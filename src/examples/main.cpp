@@ -17,11 +17,35 @@ template<class...> class show_type;
 
 void foo(ranges::Readable&) {}
 
-
-
 template<std::experimental::ranges::CopyConstructible Maybe,  typename T>
 requires std::is_object_v<T>
 class maybe_view : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
+  private:
+    std::experimental::ranges::detail::semiregular_box<Maybe> value_;
+
+    //    Maybe value_; // exposition only
+  public:
+    maybe_view() = default;
+
+    constexpr maybe_view(const Maybe& maybe) : value_(maybe)
+    {}
+
+    constexpr maybe_view(Maybe&& maybe) : value_(std::move(maybe))
+    {}
+
+    constexpr T* begin() noexcept { return data(); }
+    constexpr const T* begin() const noexcept { return data(); }
+    constexpr T* end() noexcept { if (data()) return data() + 1; else return data(); }
+    constexpr const T* end() const noexcept { if (data()) return data() + 1; else return data(); }
+    constexpr std::ptrdiff_t size() noexcept { if (value_.get()) return 1; else return 0;}
+
+    constexpr T* data() noexcept { if (value_.get()) return std::addressof(*value_.get()); else return 0;}
+    constexpr const T* data() const noexcept { if (value_.get()) return std::addressof(*value_.get()); else return 0;}
+};
+
+template<std::experimental::ranges::CopyConstructible Maybe,  typename T>
+requires std::is_object_v<T> && std::is_rvalue_reference_v<Maybe>
+class maybe_view<Maybe, T> : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
   private:
     std::experimental::ranges::detail::semiregular_box<Maybe> value_;
 
@@ -54,13 +78,15 @@ struct dereference {
 
 
 template<class Maybe>
-//maybe_view(const Maybe&) -> maybe_view<Maybe, typename Maybe::value_type>;
 maybe_view(const Maybe&) -> maybe_view<Maybe, typename dereference<Maybe>::type>;
+
+// template<class Maybe>
+// maybe_view(Maybe&&) -> maybe_view<Maybe&&, typename dereference<Maybe>::type>;
 
 // template<class Maybe>
 // maybe_view(const Maybe&) -> maybe_view<Maybe, std::remove_pointer_t<Maybe>>;
 
- // template<class U>
+// template<class U>
 // explicit maybe_view(U&&) -> maybe_view<invoke_result<decltype(std::ranges::maybe_value), U>>;
 
 namespace view {
@@ -81,6 +107,37 @@ void check(CHECK k)
     show_type<CHECK> _;
 
 }
+
+template<typename Maybe>
+struct test;
+
+template<typename Maybe>
+requires !std::is_reference_v<Maybe>
+struct test<Maybe> {
+    test(Maybe) {std::cout << "not reference\n";}
+};
+
+template<typename Maybe>
+requires std::is_rvalue_reference_v<Maybe>
+struct test<Maybe> {
+    test(Maybe) {std::cout << "is_rvalue_reference_v\n";}
+};
+
+template<typename Maybe>
+requires std::is_lvalue_reference_v<Maybe>
+struct test<Maybe> {
+    test(Maybe) {std::cout << "is_lvalue_reference_v\n";}
+};
+
+template<class Maybe>
+test(const Maybe&) -> test<const Maybe&>;
+
+template<class Maybe>
+test(Maybe&&) -> test<Maybe&&>;
+
+
+int bar(){return 7;}
+int & bar2() {static int i = 9; return i;}
 
 int main() {
 
@@ -154,5 +211,21 @@ int main() {
      //     i = 9;
      //     std::cout << "i=" << i << '\n'; // prints 7
      // }
+
+
+     int kkk = 7;
+     int & r_kkk = kkk;
+     int const& cr_kkk = kkk;
+     int && rv_kkk = std::move(kkk);
+
+     test to1(std::optional<int>{});
+     test to2(std::optional<int>{9});
+     test t0(9);
+     test t1(kkk);
+     test t2(r_kkk);
+     test t3(cr_kkk);
+     test t4(rv_kkk);
+     test t5(bar());
+     test t6(bar2());
 
 }
