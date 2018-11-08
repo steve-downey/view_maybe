@@ -15,66 +15,10 @@ template<class...> class show_type;
 
 void foo(ranges::Readable&) {}
 
-namespace std::ranges {
-
-// namespace __maybe {
-// struct fn_maybe_has_value {
-//     template<typename U>
-//     constexpr
-//     auto operator()(U* u) const -> bool {return (u != nullptr);}
-
-//     template<typename T>
-//     constexpr
-//     auto operator()(const std::optional<T>& o) const -> bool {return !!o;}
-// };
-
-// struct fn_maybe_value {
-//     template<typename U>
-//     constexpr
-//     auto operator()(U* u) const -> U& {}
-
-//     template<typename T>
-//     auto operator()(const std::optional<T>& o) -> T& {o.value();}
-
-//     template<typename T>
-//     constexpr
-//     auto operator()(std::optional<T>&&  o) const -> T& {o.value();}
-
-// };
-// }
-
-// inline constexpr __maybe::fn_maybe_value maybe_value{};
-// inline constexpr __maybe::fn_maybe_has_value maybe_has_value{};
-
-template<std::experimental::ranges::CopyConstructible T>
-requires std::is_object_v<T>
-class single_view : public std::experimental::ranges::view_interface<single_view<T>> {
-  private:
-    std::experimental::ranges::detail::semiregular_box<T> value_;
-  public:
-    single_view() = default;
-    constexpr explicit single_view(const T& t)
-    : value_(t) {}
-    constexpr explicit single_view(T&& t)
-    : value_(std::move(t)) {}
-
-    template<class... Args>
-    requires std::experimental::ranges::Constructible<T, Args...>
-    constexpr single_view(std::in_place_t, Args&&... args)
-		: value_(std::in_place, std::forward<Args>(args)...) {}
-
-    constexpr T* begin() noexcept { return data(); }
-    constexpr const T* begin() const noexcept { return data(); }
-    constexpr T* end() noexcept { return data() + 1; }
-    constexpr const T* end() const noexcept { return data() + 1; }
-    constexpr static std::ptrdiff_t size() noexcept { return 1; }
-    constexpr T* data() noexcept { return std::addressof(value_.get()); }
-    constexpr const T* data() const noexcept { return std::addressof(value_.get()); }
-};
 
 
 template<typename Maybe, std::experimental::ranges::CopyConstructible T>
-requires is_object_v<T>
+requires std::is_object_v<T>
 class maybe_view : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
   private:
     Maybe  value_; // exposition only
@@ -98,6 +42,7 @@ class maybe_view : public std::experimental::ranges::view_interface<maybe_view<M
 
 
 template<class Maybe>
+//maybe_view(const Maybe&) -> maybe_view<Maybe, typename Maybe::value_type>;
 maybe_view(const Maybe&) -> maybe_view<Maybe, typename Maybe::value_type>;
 
 // template<class Maybe>
@@ -105,7 +50,6 @@ maybe_view(const Maybe&) -> maybe_view<Maybe, typename Maybe::value_type>;
 
  // template<class U>
 // explicit maybe_view(U&&) -> maybe_view<invoke_result<decltype(std::ranges::maybe_value), U>>;
-}
 
 
 int main() {
@@ -125,14 +69,13 @@ int main() {
 
 
     //    std::ranges::maybe_view<std::optional<int>, int> vs2{s};
-    std::ranges::maybe_view vs2{s};
+    maybe_view vs2{s};
     std::cout << *begin(vs2) << '\n';
-	// ranges::copy(vs2, out);
 	// std::cout << '\n';
     for (auto i : vs2)
         std::cout << "i=" << i << '\n'; // prints 4
 
-    std::ranges::maybe_view e2{std::optional<int>{}};
+    maybe_view e2{std::optional<int>{}};
     for (int i : e2)
         std::cout << "i=" <<  i << '\n'; // does not print
 
