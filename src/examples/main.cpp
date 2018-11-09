@@ -16,26 +16,44 @@ namespace ranges = std::experimental::ranges;
 template <class...>
 class show_type;
 
-template <class Maybe>
-concept bool MaybeValue = requires(Maybe m) {
-    m ? true : false;
-    *m;
+template <class T>
+struct dereference {
+    typedef std::remove_reference_t<decltype(*std::declval<T>())> type;
 };
 
-template <MaybeValue Maybe>
-void testMaybe(Maybe const& m);
+template <class T>
+using dereference_t = typename dereference<T>::type;
+
+
+template <class T>
+concept bool Readable =
+    requires (T t) {
+    t ? true : false;
+    { *t } -> auto&&;
+};
+
+template <Readable Maybe>
+void testMaybe(Maybe const& m) {}
+
+void v_func();
 
 void checks() {
     testMaybe(std::optional{3});
     //    testMaybe(3);
     std::array ar = {1};
     //    testMaybe(ar);
+    int *p;
+    testMaybe(p);
+    void *v;
+    //    testMaybe(v);
+    testMaybe(v_func);
+    //    testMaybe(v_func());
 }
 
-template <MaybeValue Maybe, typename T>
+template <Readable Maybe, typename T>
 class maybe_view;
 
-template <MaybeValue Maybe, typename T>
+template <Readable Maybe, typename T>
 requires std::is_object_v<T>&&
     std::is_rvalue_reference_v<Maybe> class maybe_view<Maybe, T>
     : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
@@ -87,7 +105,7 @@ requires std::is_object_v<T>&&
     }
 };
 
-template <MaybeValue Maybe, typename T>
+template <Readable Maybe, typename T>
 requires std::is_object_v<T>&&
     std::is_lvalue_reference_v<Maybe> class maybe_view<Maybe, T> {
     Maybe& value_;
@@ -136,26 +154,19 @@ requires std::is_object_v<T>&&
     }
 };
 
-template <class T>
-struct dereference {
-    typedef std::remove_reference_t<decltype(*std::declval<T>())> type;
-};
 
-template <class T>
-using dereference_t = typename dereference<T>::type;
-
-template <MaybeValue Maybe>
+template <Readable Maybe>
 maybe_view(const Maybe&)->maybe_view<const Maybe&, dereference_t<Maybe>>;
 
-template <MaybeValue Maybe>
+template <Readable Maybe>
 maybe_view(Maybe &&)->maybe_view<Maybe&&, dereference_t<Maybe>>;
 
-template <MaybeValue Maybe>
+template <Readable Maybe>
 maybe_view(Maybe&)->maybe_view<Maybe&, dereference_t<Maybe>>;
 
 namespace view {
 struct __maybe_fn {
-    template <MaybeValue T>
+    template <Readable T>
     constexpr auto operator()(T&& t) const
         STL2_NOEXCEPT_REQUIRES_RETURN(maybe_view{std::forward<T>(t)})
 };
@@ -332,11 +343,11 @@ int main() {
     }
     std::cout << "s=" << *s << '\n'; // prints 7
 
-    std::array<int, 2> a2 = {2, 3};
-    for (auto&& i : view::maybe(a2)) {
-        i = 9;
-        std::cout << "i=" << i << '\n'; // prints 7
-    }
+    // std::array<int, 2> a2 = {2, 3};
+    // for (auto&& i : view::maybe(a2)) {
+    //     i = 9;
+    //     std::cout << "i=" << i << '\n'; // prints 7
+    // }
 
     const std::optional      cs{7};
     const std::optional<int> ce{};
@@ -419,6 +430,11 @@ int main() {
     for (auto&& i : view::maybe(std::optional{noDefault})) {
         std::cout << "No Default\n";
     }
+
+    //    maybe_view func_view{v_func}; //incomplete
+    // for (auto&& i : view::maybe(v_func) {
+    //     std::cout << "No Default\n";
+    // }
 
     int        kkk    = 7;
     int&       r_kkk  = kkk;
