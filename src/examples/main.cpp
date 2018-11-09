@@ -16,14 +16,23 @@ namespace ranges = std::experimental::ranges;
 template <class...>
 class show_type;
 
-template< class Maybe >
-concept bool MaybeValue =
-    requires(Maybe m) {
-    m?true:false;
+template <class Maybe>
+concept bool MaybeValue = requires(Maybe m) {
+    m ? true : false;
     *m;
 };
 
-template <typename Maybe, typename T>
+template <MaybeValue Maybe>
+void testMaybe(Maybe const& m);
+
+void checks() {
+    testMaybe(std::optional{3});
+    //    testMaybe(3);
+    std::array ar = {1};
+    //    testMaybe(ar);
+}
+
+template <MaybeValue Maybe, typename T>
 class maybe_view;
 
 template <MaybeValue Maybe, typename T>
@@ -135,18 +144,18 @@ struct dereference {
 template <class T>
 using dereference_t = typename dereference<T>::type;
 
-template <class Maybe>
+template <MaybeValue Maybe>
 maybe_view(const Maybe&)->maybe_view<const Maybe&, dereference_t<Maybe>>;
 
-template <class Maybe>
+template <MaybeValue Maybe>
 maybe_view(Maybe &&)->maybe_view<Maybe&&, dereference_t<Maybe>>;
 
-template <class Maybe>
+template <MaybeValue Maybe>
 maybe_view(Maybe&)->maybe_view<Maybe&, dereference_t<Maybe>>;
 
 namespace view {
 struct __maybe_fn {
-    template <class T>
+    template <MaybeValue T>
     constexpr auto operator()(T&& t) const
         STL2_NOEXCEPT_REQUIRES_RETURN(maybe_view{std::forward<T>(t)})
 };
@@ -323,12 +332,11 @@ int main() {
     }
     std::cout << "s=" << *s << '\n'; // prints 7
 
-    // std::array<int, 2> a2 = {2,3};
-    // for (auto&& i : view::maybe(a2))
-    // {
-    //     i = 9;
-    //     std::cout << "i=" << i << '\n'; // prints 7
-    // }
+    std::array<int, 2> a2 = {2, 3};
+    for (auto&& i : view::maybe(a2)) {
+        i = 9;
+        std::cout << "i=" << i << '\n'; // prints 7
+    }
 
     const std::optional      cs{7};
     const std::optional<int> ce{};
