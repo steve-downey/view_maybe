@@ -31,10 +31,7 @@ class maybe_view<Maybe, T> : public std::experimental::ranges::view_interface<ma
   public:
     maybe_view() = default;
 
-    constexpr maybe_view(const M& maybe) : value_(maybe)
-    {}
-
-    constexpr maybe_view(M&& maybe) : value_(std::move(maybe))
+    constexpr maybe_view(Maybe maybe) : value_(std::move(maybe))
     {}
 
     constexpr T* begin() noexcept { return data(); }
@@ -50,17 +47,13 @@ class maybe_view<Maybe, T> : public std::experimental::ranges::view_interface<ma
 template<typename Maybe,  typename T>
 requires std::is_object_v<T> && std::is_lvalue_reference_v<Maybe>
 class maybe_view<Maybe, T> {
-    Maybe& value_; // exposition only
+    Maybe& value_;
     using R = std::remove_reference_t<decltype(*value_)>;
   public:
     maybe_view() = default;
 
-
     constexpr maybe_view(Maybe& maybe) : value_(maybe)
     {}
-
-    // constexpr maybe_view(M&& maybe) : value_(std::move(maybe))
-    // {}
 
     constexpr R* begin() noexcept { return data(); }
     constexpr const R* begin() const noexcept { return data(); }
@@ -145,6 +138,81 @@ test(Maybe&) -> test<Maybe&>;
 int bar(){return 7;}
 int & bar2() {static int i = 9; return i;}
 
+
+class Int
+{
+    int i_;
+  public:
+    Int() : i_(0){};
+    explicit  Int(int i) : i_(i){};
+    explicit operator int(){return i_;}
+
+    Int operator+(int j) const {return Int(i_ + j);}
+};
+
+bool operator==(Int lhs, Int rhs){
+    return static_cast<int>(lhs) == static_cast<int>(rhs);
+}
+
+bool operator>(Int lhs, Int rhs){
+    return static_cast<int>(lhs) > static_cast<int>(rhs);
+}
+
+Int operator+(Int lhs, Int rhs){
+    return Int(static_cast<int>(lhs) + static_cast<int>(rhs));
+}
+
+
+class Double
+{
+    double d_;
+  public:
+    Double() : d_(0){};
+    explicit Double(double d) : d_(d){};
+    explicit operator double(){return d_;}
+};
+
+bool operator==(Double lhs, Double rhs){
+    return static_cast<double>(lhs) == static_cast<double>(rhs);
+};
+
+class NoDefault
+{
+  public:
+    NoDefault(int) {};
+    NoDefault() = delete;
+};
+
+class NoCopy {
+    NoCopy(NoCopy const&) = delete;
+  public:
+    NoCopy() = default;
+    NoCopy(NoCopy&&) = default;
+};
+
+class NoMove {
+    NoMove(NoMove&&) = delete;
+  public:
+    NoMove() = default;
+    NoMove(NoMove const&) = default;
+};
+
+NoDefault makeNoDefault() {
+    NoDefault noDefault{1};
+    return noDefault;
+}
+
+NoMove makeNoMove() {
+    NoMove noMove;
+    return noMove;
+}
+
+NoCopy makeNoCopy() {
+    NoCopy noCopy;
+    return noCopy;
+}
+
+
 int main() {
 
     std::optional s{7};
@@ -224,14 +292,97 @@ int main() {
      const std::optional<int> ce{};
 
      maybe_view vcs2{cs};
-     std::cout << *begin(vs2) << '\n';
+     std::cout << *begin(vcs2) << '\n';
 
      for (auto&& i : view::maybe(cs))
      {
          // i = 9;
          std::cout << "i=" << i << '\n'; // prints 7
      }
-     std::cout << "cs=" << *s << '\n'; // prints 7
+     std::cout << "cs=" << *cs << '\n'; // prints 7
+
+
+     std::optional<volatile int> vs{7};
+
+     if (vs) {
+         std::cout << "*vs = " << *vs << '\n';
+     }
+     maybe_view vvs2{vs};
+     std::cout << *begin(vvs2) << '\n';
+
+     for (auto&& i : view::maybe(vs))
+     {
+         // i = 9;
+         std::cout << "i=" << i << '\n'; // prints 7
+     }
+     std::cout << "vs=" << *s << '\n'; // prints 7
+
+     const int ci = 11;
+     volatile int vi = 12;
+     const volatile int cvi = 13;
+
+     auto pci = &ci;
+     for (auto&& i : view::maybe(pci))
+     {
+         std::cout << "i=" << i << '\n'; // prints 7
+     }
+     std::cout << "pci=" << *pci << '\n'; // prints 7
+
+     auto pvi = &vi;
+     std::cout << "pvi=" << *pvi << '\n'; // prints 7
+     for (auto&& i : view::maybe(pvi))
+     {
+         i++;
+         std::cout << "i=" << i << '\n'; // prints 7
+     }
+     std::cout << "pvi=" << *pvi << '\n'; // prints 7
+
+     auto pcvi = &cvi;
+     for (auto&& i : view::maybe(pcvi))
+     {
+         std::cout << "i=" << i << '\n'; // prints 7
+     }
+
+
+     int ar[] = {111,112,113,114,115};
+     for (auto&& i : view::maybe(ar))
+     {
+         std::cout << "i=" << i << '\n'; // prints 7
+     }
+
+     Int myInt{231};
+     Double myDouble{457.3};
+     NoCopy noCopy;
+     NoMove noMove;
+     NoDefault noDefault{678};
+
+     for (auto&& i : view::maybe(std::optional{myInt}))
+     {
+         std::cout << "i=" << int(i) << '\n'; // prints 7
+     }
+
+     for (auto&& i : view::maybe(std::optional{myDouble}))
+     {
+         std::cout << "i=" << double(i) << '\n'; // prints 7
+     }
+
+     std::optional<NoCopy> optionalNoCopy;
+     optionalNoCopy.emplace();
+     for (auto&& i : view::maybe(optionalNoCopy))
+     {
+         std::cout << "No Copy\n";
+     }
+
+     for (auto&& i : view::maybe(std::optional{noMove}))
+     {
+         std::cout << "No Move\n";
+     }
+
+     for (auto&& i : view::maybe(std::optional{noDefault}))
+     {
+         std::cout << "No Default\n";
+     }
+
 
      int kkk = 7;
      int & r_kkk = kkk;
