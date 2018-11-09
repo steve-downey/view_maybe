@@ -16,12 +16,17 @@ namespace ranges = std::experimental::ranges;
 template <class...>
 class show_type;
 
-void foo(ranges::Readable&) {}
+template< class Maybe >
+concept bool MaybeValue =
+    requires(Maybe m) {
+    m?true:false;
+    *m;
+};
 
 template <typename Maybe, typename T>
 class maybe_view;
 
-template <typename Maybe, typename T>
+template <MaybeValue Maybe, typename T>
 requires std::is_object_v<T>&&
     std::is_rvalue_reference_v<Maybe> class maybe_view<Maybe, T>
     : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
@@ -43,12 +48,14 @@ requires std::is_object_v<T>&&
         else
             return data();
     }
+
     constexpr const T* end() const noexcept {
         if (data())
             return data() + 1;
         else
             return data();
     }
+
     constexpr std::ptrdiff_t size() noexcept {
         if (value_.get())
             return 1;
@@ -62,6 +69,7 @@ requires std::is_object_v<T>&&
         else
             return 0;
     }
+
     constexpr const T* data() const noexcept {
         if (value_.get())
             return std::addressof(*value_.get());
@@ -70,7 +78,7 @@ requires std::is_object_v<T>&&
     }
 };
 
-template <typename Maybe, typename T>
+template <MaybeValue Maybe, typename T>
 requires std::is_object_v<T>&&
     std::is_lvalue_reference_v<Maybe> class maybe_view<Maybe, T> {
     Maybe& value_;
@@ -89,12 +97,14 @@ requires std::is_object_v<T>&&
         else
             return data();
     }
+
     constexpr const R* end() const noexcept {
         if (data())
             return data() + 1;
         else
             return data();
     }
+
     constexpr std::ptrdiff_t size() noexcept {
         if (value_.get())
             return 1;
@@ -108,6 +118,7 @@ requires std::is_object_v<T>&&
         else
             return 0;
     }
+
     constexpr const R* data() const noexcept {
         if (value_)
             return std::addressof(*value_);
@@ -121,26 +132,17 @@ struct dereference {
     typedef std::remove_reference_t<decltype(*std::declval<T>())> type;
 };
 
-template <class Maybe>
-maybe_view(const Maybe&)
-    ->maybe_view<const Maybe&, typename dereference<Maybe>::type>;
+template <class T>
+using dereference_t = typename dereference<T>::type;
 
 template <class Maybe>
-maybe_view(Maybe &&)->maybe_view<Maybe&&, typename dereference<Maybe>::type>;
+maybe_view(const Maybe&)->maybe_view<const Maybe&, dereference_t<Maybe>>;
 
 template <class Maybe>
-maybe_view(Maybe&)->maybe_view<Maybe&, typename dereference<Maybe>::type>;
+maybe_view(Maybe &&)->maybe_view<Maybe&&, dereference_t<Maybe>>;
 
-// template<class Maybe>
-// maybe_view(Maybe&&) -> maybe_view<Maybe&&, typename
-// dereference<Maybe>::type>;
-
-// template<class Maybe>
-// maybe_view(const Maybe&) -> maybe_view<Maybe, std::remove_pointer_t<Maybe>>;
-
-// template<class U>
-// explicit maybe_view(U&&) ->
-// maybe_view<invoke_result<decltype(std::ranges::maybe_value), U>>;
+template <class Maybe>
+maybe_view(Maybe&)->maybe_view<Maybe&, dereference_t<Maybe>>;
 
 namespace view {
 struct __maybe_fn {
