@@ -33,29 +33,32 @@ concept bool Readable =
 };
 
 template <Readable Maybe>
-void testMaybe(Maybe const& m) {}
+void testMaybe(Maybe const&) {}
 
 void v_func();
+int i_func();
 
 void checks() {
     testMaybe(std::optional{3});
     //    testMaybe(3);
-    std::array ar = {1};
+    //std::array ar = {1};
     //    testMaybe(ar);
     int *p;
     testMaybe(p);
-    void *v;
+    //void *v;
     //    testMaybe(v);
     testMaybe(v_func);
     //    testMaybe(v_func());
 }
 
 template <Readable Maybe, typename T>
+requires std::is_object_v<T>
 class maybe_view;
 
 template <Readable Maybe, typename T>
 requires std::is_object_v<T>&&
-    std::is_rvalue_reference_v<Maybe> class maybe_view<Maybe, T>
+    std::is_rvalue_reference_v<Maybe>
+class maybe_view<Maybe, T>
     : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
   private:
     using M = std::remove_cv_t<std::remove_reference_t<Maybe>>;
@@ -66,7 +69,6 @@ requires std::is_object_v<T>&&
     maybe_view() = default;
 
     constexpr maybe_view(Maybe maybe) : value_(std::move(maybe)) {}
-
     constexpr T*       begin() noexcept { return data(); }
     constexpr const T* begin() const noexcept { return data(); }
     constexpr T*       end() noexcept {
@@ -107,7 +109,8 @@ requires std::is_object_v<T>&&
 
 template <Readable Maybe, typename T>
 requires std::is_object_v<T>&&
-    std::is_lvalue_reference_v<Maybe> class maybe_view<Maybe, T> {
+    std::is_lvalue_reference_v<Maybe>
+class maybe_view<Maybe, T> {
     Maybe& value_;
     using R = std::remove_reference_t<decltype(*value_)>;
 
@@ -241,7 +244,7 @@ class Double {
 
 bool operator==(Double lhs, Double rhs) {
     return static_cast<double>(lhs) == static_cast<double>(rhs);
-};
+}
 
 class NoDefault {
   public:
@@ -419,22 +422,20 @@ int main() {
 
     std::optional<NoCopy> optionalNoCopy;
     optionalNoCopy.emplace();
-    for (auto&& i : view::maybe(optionalNoCopy)) {
-        std::cout << "No Copy\n";
+    for (auto&& i: view::maybe(optionalNoCopy)) {
+        std::cout << "No Copy" << &i << "\n";
     }
 
     for (auto&& i : view::maybe(std::optional{noMove})) {
-        std::cout << "No Move\n";
+        std::cout << "No Move" << &i << "\n";
     }
 
     for (auto&& i : view::maybe(std::optional{noDefault})) {
-        std::cout << "No Default\n";
+        std::cout << "No Default" << &i << "\n";
     }
 
-    //    maybe_view func_view{v_func}; //incomplete
-    // for (auto&& i : view::maybe(v_func) {
-    //     std::cout << "No Default\n";
-    // }
+    // maybe_view vfunc_view{v_func};
+    // maybe_view ifunc_view{i_func};
 
     int        kkk    = 7;
     int&       r_kkk  = kkk;
@@ -450,4 +451,5 @@ int main() {
     test t4(rv_kkk);
     test t5(bar());
     test t6(bar2());
+
 }
