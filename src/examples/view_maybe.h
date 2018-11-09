@@ -10,12 +10,18 @@ struct dereference {
 template <class T>
 using dereference_t = typename dereference<T>::type;
 
+template<class T>
+concept bool Dereferenceable =
+    requires(T& t) {
+    { *t } -> auto&&;
+};
+
 
 template <class T>
 concept bool Readable =
+    Dereferenceable<T> &&
     requires (T t) {
     t ? true : false;
-    { *t } -> auto&&;
 };
 
 
