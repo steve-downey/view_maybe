@@ -19,7 +19,7 @@ template <class...>
 class show_type;
 
 
-template <Readable Maybe>
+template <Nullable Maybe>
 void testMaybe(Maybe const&) {}
 
 void v_func();
@@ -275,4 +275,24 @@ int main() {
     // maybe_view vfunc_view{v_func};
     // maybe_view ifunc_view{i_func};
 
+
+    maybe_view copy{pj};
+    copy = vpj;
+
+    std::vector<std::optional<int>> v{
+        std::optional<int>{42},
+            std::optional<int>{},
+                std::optional<int>{6 * 9}};
+
+    auto&& x = std::experimental::ranges::view::transform(v, view::maybe);
+    for (auto i : x) {
+        for (auto j : i)
+            std::cout << j; // prints 42 and 42
+    }
+
+    auto r = std::experimental::ranges::view::join(x);
+
+    for (auto i : r) {
+        std::cout << i; // prints 42 and 42
+    }
 }

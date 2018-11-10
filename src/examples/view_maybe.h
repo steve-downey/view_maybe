@@ -2,13 +2,6 @@
 #ifndef INCLUDED_VIEW_MAYBE
 #define INCLUDED_VIEW_MAYBE
 
-template <class T>
-struct dereference {
-    typedef decltype(*std::declval<T>()) type;
-};
-
-template <class T>
-using dereference_t = typename dereference<T>::type;
 
 template<class T>
 concept bool Dereferenceable =
@@ -16,20 +9,28 @@ concept bool Dereferenceable =
     { *t } -> auto&&;
 };
 
+template <Dereferenceable T>
+struct dereference {
+    typedef decltype(*std::declval<T>()) type;
+};
 
 template <class T>
-concept bool Readable =
+using dereference_t = typename dereference<T>::type;
+
+
+template <class T>
+concept bool Nullable =
     Dereferenceable<T> &&
     requires (T t) {
     t ? true : false;
 };
 
 
-template <Readable Maybe, typename T>
+template <Nullable Maybe, typename T>
 requires std::is_object_v<T>
 class maybe_view;
 
-template <Readable Maybe, typename T>
+template <Nullable Maybe, typename T>
 requires std::is_object_v<T>&&
 std::is_rvalue_reference_v<Maybe>
 class maybe_view<Maybe, T>
@@ -42,7 +43,7 @@ class maybe_view<Maybe, T>
   public:
     maybe_view() = default;
 
-    constexpr maybe_view(Maybe maybe) : value_(std::move(maybe)) {}
+    constexpr explicit maybe_view(Maybe maybe) : value_(std::move(maybe)) {}
     constexpr T*       begin() noexcept { return data(); }
     constexpr const T* begin() const noexcept { return data(); }
     constexpr T*       end() noexcept {
@@ -81,17 +82,19 @@ class maybe_view<Maybe, T>
     }
 };
 
-template <Readable Maybe, typename T>
+template <Nullable Maybe, typename T>
 requires std::is_object_v<T>&&
 std::is_lvalue_reference_v<Maybe>
-class maybe_view<Maybe, T> {
-    Maybe& value_;
-    using R = std::remove_reference_t<decltype(*value_)>;
+class maybe_view<Maybe, T>
+    : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
+    std::remove_reference_t<Maybe>* value_;
+    using R = std::remove_reference_t<decltype(**value_)>;
 
   public:
     maybe_view() = default;
 
-    constexpr maybe_view(Maybe& maybe) : value_(maybe) {}
+    constexpr explicit maybe_view(Maybe& maybe) : value_(std::addressof(maybe)) {}
+    constexpr maybe_view(maybe_view const&) = default;
 
     constexpr R*       begin() noexcept { return data(); }
     constexpr const R* begin() const noexcept { return data(); }
@@ -110,40 +113,43 @@ class maybe_view<Maybe, T> {
     }
 
     constexpr std::ptrdiff_t size() noexcept {
-        if (value_.get())
+        if (**value_)
             return 1;
         else
             return 0;
     }
 
     constexpr R* data() noexcept {
-        if (value_)
-            return std::addressof(*value_);
+        if (*value_)
+            return std::addressof(**value_);
         else
-            return 0;
+            return nullptr;
     }
 
     constexpr const R* data() const noexcept {
-        if (value_)
-            return std::addressof(*value_);
+        if (*value_)
+            return std::addressof(**value_);
         else
-            return 0;
+            return nullptr;
     }
 };
 
 
-template <Readable Maybe>
-maybe_view(const Maybe&)->maybe_view<const Maybe&, std::remove_reference_t<dereference_t<Maybe>>>;
+template <Nullable Maybe,
+          typename T = std::remove_reference_t<dereference_t<Maybe>>>
+maybe_view(const Maybe&)->maybe_view<const Maybe&, T>;
 
-template <Readable Maybe>
+template <Nullable Maybe>
 maybe_view(Maybe &&)->maybe_view<Maybe&&, std::remove_reference_t<dereference_t<Maybe>>>;
 
-template <Readable Maybe>
-maybe_view(Maybe&)->maybe_view<Maybe&, std::remove_reference_t<dereference_t<Maybe>>>;
+template <Nullable Maybe,
+          typename T = std::remove_reference_t<dereference_t<Maybe>>>
+maybe_view(Maybe&)->maybe_view<Maybe&, T>;
+
 
 namespace view {
 struct __maybe_fn {
-    template <Readable T>
+    template <Nullable T>
     constexpr auto operator()(T&& t) const
         STL2_NOEXCEPT_REQUIRES_RETURN(maybe_view{std::forward<T>(t)})
         };
