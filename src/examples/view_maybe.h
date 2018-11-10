@@ -4,7 +4,7 @@
 
 template <class T>
 struct dereference {
-    typedef std::remove_reference_t<decltype(*std::declval<T>())> type;
+    typedef decltype(*std::declval<T>()) type;
 };
 
 template <class T>
@@ -133,13 +133,13 @@ class maybe_view<Maybe, T> {
 
 
 template <Readable Maybe>
-maybe_view(const Maybe&)->maybe_view<const Maybe&, dereference_t<Maybe>>;
+maybe_view(const Maybe&)->maybe_view<const Maybe&, std::remove_reference_t<dereference_t<Maybe>>>;
 
 template <Readable Maybe>
-maybe_view(Maybe &&)->maybe_view<Maybe&&, dereference_t<Maybe>>;
+maybe_view(Maybe &&)->maybe_view<Maybe&&, std::remove_reference_t<dereference_t<Maybe>>>;
 
 template <Readable Maybe>
-maybe_view(Maybe&)->maybe_view<Maybe&, dereference_t<Maybe>>;
+maybe_view(Maybe&)->maybe_view<Maybe&, std::remove_reference_t<dereference_t<Maybe>>>;
 
 namespace view {
 struct __maybe_fn {
