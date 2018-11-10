@@ -1,61 +1,72 @@
-INSTALL_PREFIX?=../install
+#! /usr/bin/make -f
+# -*-makefile-*-
+INSTALL_PREFIX?=/home/sdowney/install
+BUILD_DIR?=../cmake.bld/$(shell basename $(CURDIR))
+BUILD_TYPE?=RelWithDebInfo
+DEST?=../install
+CMAKE_FLAGS?=
 
-ifeq (clang,$(TOOLCHAIN))
-	BUILD_NAME?=build-clang
-	BUILD_DIR?=../cmake.bld/$(shell basename $(CURDIR))
-	BUILD_PATH?=$(BUILD_DIR)/$(BUILD_NAME)
-	BUILD_TYPE?=RelWithDebInfo
-	CMAKE_ARGS=-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-else ifeq (clang-master,$(TOOLCHAIN))
-	BUILD_NAME?=build-clang-master
-	BUILD_DIR?=../cmake.bld/$(shell basename $(CURDIR))
-	BUILD_PATH?=$(BUILD_DIR)/$(BUILD_NAME)
-	BUILD_TYPE?=RelWithDebInfo
-	export LLVM_ROOT?=~/install/llvm-master
-	CMAKE_ARGS=-DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/etc/llvm-master-toolchain.cmake
+ifeq (,$(VER))
+	_ver_suffix=
 else
-	BUILD_NAME?=build
-	BUILD_DIR?=../cmake.bld/$(shell basename $(CURDIR))
-	BUILD_PATH?=$(BUILD_DIR)/$(BUILD_NAME)
-	BUILD_TYPE?=RelWithDebInfo
+	_ver_suffix=-$(VER)
 endif
+
+ifeq (,$(COMPILER))
+	_build_name=build
+else ifeq (clang,$(COMPILER))
+	_build_name=build-clang${_ver_suffix}
+	_cmake_args=-DCMAKE_C_COMPILER=clang$(_vers_suffix) -DCMAKE_CXX_COMPILER=clang++${_ver_suffix}
+else ifeq (gcc,$(COMPILER))
+	_build_name=build-gcc${_ver_suffix}
+	_cmake_args=-DCMAKE_C_COMPILER=gcc${_ver_suffix} -DCMAKE_CXX_COMPILER=g++${_ver_suffix}
+else ifeq (clang-master,$(COMPILER))
+	_build_name=build-clang-master
+	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/llvm-master/bin/clang \
+		-DCMAKE_CXX_COMPILER=/home/sdowney/install/llvm-master/bin/clang++
+endif
+
+
+_build_path?=$(BUILD_DIR)/$(_build_name)
 
 define run_cmake =
 	cmake \
-	-G "Unix Makefiles" \
+	-G "Ninja" \
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	-DCMAKE_INSTALL_PREFIX=$(abspath $(INSTALL_PREFIX)) \
-	$(CMAKE_ARGS) \
+	$(_cmake_args) \
+	$(CMAKE_FLAGS) \
 	$(CURDIR)
 endef
 
 default: build
 
-$(BUILD_PATH):
-	mkdir -p $(BUILD_PATH)
+$(_build_path):
+	mkdir -p $(_build_path)
 
-$(BUILD_PATH)/CMakeCache.txt: | $(BUILD_PATH)
-	cd $(BUILD_PATH) && $(run_cmake)
+$(_build_path)/CMakeCache.txt: | $(_build_path)
+	cd $(_build_path) && $(run_cmake)
 
-build: $(BUILD_PATH)/CMakeCache.txt
-	cd $(BUILD_PATH) && make -k
+build: $(_build_path)/CMakeCache.txt
+	ninja -C $(_build_path) -k 0
 
-install: $(BUILD_PATH)/CMakeCache.txt
-	cd $(BUILD_PATH) && make install
+install: $(_build_path)/CMakeCache.txt
+	DESTDIR=$(abspath $(DEST)) ninja -C $(_build_path) -k 0  install
 
-ctest: $(BUILD_PATH)/CMakeCache.txt
-	cd $(BUILD_PATH) && ctest
+ctest: $(_build_path)/CMakeCache.txt
+	cd $(_build_path) && ctest
 
 ctest_ : build
-	cd $(BUILD_PATH) && ctest
+	cd $(_build_path) && ctest
 
 test: ctest_
 
-cmake: | $(BUILD_PATH)
-	cd $(BUILD_PATH) && $(run-cmake)
+cmake: $(_build_path)
+	echo ${run_cmake}
+	cd $(_build_path) && ${run_cmake}
 
-clean: $(BUILD_PATH)/CMakeCache.txt
-	cd $(BUILD_PATH) && make clean
+clean: $(_build_path)
+	ninja -C $(_build_path) clean
 
 realclean:
-	rm -rf $(BUILD_PATH)
+	rm -rf $(_build_path)
