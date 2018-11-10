@@ -70,3 +70,5 @@ clean: $(_build_path)
 
 realclean:
 	rm -rf $(_build_path)
+
+.PHONY : default build install ctest cmake clean realclean
