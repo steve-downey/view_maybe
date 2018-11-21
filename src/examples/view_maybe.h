@@ -17,25 +17,42 @@ struct dereference {
 template <class T>
 using dereference_t = typename dereference<T>::type;
 
+template<class> struct reference_type {};
+template<class D>
+requires
+requires(const D& d) {{ *d } -> auto&&; }
+struct reference_type<D> {
+    using type = decltype(*std::declval<D>());
+};
+template<class D>
+using reference_t = typename reference_type<D>::type;
+
+
+template<class T>
+concept bool ContextualBool =
+    requires(T& t) {
+    bool{t};
+};
 
 template <class T>
 concept bool Nullable =
     Dereferenceable<T> &&
-    requires (T t) {
-    t ? true : false;
+    ContextualBool<T> &&
+    requires (const T& t) {
+    typename reference_t<T>;
+    std::is_object_v<std::remove_reference_t<dereference_t<T>>>;
 };
 
 
-template <Nullable Maybe, typename T>
-requires std::is_object_v<T>
+template <Nullable Maybe>
 class maybe_view;
 
-template <Nullable Maybe, typename T>
-requires std::is_object_v<T>&&
-std::is_rvalue_reference_v<Maybe>
-class maybe_view<Maybe, T>
-    : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
+template <Nullable Maybe>
+requires std::is_rvalue_reference_v<Maybe>
+class maybe_view<Maybe>
+    : public std::experimental::ranges::view_interface<maybe_view<Maybe>> {
   private:
+    using T = std::remove_reference_t<dereference_t<Maybe>>;
     using M = std::remove_cv_t<std::remove_reference_t<Maybe>>;
 
     std::experimental::ranges::detail::semiregular_box<M> value_;
@@ -82,11 +99,10 @@ class maybe_view<Maybe, T>
     }
 };
 
-template <Nullable Maybe, typename T>
-requires std::is_object_v<T>&&
-std::is_lvalue_reference_v<Maybe>
-class maybe_view<Maybe, T>
-    : public std::experimental::ranges::view_interface<maybe_view<Maybe, T>> {
+template <Nullable Maybe>
+requires std::is_lvalue_reference_v<Maybe>
+class maybe_view<Maybe>
+    : public std::experimental::ranges::view_interface<maybe_view<Maybe>> {
     std::remove_reference_t<Maybe>* value_;
     using R = std::remove_reference_t<decltype(**value_)>;
 
@@ -135,16 +151,14 @@ class maybe_view<Maybe, T>
 };
 
 
-template <Nullable Maybe,
-          typename T = std::remove_reference_t<dereference_t<Maybe>>>
-maybe_view(const Maybe&)->maybe_view<const Maybe&, T>;
+template <Nullable Maybe>
+maybe_view(const Maybe&)->maybe_view<const Maybe&>;
 
 template <Nullable Maybe>
-maybe_view(Maybe &&)->maybe_view<Maybe&&, std::remove_reference_t<dereference_t<Maybe>>>;
+maybe_view(Maybe &&)->maybe_view<Maybe&&>;
 
-template <Nullable Maybe,
-          typename T = std::remove_reference_t<dereference_t<Maybe>>>
-maybe_view(Maybe&)->maybe_view<Maybe&, T>;
+template <Nullable Maybe>
+maybe_view(Maybe&)->maybe_view<Maybe&>;
 
 
 namespace view {

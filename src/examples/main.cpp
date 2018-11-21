@@ -25,17 +25,38 @@ void testMaybe(Maybe const&) {}
 void v_func();
 int i_func();
 
+struct deref {
+    int i;
+    int const&  operator*() const {return i;}
+    explicit operator bool() const { return true; };
+};
+
+struct no_ex_bool {
+    int i;
+    int const&  operator*() const {return i;}
+        //    explicit operator bool() const { return true; };
+};
+
 void checks() {
     testMaybe(std::optional{3});
-    //    testMaybe(3);
-    //std::array ar = {1};
-    //    testMaybe(ar);
+    //testMaybe(3);
+    // std::array ar = {1};
+    // testMaybe(ar);
     int *p;
     testMaybe(p);
-    //void *v;
-    //    testMaybe(v);
+    // void *v;
+    //     testMaybe(v);
     testMaybe(v_func);
-    //    testMaybe(v_func());
+    // testMaybe(v_func());
+
+    // bool b = true;
+    // testMaybe(b);
+
+    deref d;
+    testMaybe(d);
+
+    // no_ex_bool neb;
+    // testMaybe(neb);
 }
 
 
@@ -287,12 +308,15 @@ int main() {
     auto&& x = std::experimental::ranges::view::transform(v, view::maybe);
     for (auto i : x) {
         for (auto j : i)
-            std::cout << j; // prints 42 and 42
+            std::cout << j << '\t'; // prints 42 and 42
     }
+    std::cout << '\n';
 
     auto r = std::experimental::ranges::view::join(x);
 
     for (auto i : r) {
-        std::cout << i; // prints 42 and 42
+        std::cout << i << '\t'; // prints 42 and 42
     }
+    std::cout << '\n';
+
 }
