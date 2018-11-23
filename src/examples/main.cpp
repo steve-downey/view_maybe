@@ -213,13 +213,18 @@ int main() {
     const std::optional<int> ce{};
 
     maybe_view vcs2{cs};
-    std::cout << *begin(vcs2) << '\n';
+    std::cout << "cs=" << *begin(vcs2) << '\n';
 
     for (auto&& i : view::maybe(cs)) {
-        // i = 9 does not compile
+        //i = 9 //does not compile
         std::cout << "i=" << i << '\n'; // prints 3
     }
     std::cout << "cs=" << *cs << '\n'; // prints 3
+
+    for (auto&& i : view::maybe(ce)) {
+        //i = 9 //does not compile
+        std::cout << "does not print i=" << i << '\n'; // does not print
+    }
 
     std::optional<volatile int> vs{42};
 

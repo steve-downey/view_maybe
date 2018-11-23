@@ -2,45 +2,34 @@
 #ifndef INCLUDED_VIEW_MAYBE
 #define INCLUDED_VIEW_MAYBE
 
+#include <experimental/ranges/concepts>
 
-template<class T>
-concept bool Dereferenceable =
-    requires(T& t) {
-    { *t } -> auto&&;
-};
 
-template <Dereferenceable T>
-struct dereference {
-    typedef decltype(*std::declval<T>()) type;
-};
+template<class> struct dereference_type {};
 
-template <class T>
-using dereference_t = typename dereference<T>::type;
-
-template<class> struct reference_type {};
 template<class D>
 requires
 requires(const D& d) {{ *d } -> auto&&; }
-struct reference_type<D> {
-    using type = decltype(*std::declval<D>());
+struct dereference_type<D> {
+    using type = decltype(*std::declval<const D&>());
 };
+
 template<class D>
-using reference_t = typename reference_type<D>::type;
+using dereference_t = typename dereference_type<D>::type;
 
 
 template<class T>
 concept bool ContextualBool =
-    requires(T& t) {
-    bool{t};
+    requires(const T& t) {
+    {bool(t)};
 };
 
 template <class T>
 concept bool Nullable =
-    Dereferenceable<T> &&
     ContextualBool<T> &&
     requires (const T& t) {
-    typename reference_t<T>;
-    std::is_object_v<std::remove_reference_t<dereference_t<T>>>;
+    typename dereference_t<T>;
+    std::is_object_v<dereference_t<T>>;
 };
 
 
