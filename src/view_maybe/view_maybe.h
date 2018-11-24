@@ -142,27 +142,30 @@ struct __maybe_fn {
     template <Nullable T>
     constexpr auto operator()(T&& t) const
         noexcept(noexcept(safe_maybe_view{std::forward<T>(t)}))
-        requires std::is_rvalue_reference_v<T>
-        && requires {
-        safe_maybe_view{std::forward<T>(t)};
-    }
+        requires std::is_rvalue_reference_v<T> &&
+        requires {safe_maybe_view{std::forward<T>(t)};}
     {
         return safe_maybe_view{std::forward<T>(t)};
     }
 
     template <Nullable T>
     constexpr auto operator()(T&& t) const
-        requires !std::is_rvalue_reference_v<T>
-        //     noexcept(noexcept(maybe_view{std::forward<T>(t)}))
-        //     requires requires {
-        //     maybe_view{std::forward<T>(t)};
-        // }
+        noexcept(noexcept(ref_maybe_view{std::forward<T>(t)}))
+        requires !std::is_rvalue_reference_v<T> &&
+        std::is_reference_v<T> &&
+        requires {ref_maybe_view{std::forward<T>(t)};}
     {
-        if constexpr (std::is_reference_v<T>) {
-            return ref_maybe_view{std::forward<T>(t)};
-        } else {
-            return safe_maybe_view{std::forward<T>(t)};
-        }
+        return ref_maybe_view{std::forward<T>(t)};
+    }
+
+    template <Nullable T>
+    constexpr auto operator()(T&& t) const
+        noexcept(noexcept(safe_maybe_view{std::forward<T>(t)}))
+        requires !std::is_rvalue_reference_v<T> &&
+        !std::is_reference_v<T> &&
+        requires {safe_maybe_view{std::forward<T>(t)};}
+    {
+        return safe_maybe_view{std::forward<T>(t)};
     }
 };
 

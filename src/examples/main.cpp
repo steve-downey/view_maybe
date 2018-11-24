@@ -275,10 +275,10 @@ int main() {
         std::cout << "i=" << i << " prints 13\n"; // prints 13
     }
 
-    int ar[] = {111, 112, 113, 114, 115};
-    for (auto&& i : view::maybe(ar)) {
-        std::cout << "i=" << i << " prints 111\n"; // prints 111
-    }
+    // int ar[] = {111, 112, 113, 114, 115};
+    // for (auto&& i : view::maybe(ar)) {
+    //     std::cout << "i=" << i << " prints 111\n"; prints 111
+    // }
 
     Int       myInt{231};
     Double    myDouble{457.3};
