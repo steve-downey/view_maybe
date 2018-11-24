@@ -3,6 +3,7 @@
 #define INCLUDED_VIEW_MAYBE
 
 #include <experimental/ranges/concepts>
+#include <iostream>
 
 
 template<class> struct dereference_type {};
@@ -33,9 +34,6 @@ concept bool Nullable =
     std::is_object_v<dereference_t<T>>;
 };
 
-
-// template <Nullable Maybe>
-// class maybe_view;
 
 template <Nullable Maybe>
 class safe_maybe_view
@@ -96,10 +94,10 @@ class ref_maybe_view
     using R = std::remove_reference_t<decltype(**value_)>;
 
   public:
-    ref_maybe_view() = default;
+    constexpr ref_maybe_view() = default;
+    constexpr ref_maybe_view(ref_maybe_view const&) = default;
 
     constexpr explicit ref_maybe_view(Maybe& maybe) : value_(std::addressof(maybe)) {}
-    constexpr ref_maybe_view(ref_maybe_view const&) = default;
 
     constexpr R*       begin() noexcept { return data(); }
     constexpr const R* begin() const noexcept { return data(); }
@@ -138,22 +136,6 @@ class ref_maybe_view
             return nullptr;
     }
 };
-
-
-// template <Nullable Maybe>
-// maybe_view(const Maybe&)->maybe_view<const Maybe&>;
-
-// template <Nullable Maybe>
-// maybe_view(Maybe &&)->maybe_view<Maybe&&>;
-
-// template <Nullable Maybe>
-// maybe_view(Maybe&)->maybe_view<Maybe&>;
-
-//decay_t<decltype((x))>(x)
-
-template<class T>
-requires std::experimental::ranges::Constructible<std::decay_t<T>, T>
-using __f = std::decay_t<T>;
 
 namespace view {
 struct __maybe_fn {

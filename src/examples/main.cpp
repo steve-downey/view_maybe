@@ -22,6 +22,9 @@ class show_type;
 template <Nullable Maybe>
 void testMaybe(Maybe const&) {}
 
+template <std::experimental::ranges::Readable Read>
+void testRead(Read) {}
+
 void v_func();
 int i_func();
 
@@ -38,6 +41,8 @@ struct no_ex_bool {
 };
 
 void checks() {
+    Nullable m{std::optional{3}};
+    testRead(std::optional{3});
     testMaybe(std::optional{3});
     //testMaybe(3);
     // std::array ar = {1};
@@ -179,7 +184,7 @@ int main() {
 
     std::cout << "j=" << j << " prints 27\n"; // prints 27
 
-    //    int _ = view::maybe(s);
+    //int _ = view::maybe(std::optional{3});
     for (auto&& i : view::maybe(s)) {
         i = 9;
         std::cout << "i=" << i << " prints 9\n"; // prints 9
@@ -270,10 +275,10 @@ int main() {
         std::cout << "i=" << i << " prints 13\n"; // prints 13
     }
 
-    // int ar[] = {111, 112, 113, 114, 115};
-    // for (auto&& i : view::maybe(ar)) {
-    //     std::cout << "i=" << i << " prints 111\n"; // prints 111
-    // }
+    int ar[] = {111, 112, 113, 114, 115};
+    for (auto&& i : view::maybe(ar)) {
+        std::cout << "i=" << i << " prints 111\n"; // prints 111
+    }
 
     Int       myInt{231};
     Double    myDouble{457.3};
