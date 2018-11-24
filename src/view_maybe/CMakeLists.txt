@@ -13,3 +13,18 @@ target_include_directories(view_maybe PUBLIC
   )
 
 target_link_libraries(view_maybe stl2)
+
+## Tests
+add_executable(view_maybe_test "")
+
+target_sources(
+  view_maybe_test
+  PRIVATE
+  view_maybe.t.cpp)
+
+target_link_libraries(view_maybe_test view_maybe)
+target_link_libraries(view_maybe_test gtest)
+target_link_libraries(view_maybe_test gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(view_maybe_test)

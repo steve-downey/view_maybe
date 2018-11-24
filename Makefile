@@ -24,6 +24,10 @@ else ifeq (clang-master,$(COMPILER))
 	_build_name=build-clang-master
 	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/llvm-master/bin/clang \
 		-DCMAKE_CXX_COMPILER=/home/sdowney/install/llvm-master/bin/clang++
+else ifeq (clang-concepts,$(COMPILER))
+	_build_name=build-clang-concepts
+	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/llvm-concepts/bin/clang \
+		-DCMAKE_CXX_COMPILER=/home/sdowney/install/llvm-concepts/bin/clang++
 endif
 
 
