@@ -26,6 +26,7 @@ concept bool ContextualBool =
 
 template <class T>
 concept bool Nullable =
+    std::experimental::ranges::Readable<std::remove_reference_t<T>> &&
     ContextualBool<T> &&
     requires (const T& t) {
     typename dereference_t<T>;
@@ -33,13 +34,12 @@ concept bool Nullable =
 };
 
 
-template <Nullable Maybe>
-class maybe_view;
+// template <Nullable Maybe>
+// class maybe_view;
 
 template <Nullable Maybe>
-requires std::is_rvalue_reference_v<Maybe>
-class maybe_view<Maybe>
-    : public std::experimental::ranges::view_interface<maybe_view<Maybe>> {
+class safe_maybe_view
+    : public std::experimental::ranges::view_interface<safe_maybe_view<Maybe>> {
   private:
     using T = std::remove_reference_t<dereference_t<Maybe>>;
     using M = std::remove_cv_t<std::remove_reference_t<Maybe>>;
@@ -47,9 +47,10 @@ class maybe_view<Maybe>
     std::experimental::ranges::detail::semiregular_box<M> value_;
 
   public:
-    maybe_view() = default;
+    safe_maybe_view() = default;
 
-    constexpr explicit maybe_view(Maybe maybe) : value_(std::move(maybe)) {}
+    constexpr explicit safe_maybe_view(Maybe const& maybe) : value_(maybe) {}
+    constexpr explicit safe_maybe_view(Maybe&& maybe) : value_(std::move(maybe)) {}
     constexpr T*       begin() noexcept { return data(); }
     constexpr const T* begin() const noexcept { return data(); }
     constexpr T*       end() noexcept {
@@ -89,17 +90,16 @@ class maybe_view<Maybe>
 };
 
 template <Nullable Maybe>
-requires std::is_lvalue_reference_v<Maybe>
-class maybe_view<Maybe>
-    : public std::experimental::ranges::view_interface<maybe_view<Maybe>> {
+class ref_maybe_view
+    : public std::experimental::ranges::view_interface<ref_maybe_view<Maybe>> {
     std::remove_reference_t<Maybe>* value_;
     using R = std::remove_reference_t<decltype(**value_)>;
 
   public:
-    maybe_view() = default;
+    ref_maybe_view() = default;
 
-    constexpr explicit maybe_view(Maybe& maybe) : value_(std::addressof(maybe)) {}
-    constexpr maybe_view(maybe_view const&) = default;
+    constexpr explicit ref_maybe_view(Maybe& maybe) : value_(std::addressof(maybe)) {}
+    constexpr ref_maybe_view(ref_maybe_view const&) = default;
 
     constexpr R*       begin() noexcept { return data(); }
     constexpr const R* begin() const noexcept { return data(); }
@@ -140,22 +140,49 @@ class maybe_view<Maybe>
 };
 
 
-template <Nullable Maybe>
-maybe_view(const Maybe&)->maybe_view<const Maybe&>;
+// template <Nullable Maybe>
+// maybe_view(const Maybe&)->maybe_view<const Maybe&>;
 
-template <Nullable Maybe>
-maybe_view(Maybe &&)->maybe_view<Maybe&&>;
+// template <Nullable Maybe>
+// maybe_view(Maybe &&)->maybe_view<Maybe&&>;
 
-template <Nullable Maybe>
-maybe_view(Maybe&)->maybe_view<Maybe&>;
+// template <Nullable Maybe>
+// maybe_view(Maybe&)->maybe_view<Maybe&>;
 
+//decay_t<decltype((x))>(x)
+
+template<class T>
+requires std::experimental::ranges::Constructible<std::decay_t<T>, T>
+using __f = std::decay_t<T>;
 
 namespace view {
 struct __maybe_fn {
     template <Nullable T>
     constexpr auto operator()(T&& t) const
-        STL2_NOEXCEPT_REQUIRES_RETURN(maybe_view{std::forward<T>(t)})
-        };
+        noexcept(noexcept(safe_maybe_view{std::forward<T>(t)}))
+        requires std::is_rvalue_reference_v<T>
+        && requires {
+        safe_maybe_view{std::forward<T>(t)};
+    }
+    {
+        return safe_maybe_view{std::forward<T>(t)};
+    }
+
+    template <Nullable T>
+    constexpr auto operator()(T&& t) const
+        requires !std::is_rvalue_reference_v<T>
+        //     noexcept(noexcept(maybe_view{std::forward<T>(t)}))
+        //     requires requires {
+        //     maybe_view{std::forward<T>(t)};
+        // }
+    {
+        if constexpr (std::is_reference_v<T>) {
+            return ref_maybe_view{std::forward<T>(t)};
+        } else {
+            return safe_maybe_view{std::forward<T>(t)};
+        }
+    }
+};
 
 inline constexpr __maybe_fn maybe{};
 } // namespace view

@@ -46,14 +46,14 @@ void checks() {
     testMaybe(p);
     // void *v;
     //     testMaybe(v);
-    testMaybe(v_func);
+    //    testMaybe(v_func);
     // testMaybe(v_func());
 
     // bool b = true;
     // testMaybe(b);
 
-    deref d;
-    testMaybe(d);
+    // deref d;
+    // testMaybe(d);
 
     // no_ex_bool neb;
     // testMaybe(neb);
@@ -72,7 +72,7 @@ class Int {
   public:
     Int() : i_(0){};
     explicit Int(int i) : i_(i){};
-    explicit operator int() { return i_; }
+    explicit operator int() const { return i_; }
 
     Int operator+(int j) const { return Int(i_ + j); }
 };
@@ -95,7 +95,7 @@ class Double {
   public:
     Double() : d_(0){};
     explicit Double(double d) : d_(d){};
-    explicit operator double() { return d_; }
+    explicit operator double() const { return d_; }
 };
 
 bool operator==(Double lhs, Double rhs) {
@@ -144,16 +144,16 @@ int main() {
     std::optional      s{7};
     std::optional<int> e{};
 
-    maybe_view vs2{s};
-    std::cout << *begin(vs2) << '\n';
+    ref_maybe_view vs2{s};
+    std::cout << *begin(vs2) << " prints 7\n";
 
     for (auto i : vs2)
-        std::cout << "i=" << i << '\n'; // prints 7
+        std::cout << "i=" << i << " prints 7\n";
 
     for (auto i : view::maybe(s))
-        std::cout << "i=" << i << '\n'; // prints 7
+        std::cout << "i=" << i << " prints 7\n"; // prints 7
 
-    maybe_view e2{std::optional<int>{}};
+    safe_maybe_view e2{std::optional<int>{}};
     for (int i : e2)
         std::cout << "i=" << i << '\n'; // does not print
 
@@ -163,33 +163,39 @@ int main() {
 
     int        j  = 8;
     int*       pj = &j;
-    maybe_view vpj{pj};
+    ref_maybe_view vpj{pj};
     for (auto i : vpj)
-        std::cout << "i=" << i << '\n'; // prints 8
+        std::cout << "i=" << i << " prints 8\n"; // prints 8
 
     for (auto i : view::maybe(pj))
-        std::cout << "i=" << i << '\n'; // prints 8
+        std::cout << "i=" << i << " prints 8\n"; // prints 8
 
-    std::cout << "j=" << j << '\n'; // prints 8
+    std::cout << "j=" << j << " prints 8\n"; // prints 8
 
     for (auto&& i : view::maybe(pj)) {
         i = 27;
-        std::cout << "i=" << i << '\n'; // prints 27
+        std::cout << "i=" << i << " prints 27\n"; // prints 27
     }
 
-    std::cout << "j=" << j << '\n'; // prints 27
+    std::cout << "j=" << j << " prints 27\n"; // prints 27
 
+    //    int _ = view::maybe(s);
     for (auto&& i : view::maybe(s)) {
         i = 9;
-        std::cout << "i=" << i << '\n'; // prints 9
+        std::cout << "i=" << i << " prints 9\n"; // prints 9
     }
-    std::cout << "s=" << *s << '\n'; // prints 9
+    std::cout << "s=" << *s << " prints 9\n"; // prints 9
+
+    for (auto&& i : view::maybe(std::optional{9})) {
+        std::cout << "i=" << i << " prints 9\n"; // prints 9
+    }
+    std::cout << "s=" << *s << " prints 9\n"; // prints 9
 
     for (auto&& i : std::experimental::ranges::view::single(j)) {
         i = 19;
-        std::cout << "i=" << i << '\n'; // prints 19
+        std::cout << "i=" << i << " prints 19\n"; // prints 19
     }
-    std::cout << "j=" << *s << '\n'; // prints 9
+    std::cout << "j=" << *s << " prints 9\n"; // prints 9
 
     {
         auto&& __range = view::maybe(s);
@@ -200,7 +206,7 @@ int main() {
             i        = 90;
         }
     }
-    std::cout << "s=" << *s << '\n'; // prints 90
+    std::cout << "s=" << *s << " prints 90\n"; // prints 90
 
     // Does not compile
     // std::array<int, 2> a2 = {2, 3};
@@ -212,14 +218,14 @@ int main() {
     const std::optional      cs{3};
     const std::optional<int> ce{};
 
-    maybe_view vcs2{cs};
-    std::cout << "cs=" << *begin(vcs2) << '\n';
+    ref_maybe_view vcs2{cs};
+    std::cout << "cs=" << *begin(vcs2) << " prints 3\n";
 
     for (auto&& i : view::maybe(cs)) {
         //i = 9 //does not compile
-        std::cout << "i=" << i << '\n'; // prints 3
+        std::cout << "i=" << i << " prints 3\n"; // prints 3
     }
-    std::cout << "cs=" << *cs << '\n'; // prints 3
+    std::cout << "cs=" << *cs << " prints 3\n"; // prints 3
 
     for (auto&& i : view::maybe(ce)) {
         //i = 9 //does not compile
@@ -229,16 +235,16 @@ int main() {
     std::optional<volatile int> vs{42};
 
     if (vs) {
-        std::cout << "*vs = " << *vs << '\n';
+        std::cout << "*vs = " << *vs << " prints 42\n";
     }
-    maybe_view vvs2{vs};
-    std::cout << "deref begin vvs=" << *begin(vvs2) << '\n';
+    ref_maybe_view vvs2{vs};
+    std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
 
     for (auto&& i : view::maybe(vs)) {
         i = 43;
-        std::cout << "i=" << i << '\n'; // prints 43
+        std::cout << "i=" << i << " prints 43\n"; // prints 43
     }
-    std::cout << "vs=" << *vs << '\n'; // prints 43
+    std::cout << "vs=" << *vs << " prints 43\n"; // prints 43
 
     const int          ci  = 11;
     volatile int       vi  = 12;
@@ -246,28 +252,28 @@ int main() {
 
     auto pci = &ci;
     for (auto&& i : view::maybe(pci)) {
-        std::cout << "i=" << i << '\n'; // prints 11
+        std::cout << "i=" << i << " prints 11\n"; // prints 11
     }
-    std::cout << "pci=" << *pci << '\n'; // prints 11
+    std::cout << "pci=" << *pci << " prints 11\n"; // prints 11
 
     auto pvi = &vi;
-    std::cout << "pvi=" << *pvi << '\n'; // prints 12
+    std::cout << "pvi=" << *pvi << " prints 12\n"; // prints 12
     for (auto&& i : view::maybe(pvi)) {
         i++;
-        std::cout << "i=" << i << '\n'; // prints 13
+        std::cout << "i=" << i << " prints 13\n"; // prints 13
     }
-    std::cout << "pvi=" << *pvi << '\n'; // prints 13
+    std::cout << "pvi=" << *pvi << " prints 13\n"; // prints 13
 
     auto pcvi = &cvi;
     for (auto&& i : view::maybe(pcvi)) {
-        // ++i; does not compile
-        std::cout << "i=" << i << '\n'; // prints 13
+        // ++i; // does not compile
+        std::cout << "i=" << i << " prints 13\n"; // prints 13
     }
 
-    int ar[] = {111, 112, 113, 114, 115};
-    for (auto&& i : view::maybe(ar)) {
-        std::cout << "i=" << i << '\n'; // prints 111
-    }
+    // int ar[] = {111, 112, 113, 114, 115};
+    // for (auto&& i : view::maybe(ar)) {
+    //     std::cout << "i=" << i << " prints 111\n"; // prints 111
+    // }
 
     Int       myInt{231};
     Double    myDouble{457.3};
@@ -276,11 +282,11 @@ int main() {
     NoDefault noDefault{678};
 
     for (auto&& i : view::maybe(std::optional{myInt})) {
-        std::cout << "i=" << int(i) << '\n'; // prints 231
+        std::cout << "i=" << int(i) << " prints 231\n"; // prints 231
     }
 
     for (auto&& i : view::maybe(std::optional{myDouble})) {
-        std::cout << "i=" << double(i) << '\n'; // prints 457.3
+        std::cout << "i=" << double(i) << " prints 457.3\n"; // prints 457.3
     }
 
     std::optional<NoCopy> optionalNoCopy;
@@ -298,17 +304,16 @@ int main() {
     }
 
     // Does not compile
-    // maybe_view vfunc_view{v_func};
-    // maybe_view ifunc_view{i_func};
+    // auto vfunc_view = view::maybe(v_func);
+    // auto ifunc_view = view::maybe(i_func);
 
 
-    maybe_view copy{pj};
+    ref_maybe_view copy{pj};
     copy = vpj;
 
-    std::vector<std::optional<int>> v{
-        std::optional<int>{42},
-            std::optional<int>{},
-                std::optional<int>{6 * 9}};
+    std::vector<std::optional<int>> v{std::optional<int>{42},
+                                      std::optional<int>{},
+                                      std::optional<int>{6 * 9}};
 
     auto&& x = std::experimental::ranges::view::transform(v, view::maybe);
     for (auto i : x) {
