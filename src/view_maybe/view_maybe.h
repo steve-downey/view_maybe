@@ -22,7 +22,7 @@ using dereference_t = typename dereference_type<D>::type;
 template<class T>
 concept bool ContextualBool =
     requires(const T& t) {
-    {bool(t)};
+    {bool(t)} -> bool;
 };
 
 template <class T>
