@@ -14,30 +14,15 @@ TEST(ViewMaybeTest, TestGTest) {
 
 TEST(ViewMaybeTest, Concept) {
     static_assert(Nullable<std::optional<int>>);
+    static_assert(Nullable<std::optional<const int>>);
+    static_assert(Nullable<std::optional<volatile int>>);
+    static_assert(Nullable<std::optional<const volatile int>>);
+
     static_assert(!Nullable<int>);
 
     static_assert(Nullable<int*>);
     static_assert(!Nullable<std::array<int,1>>);
     static_assert(!Nullable<void*>);
-    // testMaybe(std::optional{3});
-        // //testMaybe(3);
-        // // std::array ar = {1};
-        // // testMaybe(ar);
-        // int *p;
-        // testMaybe(p);
-        // // void *v;
-        // //     testMaybe(v);
-        // testMaybe(v_func);
-        // // testMaybe(v_func());
-
-        // // bool b = true;
-        // // testMaybe(b);
-
-        // deref d;
-        // testMaybe(d);
-
-        // // no_ex_bool neb;
-        // // testMaybe(neb);
 }
 
 TEST(ViewMaybeTest, Breathing) {
@@ -167,4 +152,61 @@ TEST(ViewMaybeTest, Breathing) {
     // for (auto&& i : view::maybe(ar)) {
     //     ASSERT_EQ(i, 111);
     // }
+}
+
+namespace {
+std::optional<int> tempOpt() {
+    return {9};
+}
+
+const std::optional<int> tempConstOpt() {
+    return {10};
+}
+
+}
+TEST(ViewMaybeTest, RValTest) {
+
+    {
+        auto&& __range = view::maybe(tempOpt());
+        auto   __begin = std::begin(__range);
+        auto   __end   = std::end(__range);
+        for (; __begin != __end; ++__begin) {
+            auto&& i = *__begin;
+            i        = 90;
+        }
+    }
+
+    for (auto&& i : view::maybe(tempOpt())) {
+         ++i;
+        ASSERT_EQ(i, 10);
+    }
+
+    for (auto&& i : view::maybe(tempConstOpt())) {
+        ++i;
+        ASSERT_EQ(i, 11);
+    }
+}
+
+TEST(ViewMaybeTest, CVTest) {
+    std::optional<int> o{6};
+    std::optional<const int> co{6};
+    std::optional<volatile int> vo{6};
+    std::optional<const volatile int> cvo{6};
+
+    for (auto&& i : view::maybe(o)) {
+        ++i;
+        ASSERT_EQ(i, 7);
+    }
+    for (auto&& i : view::maybe(co)) {
+        //        ++i;
+        ASSERT_EQ(i, 6);
+    }
+    for (auto&& i : view::maybe(vo)) {
+        ++i;
+        ASSERT_EQ(i, 7);
+    }
+    for (auto&& i : view::maybe(cvo)) {
+        //        ++i;
+        ASSERT_EQ(i, 6);
+    }
 }
