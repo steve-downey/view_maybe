@@ -39,7 +39,7 @@ template <Nullable Maybe>
 class safe_maybe_view
     : public std::experimental::ranges::view_interface<safe_maybe_view<Maybe>> {
   private:
-    using T = std::remove_reference_t<dereference_t<Maybe>>;
+    using T = std::decay_t<std::remove_reference_t<dereference_t<Maybe>>>;
     using M = std::remove_cv_t<std::remove_reference_t<Maybe>>;
 
     std::experimental::ranges::detail::semiregular_box<M> value_;
@@ -141,18 +141,8 @@ namespace view {
 struct __maybe_fn {
     template <Nullable T>
     constexpr auto operator()(T&& t) const
-        noexcept(noexcept(safe_maybe_view{std::forward<T>(t)}))
-        requires std::is_rvalue_reference_v<T> &&
-        requires {safe_maybe_view{std::forward<T>(t)};}
-    {
-        return safe_maybe_view{std::forward<T>(t)};
-    }
-
-    template <Nullable T>
-    constexpr auto operator()(T&& t) const
         noexcept(noexcept(ref_maybe_view{std::forward<T>(t)}))
-        requires !std::is_rvalue_reference_v<T> &&
-        std::is_reference_v<T> &&
+        requires std::is_reference_v<T> &&
         requires {ref_maybe_view{std::forward<T>(t)};}
     {
         return ref_maybe_view{std::forward<T>(t)};
@@ -161,8 +151,7 @@ struct __maybe_fn {
     template <Nullable T>
     constexpr auto operator()(T&& t) const
         noexcept(noexcept(safe_maybe_view{std::forward<T>(t)}))
-        requires !std::is_rvalue_reference_v<T> &&
-        !std::is_reference_v<T> &&
+        requires !std::is_reference_v<T> &&
         requires {safe_maybe_view{std::forward<T>(t)};}
     {
         return safe_maybe_view{std::forward<T>(t)};
