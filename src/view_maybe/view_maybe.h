@@ -4,6 +4,8 @@
 
 #include <experimental/ranges/concepts>
 #include <iostream>
+#include <stl2/detail/semiregular_box.hpp>
+#include <stl2/view/view_interface.hpp>
 
 
 template<class> struct dereference_type {};
