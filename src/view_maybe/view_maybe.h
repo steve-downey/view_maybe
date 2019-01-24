@@ -111,7 +111,7 @@ namespace view {
         }
 
         template <class T, Nullable U = std::remove_cv_t<T>>
-            requires ranges::Constructible<U, T>
+            requires ranges::Constructible<U, T> && ranges::CopyConstructible<U>
         constexpr safe_maybe_view<U> operator()(T&& t) const
             noexcept(std::is_nothrow_constructible_v<U, T>)
         {
