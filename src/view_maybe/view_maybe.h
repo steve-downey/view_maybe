@@ -3,10 +3,12 @@
 #define INCLUDED_VIEW_MAYBE
 
 #include <experimental/ranges/concepts>
+#include <experimental/ranges/ranges>
 #include <iostream>
 #include <stl2/detail/semiregular_box.hpp>
 #include <stl2/view/view_interface.hpp>
 
+namespace ranges = std::experimental::ranges;
 
 template <class T, class Ref, class ConstRef>
 concept bool _Nullable2 =
@@ -14,7 +16,7 @@ concept bool _Nullable2 =
     std::is_object_v<std::remove_reference_t<Ref>> &&
     std::is_lvalue_reference_v<ConstRef> &&
     std::is_object_v<std::remove_reference_t<ConstRef>> &&
-    ranges::ConvertibleTo<std::add_pointer_t<ConstRef>, 
+    ranges::ConvertibleTo<std::add_pointer_t<ConstRef>,
         const std::remove_reference_t<Ref>*>;
 
 template <class T>
@@ -37,10 +39,10 @@ class safe_maybe_view
 
   public:
     constexpr safe_maybe_view() = default;
-    constexpr explicit safe_maybe_view(Maybe const& maybe) 
+    constexpr explicit safe_maybe_view(Maybe const& maybe)
         noexcept(std::is_nothrow_copy_constructible_v<Maybe>)
         : value_(maybe) {}
-    constexpr explicit safe_maybe_view(Maybe&& maybe) 
+    constexpr explicit safe_maybe_view(Maybe&& maybe)
         noexcept(std::is_nothrow_move_constructible_v<Maybe>)
         : value_(std::move(maybe)) {}
 
