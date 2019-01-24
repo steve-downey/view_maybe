@@ -52,7 +52,7 @@ class safe_maybe_view
     constexpr T*       end() noexcept { return data() + size(); }
     constexpr const T* end() const noexcept { return data() + size(); }
 
-    constexpr std::ptrdiff_t size() noexcept { return bool(value_.get()); }
+    constexpr std::ptrdiff_t size() const noexcept { return bool(value_.get()); }
 
     constexpr T* data() noexcept {
         Maybe& m = value_.get();
