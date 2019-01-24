@@ -21,10 +21,10 @@ concept bool _Nullable2 =
 template <class T>
 concept bool Nullable =
     std::is_object_v<T> &&
-    requires(const T& t) {
-    bool(t);
-  typename ranges::iter_reference_t<T>;
-  typename ranges::iter_reference_t<const T>;
+    requires(T& t, const T& ct) {
+    bool(ct);
+  *t;
+  *ct;
 } &&
 _Nullable2<T, ranges::iter_reference_t<T>, ranges::iter_reference_t<const T>>;
 
