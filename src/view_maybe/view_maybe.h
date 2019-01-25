@@ -56,17 +56,11 @@ class safe_maybe_view
 
     constexpr T* data() noexcept {
         Maybe& m = value_.get();
-        if (m)
-            return std::addressof(*m);
-        else
-            return nullptr;
+        return m ? std::addressof(*m) : nullptr;
     }
     constexpr const T* data() const noexcept {
         Maybe& m = value_.get();
-        if (m)
-            return std::addressof(*m);
-        else
-            return nullptr;
+        return m ? std::addressof(*m) : nullptr;
     }
 };
 
@@ -90,16 +84,10 @@ class ref_maybe_view
     constexpr std::ptrdiff_t size() const noexcept { return bool(*value_); }
 
     constexpr T* data() noexcept {
-        if (*value_)
-            return std::addressof(**value_);
-        else
-            return nullptr;
+        return *value_ ? std::addressof(**value_) : nullptr;
     }
     constexpr const T* data() const noexcept {
-        if (*value_)
-            return std::addressof(**value_);
-        else
-            return nullptr;
+        return *value_ ? std::addressof(**value_) : nullptr;
     }
 };
 
