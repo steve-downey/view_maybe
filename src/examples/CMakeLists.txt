@@ -30,3 +30,18 @@ install(
   EXPORT ${TARGETS_EXPORT_NAME}
   DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
+
+add_executable(allview "")
+
+target_sources(
+  allview
+  PRIVATE
+  all.cpp)
+
+target_link_libraries(allview stl2)
+
+install(
+  TARGETS allview
+  EXPORT ${TARGETS_EXPORT_NAME}
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )

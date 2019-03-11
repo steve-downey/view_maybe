@@ -13,7 +13,7 @@
 
 // Qualify everything with "std::experimental::ranges" if you like,
 // I prefer to use a namespace alias:
-//namespace ranges = std::experimental::ranges;
+namespace ranges = std::experimental::ranges;
 
 template <class...>
 class show_type;
@@ -143,6 +143,11 @@ NoCopy makeNoCopy() {
     NoCopy noCopy;
     return noCopy;
 }
+
+int func1(int i) {return i;}
+int func2(int i) {return 2*i;}
+
+typedef int (*fptr)(int i);
 
 int main() {
 
@@ -334,4 +339,144 @@ int main() {
     }
     std::cout << '\n';
 
+
+    std::optional<fptr> f0{};
+    std::optional<fptr> f1{func1};
+    std::optional<fptr> f2{func2};
+
+    for (auto f : view::maybe(f0)) {
+        std::cout << f(1) << '\n';
+    }
+
+    for (auto f : view::maybe(f1)) {
+        std::cout << f(2) << '\n';
+    }
+
+    for (auto f : view::maybe(f2)) {
+        std::cout << f(3) << '\n';
+    }
+
+    // {
+    //     fptr f0 = nullptr;
+    //     fptr f1 = &func1;
+    //     fptr f2 = &func2;
+
+    //     // for (auto f : view::maybe(f0)) {
+    //     //     std::cout << f(1) << '\n';
+    //     // }
+
+    //     for (auto f : view::maybe(f1)) {
+    //         std::cout << f(2) << '\n';
+    //     }
+
+    //     for (auto f : view::maybe(f2)) {
+    //         std::cout << f(3) << '\n';
+    //     }
+    // }
+    {
+        int i1 = 1;
+        int i2 = 2;
+        int* p0 = nullptr;
+        int* p1 = &i1;
+        int* p2 = &i2;
+
+        for (auto f : view::maybe(p0)) {
+            std::cout << f << '\n';
+        }
+
+        for (auto f : view::maybe(p1)) {
+            std::cout << f << '\n';
+        }
+
+        for (auto f : view::maybe(p2)) {
+            std::cout << f << '\n';
+        }
+
+    }
+    // {
+    //     std::function<int(int)> f0 = nullptr;
+    //     std::function<int(int)> f1 = &func1;
+    //     std::function<int(int)>f2 = &func2;
+    //     //        auto fobj = [](auto f){return [f](int i){return f(i);};};
+    //     for (auto f : view::maybe(f0)) {
+    //         std::cout << f(1) << '\n';
+    //     }
+
+    //     auto w1 = fobj(f1);
+    //     for (auto f : view::maybe(f1)) {
+    //         std::cout << f(2) << '\n';
+    //     }
+
+    //     // for (auto f : view::maybe(f2)) {
+    //     //     std::cout << f(3) << '\n';
+    //     // }
+    // }
+
+    {
+        fptr* f0 = nullptr;
+        fptr f1 = &func1;
+        fptr f2 = &func2;
+
+        for (auto f : std::experimental::ranges::view::single(f0)) {
+            //            std::cout << (*f)(1) << '\n';
+            //segfault!
+        }
+
+        for (auto f : std::experimental::ranges::view::single(f1)) {
+            std::cout << f(2) << '\n';
+        }
+
+        // for (auto f : view::maybe(f2)) {
+        //     std::cout << f(3) << '\n';
+        // }
+    }
+
+    {
+        fptr* f0 = nullptr;
+        fptr f1 = &func1;
+        fptr* pf1 = &f1;
+        fptr f2 = &func2;
+        fptr* pf2 = &f2;
+
+        for (auto f : view::maybe(f0)) {
+            std::cout << f(1) << '\n';
+        }
+
+        for (auto f : view::maybe(pf1)) {
+            std::cout << f(2) << '\n';
+        }
+
+        for (auto f : view::maybe(pf2)) {
+            std::cout << f(3) << '\n';
+        }
+}
+
+    {
+        std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
+
+        auto&& x = ranges::view::transform(v, [](int i) -> std::optional<int> {
+            switch (i) {
+            case 1:
+            case 3:
+            case 7:
+            case 9:
+                return i;
+            default:
+                return {};
+            }
+        });
+
+        auto&& r = ranges::view::transform(
+            ranges::view::join(ranges::view::transform(x, view::maybe)),
+            [](int i) {
+                while (i--) {
+                    std::cout << 'a';
+                }
+                std::cout << '\n';
+                return 0;
+            });
+
+        for (auto&& i : r) {
+        };
+    }
 }
