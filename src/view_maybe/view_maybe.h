@@ -29,7 +29,7 @@ concept bool Nullable =
     } &&
     _Nullable2<T, ranges::iter_reference_t<T>, ranges::iter_reference_t<const T>>;
 
- template <Nullable Maybe>
+template <Nullable Maybe>
      requires ranges::CopyConstructible<Maybe>
 class safe_maybe_view
     : public std::experimental::ranges::view_interface<safe_maybe_view<Maybe>> {
@@ -59,7 +59,7 @@ class safe_maybe_view
         return m ? std::addressof(*m) : nullptr;
     }
     constexpr const T* data() const noexcept {
-        Maybe& m = value_.get();
+        Maybe const& m = value_.get();
         return m ? std::addressof(*m) : nullptr;
     }
 };
