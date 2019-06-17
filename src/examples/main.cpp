@@ -134,10 +134,10 @@ NoDefault makeNoDefault() {
     return noDefault;
 }
 
-NoMove makeNoMove() {
-    NoMove noMove;
-    return noMove;
-}
+// NoMove makeNoMove() {
+//     NoMove noMove;
+//     return noMove;
+// }
 
 NoCopy makeNoCopy() {
     NoCopy noCopy;
@@ -154,16 +154,19 @@ int main() {
     std::optional      s{7};
     std::optional<int> e{};
 
-    ref_maybe_view vs2{s};
-    std::cout << *begin(vs2) << " prints 7\n";
+    for (auto i : ranges::view::single(s))
+        std::cout << "i=" << *i << " prints 7\n"; // prints 7
 
-    for (auto i : vs2)
-        std::cout << "i=" << i << " prints 7\n";
+    // ref_maybe_view vs2{s};
+    // std::cout << *begin(vs2) << " prints 7\n";
+
+    // for (auto i : vs2)
+    //     std::cout << "i=" << i << " prints 7\n";
 
     for (auto i : view::maybe(s))
         std::cout << "i=" << i << " prints 7\n"; // prints 7
 
-    safe_maybe_view e2{std::optional<int>{}};
+    maybe_view e2{std::optional<int>{}};
     for (int i : e2)
         std::cout << "i=" << i << '\n'; // does not print
 
@@ -173,9 +176,9 @@ int main() {
 
     int        j  = 8;
     int*       pj = &j;
-    ref_maybe_view vpj{pj};
-    for (auto i : vpj)
-        std::cout << "i=" << i << " prints 8\n"; // prints 8
+    // ref_maybe_view vpj{pj};
+    // for (auto i : vpj)
+    //     std::cout << "i=" << i << " prints 8\n"; // prints 8
 
     for (auto i : view::maybe(pj))
         std::cout << "i=" << i << " prints 8\n"; // prints 8
@@ -228,8 +231,8 @@ int main() {
     const std::optional      cs{3};
     const std::optional<int> ce{};
 
-    ref_maybe_view vcs2{cs};
-    std::cout << "cs=" << *begin(vcs2) << " prints 3\n";
+    // ref_maybe_view vcs2{cs};
+    // std::cout << "cs=" << *begin(vcs2) << " prints 3\n";
 
     for (auto&& i : view::maybe(cs)) {
         //i = 9 //does not compile
@@ -247,14 +250,14 @@ int main() {
     if (vs) {
         std::cout << "*vs = " << *vs << " prints 42\n";
     }
-    ref_maybe_view vvs2{vs};
-    std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
+    // ref_maybe_view vvs2{vs};
+    // std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
 
-    for (auto&& i : view::maybe(vs)) {
-        i = 43;
-        std::cout << "i=" << i << " prints 43\n"; // prints 43
-    }
-    std::cout << "vs=" << *vs << " prints 43\n"; // prints 43
+    // for (auto&& i : view::maybe(vs)) {
+    //     i = 43;
+    //     std::cout << "i=" << i << " prints 43\n"; // prints 43
+    // }
+    // std::cout << "vs=" << *vs << " prints 43\n"; // prints 43
 
     const int          ci  = 11;
     volatile int       vi  = 12;
@@ -299,11 +302,6 @@ int main() {
         std::cout << "i=" << double(i) << " prints 457.3\n"; // prints 457.3
     }
 
-    std::optional<NoCopy> optionalNoCopy;
-    optionalNoCopy.emplace();
-    for (auto&& i: view::maybe(optionalNoCopy)) {
-        std::cout << "No Copy" << &i << "\n";
-    }
 
     for (auto&& i : view::maybe(std::optional{noMove})) {
         std::cout << "No Move" << &i << "\n";
@@ -318,8 +316,8 @@ int main() {
     // auto ifunc_view = view::maybe(i_func);
 
 
-    ref_maybe_view copy{pj};
-    copy = vpj;
+    // ref_maybe_view copy{pj};
+    // copy = vpj;
 
     std::vector<std::optional<int>> v{std::optional<int>{42},
                                       std::optional<int>{},

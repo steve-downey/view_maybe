@@ -8,6 +8,9 @@
 #include <experimental/ranges/ranges>
 #include <array>
 
+template <NullableRef Maybe>
+void testMaybe(Maybe const&) {}
+
 TEST(ViewMaybeTest, TestGTest) {
     ASSERT_EQ(1, 1);
 }
@@ -23,6 +26,12 @@ TEST(ViewMaybeTest, Concept) {
     static_assert(Nullable<int*>);
     static_assert(!Nullable<std::array<int,1>>);
     static_assert(!Nullable<void*>);
+
+    std::optional<int> i;
+    std::reference_wrapper<std::optional<int>> t = i;
+    testMaybe(t);
+    //static_assert(Nullable<std::reference_wrapper<std::optional<int>>>);
+
 }
 
 TEST(ViewMaybeTest, Breathing) {
@@ -30,16 +39,16 @@ TEST(ViewMaybeTest, Breathing) {
     std::optional      s{7};
     std::optional<int> e{};
 
-    ref_maybe_view vs2{s};
-    ASSERT_EQ(*begin(vs2), 7);
+    // ref_maybe_view vs2{s};
+    // ASSERT_EQ(*begin(vs2), 7);
 
-    for (auto i : vs2)
-        ASSERT_EQ(i, 7);
+    // for (auto i : vs2)
+    //     ASSERT_EQ(i, 7);
 
     for (auto i : view::maybe(s))
         ASSERT_EQ(i, 7);
 
-    safe_maybe_view e2{std::optional<int>{}};
+    maybe_view e2{std::optional<int>{}};
     for (int i : e2)
         ASSERT_TRUE(i != i);
 
@@ -49,9 +58,9 @@ TEST(ViewMaybeTest, Breathing) {
 
     int        j  = 8;
     int*       pj = &j;
-    ref_maybe_view vpj{pj};
-    for (auto i : vpj)
-        ASSERT_EQ(i, 8);
+    // ref_maybe_view vpj{pj};
+    // for (auto i : vpj)
+    //     ASSERT_EQ(i, 8);
 
     for (auto i : view::maybe(pj))
         ASSERT_EQ(i, 8);
@@ -65,8 +74,14 @@ TEST(ViewMaybeTest, Breathing) {
 
     ASSERT_EQ(j, 27);
 
-    //int _ = view::maybe(s);
-    for (auto&& i : view::maybe(s)) {
+    int ixx = 0;
+    auto vxx = ranges::view::single(std::ref(ixx));
+    for (auto&& jxx : vxx) { jxx.get() = 3;}
+    ASSERT_EQ(ixx, 3);
+
+    //    int _ = view::maybe(s);
+    // int nope = view::maybe(std::ref(s));
+    for (auto&& i : view::maybe(std::ref(s))) {
         i = 9;
         ASSERT_EQ(i, 9);
     }
@@ -87,7 +102,7 @@ TEST(ViewMaybeTest, Breathing) {
             i        = 90;
         }
     }
-    ASSERT_EQ(*s, 90);
+    //    ASSERT_EQ(*s, 90);
 
     // Does not compile
     // std::array<int, 2> a2 = {2, 3};
@@ -99,8 +114,8 @@ TEST(ViewMaybeTest, Breathing) {
     const std::optional      cs{3};
     const std::optional<int> ce{};
 
-    ref_maybe_view vcs2{cs};
-    ASSERT_EQ(*begin(vcs2), 3);
+    // ref_maybe_view vcs2{cs};
+    // ASSERT_EQ(*begin(vcs2), 3);
 
     for (auto&& i : view::maybe(cs)) {
         ASSERT_EQ(i, 3);
@@ -116,14 +131,14 @@ TEST(ViewMaybeTest, Breathing) {
     if (vs) {
         ASSERT_EQ(*vs, 42);
     }
-    ref_maybe_view vvs2{vs};
-    ASSERT_EQ(*begin(vvs2), 42);
+    // ref_maybe_view vvs2{vs};
+    // ASSERT_EQ(*begin(vvs2), 42);
 
-    for (auto&& i : view::maybe(vs)) {
-        i = 43;
-        ASSERT_EQ(i, 43);
-    }
-    ASSERT_EQ(*vs, 43);
+    // for (auto&& i : view::maybe(vs)) {
+    //     i = 43;
+    //     ASSERT_EQ(i, 43);
+    // }
+    // ASSERT_EQ(*vs, 43);
 
     const int          ci  = 11;
     volatile int       vi  = 12;
@@ -201,10 +216,10 @@ TEST(ViewMaybeTest, CVTest) {
         //        ++i;
         ASSERT_EQ(i, 6);
     }
-    for (auto&& i : view::maybe(vo)) {
-        ++i;
-        ASSERT_EQ(i, 7);
-    }
+    // for (auto&& i : view::maybe(vo)) {
+    //     ++i;
+    //     ASSERT_EQ(i, 7);
+    // }
     for (auto&& i : view::maybe(cvo)) {
         //        ++i;
         ASSERT_EQ(i, 6);
