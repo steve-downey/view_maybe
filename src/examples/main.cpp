@@ -10,6 +10,7 @@
 #include <array>
 
 #include <view_maybe/view_maybe.h>
+#include <unordered_set>
 
 // Qualify everything with "std::experimental::ranges" if you like,
 // I prefer to use a namespace alias:
@@ -150,6 +151,23 @@ int func2(int i) {return 2*i;}
 typedef int (*fptr)(int i);
 
 int main() {
+
+    std::unordered_set<int> set{1,3,7,9};
+
+    auto flt = [=](int i) -> std::optional<int> {
+        if (set.find(i) != set.end())
+            return i;
+        else
+            return {};
+    };
+
+    for (auto i : ranges::iota_view{1, 10} | ranges::view::transform(flt)) {
+        for (auto j : view::maybe(i)) {
+            for (auto k : ranges::iota_view(0, j))
+                std::cout << '\a';
+            std::cout << '\n';
+         }
+    }
 
     std::optional      s{7};
     std::optional<int> e{};
