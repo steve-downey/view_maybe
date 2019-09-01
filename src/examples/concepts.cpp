@@ -15,8 +15,8 @@ namespace ranges = std::experimental::ranges;
 
 template<class F, class R, class... Args>
 concept bool MyRegularInvocableR =
-    ranges::Invocable<F, Args...> &&
-    ranges::Same<R, std::result_of_t<F&&(Args&&...)>>;
+    ranges::invocable<F, Args...> &&
+    ranges::same_as<R, std::result_of_t<F&&(Args&&...)>>;
 
 // template <typename F,
 //           template <typename> typename Functor,
