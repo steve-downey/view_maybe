@@ -169,6 +169,7 @@ int main() {
          }
     }
 
+
     std::optional      s{7};
     std::optional<int> e{};
 
@@ -498,18 +499,19 @@ int main() {
 
     {
         std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
-
-        auto&& x = ranges::views::transform(v, [](int i) -> std::optional<int> {
+        auto test = [](int i) -> std::optional<int> {
             switch (i) {
-            case 1:
-            case 3:
-            case 7:
-            case 9:
-                return i;
-            default:
-                return {};
+              case 1:
+              case 3:
+              case 7:
+              case 9:
+            return i;
+              default:
+            return {};
             }
-        });
+        };
+
+        auto&& x = ranges::views::transform(v, test);
 
         auto&& r = ranges::views::transform(
             ranges::views::join(ranges::views::transform(x, views::maybe)),
@@ -523,5 +525,32 @@ int main() {
 
         for (auto&& i : r) {
         };
+
+        auto&& r2 = v |
+            ranges::views::transform(test) |
+            ranges::views::transform(views::maybe) |
+            ranges::views::join |
+            ranges::views::transform(
+                [](int i) {
+                    std::cout << i;
+                    return i;
+                });
+
+        for (auto&& i : r2) {
+        };
+
+        auto&& r3 = v |
+            ranges::views::transform(test) |
+            ranges::views::filter([](auto x){return bool(x);}) |
+            ranges::views::transform([](auto x){return *x;}) |
+            ranges::views::transform(
+                [](int i) {
+                    std::cout << i;
+                    return i;
+                });
+
+        for (auto&& i : r3) {
+        };
+
     }
 }
