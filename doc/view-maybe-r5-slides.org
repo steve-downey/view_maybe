@@ -1,0 +1,215 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:nil arch:headline author:t
+#+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+options: email:nil f:t inline:t num:t p:nil pri:nil prop:nil stat:t tags:t
+#+options: tasks:t tex:t timestamp:t title:t toc:nil todo:t |:t
+#+title: view::maybe slides for LEWGI Cologne
+#+date: <2019-07-14 Sun>
+#+author: Steve Downey
+#+email: sdowney@sdowney.org
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 26.1.91 (Org mode 9.2.3)
+#+options: html-link-use-abs-url:nil html-postamble:auto html-preamble:t
+#+options: html-scripts:t html-style:t html5-fancy:nil tex:t
+
+#+STARTUP: showall
+#+OPTIONS: reveal_center:nil reveal_progress:t reveal_history:nil reveal_control:t
+#+OPTIONS: reveal_rolling_links:t reveal_keyboard:t reveal_overview:t num:nil
+#+OPTIONS: reveal_width:1400 reveal_height:1000
+#+OPTIONS: toc:1
+
+#+REVEAL_MARGIN: 0.1
+#+REVEAL_MIN_SCALE: 0.5
+#+REVEAL_MAX_SCALE: 2.5
+#+REVEAL_TRANS: cube
+#+REVEAL_THEME: moon
+#+REVEAL_HLEVEL: 2
+
+#+REVEAL_MATHJAX_URL: https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+#+REVEAL_HIGHLIGHT_CSS: %r/lib/css/zenburn.css
+#+REVEAL_PLUGINS: (markdown notes)
+
+#+options: H:3
+#+latex_class: beamer
+#+columns: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
+#+beamer_theme: default
+#+beamer_color_theme:
+#+beamer_font_theme:
+#+beamer_inner_theme:
+#+beamer_outer_theme:
+#+beamer_header:
+
+
+* view::maybe : a view of 0 or 1 elements
+- ~view::maybe~ a range adaptor that produces a view with cardinality 0 or 1
+
+- adapts nullable types such as ~std::optional~ and pointer to object types.
+
+* view::maybe : a view of 0 or 1 elements
+- (exposition) Concept Nullable
+- Capture the underlying object by value
+- Support ~std::reference_wrapper~ wrapped nullables
+- maybe_view not exposition only
+
+** Changes since R2
+-Reflects current code as reviewed
+- Nullable concept specification
+   Remove Readable as part of the specification, use the useful requirements from Readable
+- Wording for view::maybe as proposed
+- Appendix A: wording for a view_maybe that always captures
+
+** Changes since R1
+- Refer to view::all
+   Behavior of capture vs refer is similar to how view::all works over the expression it is given
+- Use wording 'range adaptor object'
+   Match current working paper language
+
+** Changes since R0
+- Remove customization point objects
+   Removed view::maybe_has_value and view::maybe_value, instead requiring that the nullable type be dereferenceable and contextually convertible to bool.
+- Concept ~Nullable~, for exposition
+   Concept Nullable, which is Readable and contextually convertible to bool
+- Capture rvalues by decay copy
+   Hold a copy when constructing a view over a nullable rvalue.
+- Remove maybe_view as a specified type
+   Introduced two exposition types, one safely holding a copy, the other referring to the nullable
+
+* Examples
+** Ignoring empty results
+#+begin_src C++
+std::vector<std::optional<int>> v{
+  std::optional<int>{42},
+  std::optional<int>{},
+  std::optional<int>{6 * 9}};
+
+auto r = view::join(view::transform(v, view::maybe));
+
+for (auto i : r) {
+    std::cout << i; // prints 42 and 54
+}
+#+end_src
+
+** For loops for safe access to Nullables
+#+BEGIN_SRC C++
+{
+    auto&& opt = possible_value();
+    if (opt) {
+        // a few dozen lines ...
+        use(*opt); // is *opt OK ?
+    }
+}
+
+for (auto&& opt : view::maybe(possible_value())) {
+    // a few dozen lines ...
+    use(opt); // opt is OK
+}
+#+END_SRC
+
+** Working with Nullables in pipelines
+#+begin_src C++
+std::unordered_set<int> set{1, 3, 7, 9};
+
+auto flt = [=](int i) -> std::optional<int> {
+    if (set.contains(i))
+        return i;
+    else
+        return {};
+};
+
+for (auto i : ranges::iota_view{1, 10} | ranges::view::transform(flt)) {
+    for (auto j : view::maybe(i)) {
+        for (auto k : ranges::iota_view(0, j))
+            std::cout << '\a';
+        std::cout << '\n';
+    }
+}
+// Produce 1 ring, 3 rings, 7 rings, and 9 rings
+#+end_src
+
+* Design
+The basis of the design is to hybridize ~view::single~ and ~view::empty~. If
+the underlying object claims to hold a value, as determined by checking if the
+object when converted to bool is true, ~begin~ and ~end~ of the view are
+equivalent to the address of the held value within the underlying object and
+one past the underlying object.  If the underlying object does not have a
+value, ~begin~ and ~end~ return ~nullptr~.
+
+* Concept Nullable
+#+begin_src c++
+    std::is_object_v<T> &&
+    requires(T& t, const T& ct) {
+      bool(ct);
+      *(t);
+      *(ct);
+    };
+#+end_src
+Contextually convertible to ~bool~, and dereferencable by ~*~
+
+** Machinery for indirectly equality-preserving
+ ranges::iter_reference_t for the nullable and const nullable are lvalue
+ references, objects, and appropriately convertible to each other
+
+ #+begin_src c++
+    std::is_lvalue_reference_v<Ref> &&
+    std::is_object_v<std::remove_reference_t<Ref>> &&
+    std::is_lvalue_reference_v<ConstRef> &&
+    std::is_object_v<std::remove_reference_t<ConstRef>> &&
+    ranges::ConvertibleTo<std::add_pointer_t<ConstRef>,
+        const std::remove_reference_t<Ref>*>;
+ #+end_src
+
+** Exposition Nullable
+   We are wary of adding Concepts to the std because we can neither strengthen
+   them or weaken them once published. One would directly invalidate "working"
+   code, the other would change "SFINAE" choice. It's not clear than exposition
+   only won't have problems, in any case, but it may prevent naming fixup
+   problems later.
+
+* Capture the underlying object by value
+Departing from earlier versions of view::maybe, the underlying object is always captured into a semi-regular box.
+
+Semi-regular box is an implementation detail that is a lighter weight ~optional~.
+
+** Only one concrete view type
+   Earlier proposals split the concrete view type on the value category of the
+   Nullable being viewed
+
+   - Fragile
+   - Error Prone
+   - Occasionally hard to predict
+
+** Reference semantics are useful
+   Being able to modify the underlying object in some ways is useful.
+
+   Some views already support this: ~string_view~
+
+** Support ~std::reference_wrapper~
+
+  Make the choice visible and controlled
+
+  Downside is that ~std::reference_wrapper~ is imperfect
+
+** Workarounds
+   - ~requires~ clauses need specialization
+   - ~if constexpr~ for places additional ~get~ needed
+   - no ~std::is_reference_wrapper~
+#+begin_src c++
+    constexpr T* data() noexcept {
+        Maybe& m = value_.get();
+        if constexpr (is_reference_wrapper<Maybe>) {
+            return m.get() ? std::addressof(*(m.get())) : nullptr;
+        } else {
+            return m ? std::addressof(*m) : nullptr;
+        }
+    }
+#+end_src
+
+** Will work on better general support in 23
+   - I'm not the only one getting bit
+   - Wanting to say "Or reference_wrapper<T>" likely common
+   - There are a few reference_wrappers
+   - Separate proposal TBD
+
+* Code
+[[https://github.com/steve-downey/view_maybe/blob/master/src/view_maybe/view_maybe.h][Source Code for view::maybe]]
