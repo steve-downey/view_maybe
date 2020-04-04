@@ -60,7 +60,7 @@ install: $(_build_path)/CMakeCache.txt
 ctest: $(_build_path)/CMakeCache.txt
 	cd $(_build_path) && ctest
 
-ctest_ : build
+ctest_ : compile
 	cd $(_build_path) && ctest
 
 test: ctest_
