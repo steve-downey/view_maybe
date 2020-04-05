@@ -1,6 +1,6 @@
 ---
 title: "A view of 0 or 1 elements: `views::maybe`"
-document: P1255R5
+document: P1255R6
 date: today
 audience: LEWG
 author:
@@ -15,6 +15,13 @@ Abstract: This paper proposes `views::maybe` a range adaptor that produces a vie
 
 # Changes
 
+## Changes since R5
+- Fix reversed before/after table entry
+- Update to match C++20 style [@N4849] and changes in Ranges since [@P0896R3]
+- size is now size_t, like other ranges are also
+- add synopsis for adding to `<ranges>` header
+- Wording clean up, formatting, typesetting
+- Add implementation notes and references
 
 ## Changes since R4
 
@@ -98,15 +105,6 @@ for (auto&& opt : views::maybe(possible_value())) {
 
 ```C++
 std::optional o{7};
-for (auto&& i : views::maybe(std::ref(o))) {
-    i = 9;
-    std::cout << "i=" << i << " prints 9\n";
-}
-std::cout << "o=" << *o << " prints 9\n";
-```
-
-```C++
-std::optional o{7};
 if (o) {
     *o = 9;
     std::cout << "o=" << *o << " prints 9\n";
@@ -115,7 +113,17 @@ std::cout << "o=" << *o << " prints 9\n";
 
 ```
 
+```C++
+std::optional o{7};
+for (auto&& i : views::maybe(std::ref(o))) {
+    i = 9;
+    std::cout << "i=" << i << " prints 9\n";
+}
+std::cout << "o=" << *o << " prints 9\n";
+```
+
 ---
+
 ```C++
 std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
 auto test = [](int i) -> std::optional<int> {
@@ -247,69 +255,99 @@ for (auto i : ranges::iota_view{1, 10} | ranges::views::transform(flt)) {
 
 # Proposal
 
-Add a range adaptor object `views::maybe`, returning a view over a nullable object, capturing by value temporary nullables. A `Nullable` object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `std::optional`, and the proposed `outcome` and `expected` types all model Nullable. Function pointers do not, as functions are not objects. Iterators do not generally model Nullable, as they are not required to be contextually convertible to bool.
+Add a range adaptor object `views::maybe`, returning a view over a nullable object, capturing by value temporary nullables. A _`nullable`_ object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `std::optional`, and the proposed  `expected` [@P0323R9] types all model _`nullable`_. Function pointers do not, as functions are not objects. Iterators do not generally model _`nullable`_, as they are not required to be contextually convertible to bool.
 
 
 # Design
 
 The basis of the design is to hybridize `views::single` and `views::empty`. If the underlying object claims to hold a value, as determined by checking if the object when converted to bool is true, `begin` and `end` of the view are equivalent to the address of the held value within the underlying object and one past the underlying object. If the underlying object does not have a value, `begin` and `end` return `nullptr`.
 
+# Implementation
+
+A publically available implementation at <https://github.com/steve-downey/view_maybe> based on the Ranges implementation in cmcstl2 at <https://github.com/CaseyCarter/cmcstl2> . There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as *Effects*.
+
+[Compiler Explorer Link to Before/After Examples](https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAM1QDsCBlZAQwBtMQBGAFlICsupVs1qhkAUgBMAISnTSAZ0ztkBPHUqZa6AMKpWAVwC2tLry3oAMnlqYAcsYBGmYiACsb0gAdUCwuto9QxMzb19/OmtbByNnVw9FZUxVAIYCZmICIONTHkSVNTo0jIIo%2BycXd08FdMzskLyakrKYuKqASkVUA2JkDgByKQBmG2RDLABqcSGdBAICLwUQAHpl4mYAdwA6YEIEA0cDJV66Ai0CLbQjZZrMADdMAFp0VA3bAE9lu7xMDYB9IzMd7OZaA27EG69L4/f6A4GYaG/AFA5xbBDTbDiAAMAEFsTiaugQCBUF5CrQ2NMdDYCBiJj4FH5HOw/nc2AZMBB2tNZLi7qg8OgJkdOTSJgRuUNeTj%2BYKJs4aMRMFiufjxAB2aUTbVTTX4nUTZgGIhSABsZompIIUyGABF6b4mSy2YZOZKtTq8FQJhAre0priDRqPQbtatDRMqL8Ji8AF5aCasGyYBQTLbp/Wh7UiiAAKj9PIm4bwqfzZImAHkANI2gBime1GttDd1zdxTbVfIFQuYVDOxBV/rVetxip9RpNknNU8t5ZAE2%2BvyWIDhzggDKdmFZ7Ld7SH7ZHOIN4eYkejcYTSdsqfTWxbOYLUqLy1n1pLlarw7bePV3/xsqFBUSEwTguQDH9pUJYkrQCNhLWDdUOylfEvR9VB9wglt8xte0AE4eRbKCUG6a0qSpKZJEkVBpmbSibR0cjsLImYKMkeliBpVN8LcHRaCkSQCIPb8iLQY16PI/jqLtfjxJYpiZgkuivA4%2BguPEHi%2BMowSfz/Ls5V7ftQIw4N8SImC6Dg6jNUQ39tLHCAJ2oqcLTwCZ50XDZl1XTkiKVKhfT3YzDwNVyaImfDkMDHURJI2SdFYvAaJk5j4tChSWJk5TOPC9TeP47SO1xGKxJS1ipNotjSvkhiMqUlSCDUjT8sinTOxlbt5UwRVMEkVUD0gggiRAB5VBIKkaTpO5g0kUgJiGWbeAmTwJlNWb1VmgAOWbcNmzgkOlRzxRTUi7SmNxZDcW0IDFPB/UeOkzLJWDWHG%2Bg6RMqLtQUDZCGQBAfVu3UQx1FglAmTgQBbbVQcwObIc%2BkHmDB9V4aPUMYfC1GDSVAgeloCZEparMsCoI1WAILGdRxvGgf2ltCtalr8Ucs0LWIHCF11BiEfWUQU2JDzlwIXmFEVIwIDOGoh3Vbm0e1XngH54aYWXKg8HJlwIHUi6rsOgAPblNWp4h8ccVB9AgA2CN/aXZexkRFeXQXiWFkRRZIcXtfU3XjVQCYraNzBcZNiZcz163bVtlsFaV52QFd2h3eIT2EaDc7veu%2BgCel4Gsy%2BwbiVEk6atS7S89DY38cJ3OdSbd18XslnnJnVz52IHO6fbIS2oAw0%2BxcXruX60yC%2BG5IiGIV7aSGbAF2m2b5omRbltWiZ1omLbwt2zucUOyWTvtL3Lszt87oe0fzIpF6ZgmmfaYR77fv%2B66O9TiYMYhqH36R2Ghkpg0MYoy/hjXC/8JiVwJmXUMJMyYU2jkHGmJlbJE1rrZbuTNcRN2nKacBHM7hc2jg7WOKsXYizFhLY6UceZEKdiQ%2BOZCPYQDjt5KhctwE0IFnQvgAp8YajtlTDhyslykLduQr%2BjZ07Hxuq/Nh5dirF3ItXcRFcEEhyUW/RsNs7IkHHL7VmLc3LgI7sg6UTZ%2BidFYCAfobh%2BikFMP0LEtjUBWIYjIOQEwFDdF6LDYYnBbEUwceYzoCBMDMCwK4LkpAADW7gsRCCsdwWx9jHGkGcf0WxSw4kBMcZ0OAsAYCIGIkYLw6sXDkEoFcEp7BXDAAUBSRYCBUAEFIGrDWxAlgQEcFYlJjgbAZHeFYvxpArhGHOBWWgrABmBNIFgQEoh2DdNsfgJUKQHhLGmZgPWyRjQDCGTSZQiyhB4EcOsYg7w9BYEGf4jiRgrmdBoPQJgbAOB5AEJwIQDsUByDkEcxwSxYAUlGSgIwyAaisBmg8VwwsDC0CiXuVJT06DrMeI8QkNEJBuJkJILEExHgViGBkpIKQNAQAsPUXIpALAtAqK4d5DIIiBH0DkQQ9LyTUtiJUd5SgCipFqFkJlDR8jj15c0ZMrROWKD5eSwQTRMjsraJwTonieh9C4BYqxNi7GHLSXrDappHimm4BMYAyBkA%2BmhbC/0EBcCEB0b42aehimlPZr4/0rjZAyH8Ys%2BFMS3BxMsf0RJpBbl%2Bq1dMtJGSQBZO9aQPJhSSJeGNOUiAlTnWCEwPgCeggHmMBYAsvIGx1heDufE6xSTtVWN8RMH6BB/q6v1Ya41przXEBhXCr1gT4UhLCZUSJAag0hrickpxVjI3Rs7Z0X1/qrEErDSkiNpBslBNLZIct4bR2Lu9Z0SFfgNDcCAA%3D%3D)
 
 # LEWG Attention
 
-Call LEWG's attention to the use of `ptrdiff_t` as the return type of `size` (which is consistent with `single_view`). The author has a weak preference for a signed type here, but a strong preference for consistency with other Range types.
+~~Call LEWG's attention to the use of `ptrdiff_t` as the return type of `size` (which is consistent with `single_view`). The author has a weak preference for a signed type here, but a strong preference for consistency with other Range types.~~
+`single_view` now uses size_t.
 
 Call LEWG's attention to removing the conditional noexcept constructors, consistent with `single_view`.
 
-# Synopsis
+# Wording
 
+## Synopsis
 
-## Maybe View
+Modify 24.2 Header <ranges> synopsis
 
-`views::maybe` returns a View over a Nullable that is either empty if the nullable is empty, or provides access to the contents of the nullable object.
+::: add
+```cpp
+  // @[range.maybe]{.sref}@, maybe view
+  template<copy_constructible T>
+    requires @*see below*@
+  class maybe_view;
 
-The name views::maybe denotes a range adaptor object ([range.adaptor.object]). For some subexpression E, the expression views::maybe(E) is expression-equivalent to:
+  namespace views { inline constexpr @_unspecified_@ maybe = @_unspecified_@; }
+```
+:::
 
-- maybe\_view{E}, the View specified below, if the expression is well formed, where decay-copy(E) is moved into the maybe\_view
-- otherwise views::maybe(E) is ill-formed.
+## Maybe View [range.maybe]{.sref}
 
-[Note: Whenever views::maybe(E) is a valid expression, it is a prvalue whose type models View. — end note ]
+### Overview
+[1]{.pnum} `maybe_view` produces a `view` over a _`nullable`_ that is either empty if the _`nullable`_ is empty, or provides access to the contents of the _`nullable`_ object.
 
+[2]{.pnum} The name `views::maybe` denotes a customization point object ([customization.point.object]). For some subexpression `E`, the expression `views::maybe(E)` is expression-equivalent to:
 
-## Concept *`nullable`*
+- `maybe_view{E}`, the `view` specified below, if the expression is well formed, where `@decay-copy@(E)` is moved into the `maybe_view`
+- otherwise `views::maybe(E)` is ill-formed.
 
-Types that:
+[Note: Whenever `views::maybe(E)` is a valid expression, it is a prvalue whose type models `view`. — end note ]
 
-- are contextually convertible to bool
+[3]{.pnum} [ _Example:_
+```cpp
+  optional o{4};
+  maybe_view m{o};
+  for (int i : m)
+    cout << i;        // prints 4
+```
+— _end example_ ]
+
+### Concept *`nullable`*
+
+[1]{.pnum} Types that:
+
+- are contextually convertible to `bool`
 - are dereferenceable
 - have const references which are dereferenceable
-- the iter\_reference\_t of the type and the iter\_reference\_t of the const type, will :
-    - satisfy is\_lvalue\_reference
-    - satisfy is\_object when the reference is removed
-    - for const pointers to the referred to types, satisfy ConvertibleTo model the exposition only Nullable concept
-    - Or are a reference\_wrapper around a type that satifies Nullable
+- the `iter_reference_t` of the type and the `iter_reference_t` of the const type, will :
+    - satisfy `is_lvalue_reference`
+    - satisfy `is_object` when the reference is removed
+    - for const pointers to the referred to types, satisfy `convertible_to`
+- or are a `reference_wrapper` around a type that satifies _`nullable`_
 
-Given a value i of type I, I models `nullable` only if the expression \*i is equality-preserving. [ Note: The expression \*i is required to be valid via the exposition-only `nullable` concept). — end note ]
+model the exposition only _`nullable`_ concept
 
-For convienence, the exposition-only `is_reference_wrapper_v` is used below.
+[2]{.pnum} Given a value `i` of type `I`, `I` models _`nullable`_ only if the expression `*i` is equality-preserving. [ Note: The expression `*i` is required to be valid via the exposition-only _`nullable`_ concept). — end note ]
+
+[3]{.pnum} For convienence, the exposition-only `@*is-reference-wrapper-v*@` is used below.
 ```cpp
 // For Exposition
     template <typename T>
-    struct is_reference_wrapper :std::false_type {};
+    struct is_reference_wrapper : false_type {};
+
     template <typename T>
-    struct is_reference_wrapper<std::reference_wrapper<T>>
-      :std::true_type {};
+    struct is_reference_wrapper<reference_wrapper<T>> : true_type {};
+
     template <typename T>
-    inline constexpr bool is_reference_wrapper_v =
-      is_reference_wrapper<T>::value;
+    inline constexpr bool is_reference_wrapper_v
+        = is_reference_wrapper<T>::value;
 ```
 
 ```cpp
-namespace std::ranges {
-
 // For Exposition
 template <class Ref, class ConstRef>
-concept bool readable_references =
+concept readable_references =
     is_lvalue_reference_v<Ref> &&
     is_object_v<remove_reference_t<Ref>> &&
     is_lvalue_reference_v<ConstRef> &&
@@ -318,7 +356,7 @@ concept bool readable_references =
                    const remove_reference_t<Ref>*>;
 
 template <class T>
-concept bool nullable =
+concept nullable =
     is_object_v<T> &&
     requires(T& t, const T& ct) {
         bool(ct); // Contextually bool
@@ -329,25 +367,23 @@ concept bool nullable =
                            iter_reference_t<const T>>; // ConstRef
 
 template <class T>
-concept bool wrapped_nullable =
-    is_reference_wrapper_v<T>
-    && nullable<typename T::type>;
+concept wrapped_nullable =
+    @*is-reference-wrapper-v*@<T>
+    && @_nullable_@<typename T::type>;
 
 ```
 
 
-## *maybe\_view*
+### Class template *maybe\_view*
 
 ```cpp
-template <typename Maybe>
-requires ranges::copy_constructible<Maybe> &&
-(nullable<Maybe> || wrapped_nullable<Maybe>)
-class maybe_view
-    : public ranges::view_interface<maybe_view<Maybe>> {
+namespace std::ranges {
+  template <copy_constructible Maybe>
+    requires (@_nullable_@<Maybe> || @_wrapped-nullable_@<Maybe>)
+  class maybe_view : public view_interface<maybe_view<Maybe>> {
   private:
-// For Exposition
     using T = /* @*see below*@ */
-    @*semiregular-box*@<Maybe> value_;
+    @*semiregular-box*@<Maybe> value_; // exposition only (see @[range.semi.wrap]{.sref}@)
 
   public:
     constexpr maybe_view() = default;
@@ -356,7 +392,7 @@ class maybe_view
     constexpr explicit maybe_view(Maybe&& maybe);
 
     template<class... Args>
-    requires Constructible<Maybe, Args...>
+    requires constructible_from<Maybe, Args...>
     constexpr maybe_view(in_place_t, Args&&... args);
 
     constexpr T*       begin() noexcept;
@@ -364,65 +400,61 @@ class maybe_view
     constexpr T*       end() noexcept;
     constexpr const T* end() const noexcept;
 
-    constexpr std::ptrdiff_t size() const noexcept;
+    constexpr size_t size() const noexcept;
 
     constexpr T* data() noexcept;
     constexpr const T* data() const noexcept;
-};
+  };
+}
 
 ```
-
-Where the type alias T is the iter\_reference\_t with the reference removed of either the type Maybe or the type reference\_wrapper<Maybe>::type.
 
 ```cpp
 // For Exposition
-using T = std::remove_reference_t<
-    ranges::iter_reference_t<typename unwrap_ref<Maybe>::type>>;
+using T = remove_reference_t<iter_reference_t<typename unwrap_reference_t<Maybe>>>;
 ```
 
 ```cpp
-constexpr explicit maybe_view(Maybe const& maybe)
-    noexcept(std::is_nothrow_copy_constructible_v<Maybe>);
+constexpr explicit maybe_view(Maybe const& maybe);
 ```
 
-*Effects*: Initializes value\_ with maybe.
+[1]{.pnum} *Effects*: Initializes value\_ with maybe.
 
 ```cpp
-constexpr explicit maybe_view(Maybe&& maybe)
-    noexcept(std::is_nothrow_move_constructible_v<Maybe>);
+constexpr explicit maybe_view(Maybe&& maybe);
 ```
 
-*Effects*: Initializes value\_ with `std::move(maybe)`.
+[2]{.pnum} *Effects*: Initializes value\_ with `move(maybe)`.
 
 ```cpp
 template<class... Args>
 constexpr maybe_view(in_place_t, Args&&... args);
 ```
 
-*Effects*: Initializes value\_ as if by `value_{in_place, std::forward<Args>(args)...}`.
+[3]{.pnum} *Effects*: Initializes value\_ as if by `value_{in_place, forward<Args>(args)...}`.
 
 ```cpp
 constexpr T* begin() noexcept;
 constexpr const T* begin() const noexcept;
 ```
 
-*Effects*: Equivalent to: `return data();`.
+[4]{.pnum} *Effects*: Equivalent to: `return data();`.
 
 ```cpp
 constexpr T* end() noexcept;
 constexpr const T* end() const noexcept;
 ```
 
-*Effects*: Equivalent to: `return data() + size();`.
+[5]{.pnum} *Effects*: Equivalent to: `return data() + size();`.
 
 ```cpp
 static constexpr ptrdiff_t size() noexcept;
 ```
 
-*Effects*: Equivalent to:
+[6]{.pnum} *Effects*: Equivalent to:
 
 ```cpp
-        if constexpr (@_is_reference_wrapper_v_@<Maybe>) {
+        if constexpr (@*is-reference-wrapper-v*@<Maybe>) {
             return bool(value_.get().get());
         } else {
             return bool(value_.get());
@@ -435,14 +467,14 @@ static constexpr ptrdiff_t size() noexcept;
 constexpr T* data() noexcept;
 ```
 
-*Effects*: Equivalent to:
+[7]{.pnum} *Effects*: Equivalent to:
 
 ```cpp
         Maybe& m = value_.get();
-        if constexpr (@_is_reference_wrapper_v_@<Maybe>) {
-            return m.get() ? std::addressof(*(m.get())) : nullptr;
+        if constexpr (@*is-reference-wrapper-v*@<Maybe>) {
+            return m.get() ? addressof(*(m.get())) : nullptr;
         } else {
-            return m ? std::addressof(*m) : nullptr;
+            return m ? addressof(*m) : nullptr;
         }
 ```
 
@@ -450,30 +482,18 @@ constexpr T* data() noexcept;
 constexpr const T* data() const noexcept;
 ```
 
-*Effects*: Equivalent to:
+[8]{.pnum} *Effects*: Equivalent to:
 
 ```cpp
         const Maybe& m = value_.get();
-        if constexpr (@_is_reference_wrapper_v_@<Maybe>) {
-            return m.get() ? std::addressof(*(m.get())) : nullptr;
+        if constexpr (@*is-reference-wrapper-v*@<Maybe>) {
+            return m.get() ? addressof(*(m.get())) : nullptr;
         } else {
-            return m ? std::addressof(*m) : nullptr;
+            return m ? addressof(*m) : nullptr;
         }
 ```
-
-
-## view​::​maybe
-
-The name `views::maybe` denotes a customization point object ([customization.point.object]). For some subexpression E, the expression `views::maybe(E)` is expression-equivalent to `maybe_view{E}`.
 
 
 # Impact on the standard
 
 A pure library extension, affecting no other parts of the library or language.
-
-
-# References
-
-[P0896R3] Eric Niebler, Casey Carter, Christopher Di Bella. The One Ranges Proposal URL: <https://wg21.link/p0896r3>
-
-[P0323R7] Vicente Botet, JF Bastien. std::expected URL: <https://wg21.link/p0323r7>
