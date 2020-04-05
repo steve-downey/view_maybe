@@ -45,10 +45,9 @@ template<class T>
 inline constexpr bool is_reference_wrapper_v =
     meta::is_v<T, std::reference_wrapper>;
 
-template <class Maybe>
-    requires std::copy_constructible<Maybe> &&
-(nullable_val<Maybe> ||
- nullable_ref<Maybe>)
+template <std::copy_constructible Maybe>
+requires (nullable_val<Maybe> ||
+          nullable_ref<Maybe>)
 class maybe_view
     : public std::experimental::ranges::view_interface<maybe_view<Maybe>> {
   private:
