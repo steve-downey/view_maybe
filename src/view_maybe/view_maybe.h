@@ -65,6 +65,11 @@ class maybe_view
     constexpr explicit maybe_view(Maybe&& maybe)
         : value_(std::move(maybe)) {}
 
+    template<class... Args>
+    requires std::constructible_from<Maybe, Args...>
+    constexpr maybe_view(std::in_place_t, Args&&... args)
+        : value_(std::in_place, std::forward<Args>(args)...) {}
+
     constexpr T*       begin() noexcept { return data(); }
     constexpr const T* begin() const noexcept { return data(); }
     constexpr T*       end() noexcept { return data() + size(); }
