@@ -28,6 +28,10 @@ else ifeq (clang-concepts,$(COMPILER))
 	_build_name=build-clang-concepts
 	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/llvm-concepts/bin/clang \
 		-DCMAKE_CXX_COMPILER=/home/sdowney/install/llvm-concepts/bin/clang++
+else ifeq (gcc-master,$(COMPILER))
+	_build_name=build-gcc-master
+	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/gcc-master/bin/gcc \
+		-DCMAKE_CXX_COMPILER=/home/sdowney/install/gcc-master/bin/g++
 endif
 
 
