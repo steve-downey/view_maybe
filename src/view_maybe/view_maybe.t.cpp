@@ -153,7 +153,9 @@ TEST(ViewMaybeTest, Breathing) {
     auto pvi = &vi;
     ASSERT_EQ(*pvi, 12);
     for (auto&& i : views::maybe(pvi)) {
-        i++;
+        auto temp = i;
+        temp++;
+        i = temp;
         ASSERT_EQ(i, 13);
     }
     ASSERT_EQ(*pvi, 13);
@@ -216,10 +218,12 @@ TEST(ViewMaybeTest, CVTest) {
         //        ++i;
         ASSERT_EQ(i, 6);
     }
-    // for (auto&& i : views::maybe(vo)) {
-    //     ++i;
-    //     ASSERT_EQ(i, 7);
-    // }
+    for (auto&& i : views::maybe(vo)) {
+        auto temp = i;
+        temp++;
+        i = temp;
+        ASSERT_EQ(i, 7);
+    }
     for (auto&& i : views::maybe(cvo)) {
         //        ++i;
         ASSERT_EQ(i, 6);

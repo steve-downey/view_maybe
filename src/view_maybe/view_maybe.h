@@ -12,7 +12,7 @@
 namespace ranges = std::experimental::ranges;
 
 template <class Ref, class ConstRef>
-concept bool readable_references =
+concept readable_references =
     std::is_lvalue_reference_v<Ref> &&
     std::is_object_v<std::remove_reference_t<Ref>> &&
     std::is_lvalue_reference_v<ConstRef> &&
@@ -21,7 +21,7 @@ concept bool readable_references =
         const std::remove_reference_t<Ref>*>;
 
 template <class T>
-concept bool nullable =
+concept nullable =
     std::is_object_v<T> &&
     requires(T& t, const T& ct) {
     bool(ct);
@@ -31,37 +31,29 @@ concept bool nullable =
 
 
 template <class T>
-concept bool nullable_val =
+concept nullable_val =
     nullable<T> &&
     readable_references<ranges::iter_reference_t<T>, ranges::iter_reference_t<const T>>;
 
 template <class T>
-concept bool nullable_ref =
+concept nullable_ref =
     meta::is_v<T, std::reference_wrapper> &&
     nullable_val<typename T::type>;
 
 
-// template<class T>
-// struct maybe_unwrap : maybe_unwrap<std::decay_t<T>> {};
-
-template<typename T>
-struct maybe_unwrap { using type = T; };
-
 template<class T>
-struct maybe_unwrap<std::reference_wrapper<T>> { using type = T; };
-
-template<class T>
-inline constexpr bool is_reference_wrapper =
+inline constexpr bool is_reference_wrapper_v =
     meta::is_v<T, std::reference_wrapper>;
 
 template <class Maybe>
-    requires ranges::copy_constructible<Maybe> &&
+    requires std::copy_constructible<Maybe> &&
 (nullable_val<Maybe> ||
  nullable_ref<Maybe>)
 class maybe_view
     : public std::experimental::ranges::view_interface<maybe_view<Maybe>> {
   private:
-    using T = std::remove_reference_t<ranges::iter_reference_t<typename maybe_unwrap<Maybe>::type>>;
+    using T = std::remove_reference_t<
+        std::iter_reference_t<typename std::unwrap_reference_t<Maybe>>>;
 
     std::experimental::ranges::detail::semiregular_box<Maybe> value_;
 
@@ -69,11 +61,9 @@ class maybe_view
     constexpr maybe_view() = default;
 
     constexpr explicit maybe_view(Maybe const& maybe)
-    noexcept(std::is_nothrow_copy_constructible_v<Maybe>)
         : value_(maybe) {}
 
     constexpr explicit maybe_view(Maybe&& maybe)
-    noexcept(std::is_nothrow_move_constructible_v<Maybe>)
         : value_(std::move(maybe)) {}
 
     constexpr T*       begin() noexcept { return data(); }
@@ -81,8 +71,8 @@ class maybe_view
     constexpr T*       end() noexcept { return data() + size(); }
     constexpr const T* end() const noexcept { return data() + size(); }
 
-    constexpr std::ptrdiff_t size() const noexcept {
-        if constexpr (is_reference_wrapper<Maybe>) {
+    constexpr size_t size() const noexcept {
+        if constexpr (is_reference_wrapper_v<Maybe>) {
             return bool(value_.get().get());
         } else {
             return bool(value_.get());
@@ -91,7 +81,7 @@ class maybe_view
 
     constexpr T* data() noexcept {
         Maybe& m = value_.get();
-        if constexpr (is_reference_wrapper<Maybe>) {
+        if constexpr (is_reference_wrapper_v<Maybe>) {
             return m.get() ? std::addressof(*(m.get())) : nullptr;
         } else {
             return m ? std::addressof(*m) : nullptr;
@@ -100,7 +90,7 @@ class maybe_view
 
     constexpr const T* data() const noexcept {
         const Maybe& m = value_.get();
-        if constexpr (is_reference_wrapper<Maybe>) {
+        if constexpr (is_reference_wrapper_v<Maybe>) {
             return m.get() ? std::addressof(*(m.get())) : nullptr;
         } else {
             return m ? std::addressof(*m) : nullptr;

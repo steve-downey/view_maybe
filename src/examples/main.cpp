@@ -42,7 +42,7 @@ struct no_ex_bool {
 };
 
 void checks() {
-    nullable m{std::optional{3}};
+    nullable auto m{std::optional{3}};
     testRead(std::optional{3});
     testMaybe(std::optional{3});
     //testMaybe(3);
