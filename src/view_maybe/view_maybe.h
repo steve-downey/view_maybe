@@ -5,9 +5,6 @@
 #include <concepts>
 #include <ranges>
 #include <iostream>
-// #include <stl2/detail/semiregular_box.hpp>
-// #include <stl2/view/view_interface.hpp>
-// #include <stl2/detail/meta.hpp>
 
 namespace ranges = std::ranges;
 

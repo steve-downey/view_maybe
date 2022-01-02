@@ -1,2 +1,1 @@
 add_subdirectory(googletest EXCLUDE_FROM_ALL)
-add_subdirectory(cmcstl2 EXCLUDE_FROM_ALL)

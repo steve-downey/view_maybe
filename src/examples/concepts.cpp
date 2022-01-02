@@ -2,11 +2,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <experimental/ranges/concepts>
 #include <type_traits>
-#include <experimental/ranges/ranges>
+#include <ranges>
 
-namespace ranges = std::experimental::ranges;
+namespace ranges = std::ranges;
 
 // template <typename T, typename F>
 // requires ranges::Invocable<F, T>
@@ -15,8 +14,8 @@ namespace ranges = std::experimental::ranges;
 
 template<class F, class R, class... Args>
 concept MyRegularInvocableR =
-    ranges::invocable<F, Args...> &&
-    ranges::same_as<R, std::result_of_t<F&&(Args&&...)>>;
+    std::invocable<F, Args...> &&
+    std::same_as<R, std::result_of_t<F&&(Args&&...)>>;
 
 // template <typename F,
 //           template <typename> typename Functor,

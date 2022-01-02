@@ -1,9 +1,8 @@
-#include <experimental/ranges/ranges>
-#include <stl2/view/all.hpp>
-
+#include <ranges>
+#include <vector>
 #include <iostream>
 
-namespace ranges = std::experimental::ranges;
+namespace ranges = std::ranges;
 
 int main() {
     std::vector<int> v = {1,2,3,4};

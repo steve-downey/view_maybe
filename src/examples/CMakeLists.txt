@@ -8,7 +8,7 @@ target_sources(
   PRIVATE
   main.cpp)
 
-target_link_libraries(main view_maybe stl2)
+target_link_libraries(main view_maybe)
 
 install(
   TARGETS main
@@ -23,7 +23,7 @@ target_sources(
   PRIVATE
   concepts.cpp)
 
-target_link_libraries(concepts stl2)
+target_link_libraries(concepts)
 
 install(
   TARGETS concepts
@@ -38,7 +38,7 @@ target_sources(
   PRIVATE
   all.cpp)
 
-target_link_libraries(allview stl2)
+target_link_libraries(allview)
 
 install(
   TARGETS allview

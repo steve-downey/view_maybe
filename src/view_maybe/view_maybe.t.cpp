@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 
-#include <experimental/ranges/ranges>
+#include <ranges>
 #include <array>
 
 template <nullable_ref Maybe>
@@ -87,7 +87,7 @@ TEST(ViewMaybeTest, Breathing) {
     }
     ASSERT_EQ(*s, 9);
 
-    for (auto&& i : std::experimental::ranges::views::single(j)) {
+    for (auto&& i : std::ranges::views::single(j)) {
         i = 19;
         ASSERT_EQ(i, 19);
     }

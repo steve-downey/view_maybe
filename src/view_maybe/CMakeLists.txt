@@ -12,7 +12,7 @@ target_include_directories(view_maybe PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_LOWER_PROJECT_NAME}>  # <prefix>/include/fringetree
   )
 
-target_link_libraries(view_maybe stl2)
+target_link_libraries(view_maybe)
 
 ## Tests
 add_executable(view_maybe_test "")
