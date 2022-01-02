@@ -2,10 +2,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <experimental/ranges/algorithm>
-#include <experimental/ranges/iterator>
-#include <experimental/ranges/concepts>
-#include <experimental/ranges/ranges>
+#include <algorithm>
+#include <iterator>
+#include <concepts>
+#include <ranges>
 
 #include <array>
 
@@ -14,7 +14,7 @@
 
 // Qualify everything with "std::experimental::ranges" if you like,
 // I prefer to use a namespace alias:
-namespace ranges = std::experimental::ranges;
+namespace ranges = std::ranges;
 
 template <class...>
 class show_type;
@@ -23,7 +23,7 @@ class show_type;
 template <nullable Maybe>
 void testMaybe(Maybe const&) {}
 
-template <std::experimental::ranges::readable Read>
+template <std::indirectly_readable Read>
 void testRead(Read) {}
 
 void v_func();
@@ -43,7 +43,7 @@ struct no_ex_bool {
 
 void checks() {
     nullable auto m{std::optional{3}};
-    testRead(std::optional{3});
+    // testRead(&std::optional{3});
     testMaybe(std::optional{3});
     //testMaybe(3);
     // std::array ar = {1};
@@ -223,7 +223,7 @@ int main() {
     }
     std::cout << "s=" << *s << " prints 9\n"; // prints 9
 
-    for (auto&& i : std::experimental::ranges::views::single(j)) {
+    for (auto&& i : std::ranges::views::single(j)) {
         i = 19;
         std::cout << "i=" << i << " prints 19\n"; // prints 19
     }
@@ -342,14 +342,14 @@ int main() {
                                       std::optional<int>{},
                                       std::optional<int>{6 * 9}};
 
-    auto&& x = std::experimental::ranges::views::transform(v, views::maybe);
+    auto&& x = std::ranges::views::transform(v, views::maybe);
     for (auto i : x) {
         for (auto j : i)
             std::cout << j << '\t'; // prints 42 and 42
     }
     std::cout << '\n';
 
-    auto r = std::experimental::ranges::views::join(x);
+    auto r = std::ranges::views::join(x);
 
     for (auto i : r) {
         std::cout << i << '\t'; // prints 42 and 42
@@ -358,7 +358,6 @@ int main() {
 
     std::cout << "XYZZY";
     std::cout << '\n';
-    using namespace std::experimental;
     for (auto i : ranges::views::join(ranges::views::transform(v, views::maybe))) {
         std::cout << i; // prints 42 and 54
     }
@@ -463,12 +462,12 @@ int main() {
         fptr f1 = &func1;
         fptr f2 = &func2;
 
-        for (auto f : std::experimental::ranges::views::single(f0)) {
+        for (auto f : std::ranges::views::single(f0)) {
             //            std::cout << (*f)(1) << '\n';
             //segfault!
         }
 
-        for (auto f : std::experimental::ranges::views::single(f1)) {
+        for (auto f : std::ranges::views::single(f1)) {
             std::cout << f(2) << '\n';
         }
 

@@ -2,14 +2,14 @@
 #ifndef INCLUDED_VIEW_MAYBE
 #define INCLUDED_VIEW_MAYBE
 
-#include <experimental/ranges/concepts>
-#include <experimental/ranges/ranges>
+#include <concepts>
+#include <ranges>
 #include <iostream>
-#include <stl2/detail/semiregular_box.hpp>
-#include <stl2/view/view_interface.hpp>
-#include <stl2/detail/meta.hpp>
+// #include <stl2/detail/semiregular_box.hpp>
+// #include <stl2/view/view_interface.hpp>
+// #include <stl2/detail/meta.hpp>
 
-namespace ranges = std::experimental::ranges;
+namespace ranges = std::ranges;
 
 template <class Ref, class ConstRef>
 concept readable_references =
@@ -17,7 +17,7 @@ concept readable_references =
     std::is_object_v<std::remove_reference_t<Ref>> &&
     std::is_lvalue_reference_v<ConstRef> &&
     std::is_object_v<std::remove_reference_t<ConstRef>> &&
-    ranges::convertible_to<std::add_pointer_t<ConstRef>,
+    std::convertible_to<std::add_pointer_t<ConstRef>,
         const std::remove_reference_t<Ref>*>;
 
 template <class T>
@@ -33,28 +33,33 @@ concept nullable =
 template <class T>
 concept nullable_val =
     nullable<T> &&
-    readable_references<ranges::iter_reference_t<T>, ranges::iter_reference_t<const T>>;
+    readable_references<std::iter_reference_t<T>, std::iter_reference_t<const T>>;
+
+template <typename, template <typename...> class>
+inline constexpr bool is_v = false;
+template <typename... Ts, template <typename...> class C>
+inline constexpr bool is_v<C<Ts...>, C> = true;
 
 template <class T>
 concept nullable_ref =
-    meta::is_v<T, std::reference_wrapper> &&
+    is_v<T, std::reference_wrapper> &&
     nullable_val<typename T::type>;
 
 
 template<class T>
 inline constexpr bool is_reference_wrapper_v =
-    meta::is_v<T, std::reference_wrapper>;
+    is_v<T, std::reference_wrapper>;
 
 template <std::copy_constructible Maybe>
 requires (nullable_val<Maybe> ||
           nullable_ref<Maybe>)
 class maybe_view
-    : public std::experimental::ranges::view_interface<maybe_view<Maybe>> {
+    : public ranges::view_interface<maybe_view<Maybe>> {
   private:
     using T = std::remove_reference_t<
         std::iter_reference_t<typename std::unwrap_reference_t<Maybe>>>;
 
-    std::experimental::ranges::detail::semiregular_box<Maybe> value_;
+    ranges::__detail::__box<Maybe> value_;
 
   public:
     constexpr maybe_view() = default;
@@ -77,14 +82,14 @@ class maybe_view
 
     constexpr size_t size() const noexcept {
         if constexpr (is_reference_wrapper_v<Maybe>) {
-            return bool(value_.get().get());
+            return bool((*value_).get());
         } else {
-            return bool(value_.get());
+            return bool(*value_);
         }
     }
 
     constexpr T* data() noexcept {
-        Maybe& m = value_.get();
+        Maybe& m = *value_;
         if constexpr (is_reference_wrapper_v<Maybe>) {
             return m.get() ? std::addressof(*(m.get())) : nullptr;
         } else {
@@ -93,7 +98,7 @@ class maybe_view
     }
 
     constexpr const T* data() const noexcept {
-        const Maybe& m = value_.get();
+        const Maybe& m = *value_;
         if constexpr (is_reference_wrapper_v<Maybe>) {
             return m.get() ? std::addressof(*(m.get())) : nullptr;
         } else {
