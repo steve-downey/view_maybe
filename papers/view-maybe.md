@@ -1,6 +1,6 @@
 ---
 title: "A view of 0 or 1 elements: `views::maybe`"
-document: P1255R6
+document: P1255R7
 date: today
 audience: LEWG
 author:
@@ -14,6 +14,11 @@ Abstract: This paper proposes `views::maybe` a range adaptor that produces a vie
 
 
 # Changes
+## Changes since R6
+- Add an example where pipelines use references.
+- Add support for proxy references (explore std::pointer_traits, etc).
+- Make std::views::maybe model std::ranges::borrowed_range if it's not holding the object by value.
+- Add a const propagation section discussing options, existing precedent and proposing the option that the author suggests.
 
 ## Changes since R5
 - Fix reversed before/after table entry
@@ -41,7 +46,7 @@ Abstract: This paper proposes `views::maybe` a range adaptor that produces a vie
 
 Remove Readable as part of the specification, use the useful requirements from Readable
 
-- Wording for views::maybe as proposed
+- Wording for views::maybe as proposed-
 - Appendix A: wording for a view\_maybe that always captures
 
 ## Changes since R1

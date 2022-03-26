@@ -6,44 +6,27 @@ BUILD_TYPE?=RelWithDebInfo
 DEST?=../install
 CMAKE_FLAGS?=
 
-ifeq (,$(VER))
-	_ver_suffix=
+ifeq ($(strip $(TOOLCHAIN)),)
+	_build_name?=build
+	_build_dir?=../cmake.bld/$(shell basename $(CURDIR))
+	_build_type?=RelWithDebInfo
 else
-	_ver_suffix=-$(VER)
-endif
-
-ifeq (,$(COMPILER))
-	_build_name=build
-else ifeq (clang,$(COMPILER))
-	_build_name=build-clang${_ver_suffix}
-	_cmake_args=-DCMAKE_C_COMPILER=clang$(_vers_suffix) -DCMAKE_CXX_COMPILER=clang++${_ver_suffix}
-else ifeq (gcc,$(COMPILER))
-	_build_name=build-gcc${_ver_suffix}
-	_cmake_args=-DCMAKE_C_COMPILER=gcc${_ver_suffix} -DCMAKE_CXX_COMPILER=g++${_ver_suffix}
-else ifeq (clang-master,$(COMPILER))
-	_build_name=build-clang-master
-	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/llvm-master/bin/clang \
-		-DCMAKE_CXX_COMPILER=/home/sdowney/install/llvm-master/bin/clang++
-else ifeq (clang-concepts,$(COMPILER))
-	_build_name=build-clang-concepts
-	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/llvm-concepts/bin/clang \
-		-DCMAKE_CXX_COMPILER=/home/sdowney/install/llvm-concepts/bin/clang++
-else ifeq (gcc-master,$(COMPILER))
-	_build_name=build-gcc-master
-	_cmake_args=-DCMAKE_C_COMPILER=/home/sdowney/install/gcc-master/bin/gcc \
-		-DCMAKE_CXX_COMPILER=/home/sdowney/install/gcc-master/bin/g++
+	_build_name?=build-$(TOOLCHAIN)
+	_build_dir?=../cmake.bld/$(shell basename $(CURDIR))
+	_build_type?=RelWithDebInfo
+	_cmake_args=-DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/etc/$(TOOLCHAIN)-toolchain.cmake
 endif
 
 
-_build_path?=$(BUILD_DIR)/$(_build_name)
+_build_path?=$(_build_dir)/$(_build_name)
 
 define run_cmake =
 	cmake \
 	-G "Ninja" \
-	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+	-DCMAKE_BUILD_TYPE=$(_build_type) \
 	-DCMAKE_INSTALL_PREFIX=$(abspath $(INSTALL_PREFIX)) \
+	-DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
 	$(_cmake_args) \
-	$(CMAKE_FLAGS) \
 	$(CURDIR)
 endef
 
@@ -54,6 +37,8 @@ $(_build_path):
 
 $(_build_path)/CMakeCache.txt: | $(_build_path)
 	cd $(_build_path) && $(run_cmake)
+	-rm compile_commands.json
+	ln -s $(_build_path)/compile_commands.json
 
 compile: $(_build_path)/CMakeCache.txt
 	ninja -C $(_build_path) -k 0
@@ -69,11 +54,10 @@ ctest_ : compile
 
 test: ctest_
 
-cmake: $(_build_path)
-	echo ${run_cmake}
+cmake: |  $(_build_path)
 	cd $(_build_path) && ${run_cmake}
 
-clean: $(_build_path)
+clean: $(_build_path)/CMakeCache.txt
 	ninja -C $(_build_path) clean
 
 realclean:

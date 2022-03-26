@@ -1,4 +1,5 @@
 #include <cassert>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -176,11 +177,11 @@ int main() {
     for (auto i : ranges::views::single(s))
         std::cout << "i=" << *i << " prints 7\n"; // prints 7
 
-    // ref_maybe_view vs2{s};
-    // std::cout << *begin(vs2) << " prints 7\n";
+    maybe_view vs2{std::ref(s)};
+    std::cout << *begin(vs2) << " prints 7\n";
 
-    // for (auto i : vs2)
-    //     std::cout << "i=" << i << " prints 7\n";
+    for (auto i : vs2)
+        std::cout << "i=" << i << " prints 7\n";
 
     for (auto i : views::maybe(s))
         std::cout << "i=" << i << " prints 7\n"; // prints 7
@@ -195,9 +196,6 @@ int main() {
 
     int        j  = 8;
     int*       pj = &j;
-    // ref_maybe_view vpj{pj};
-    // for (auto i : vpj)
-    //     std::cout << "i=" << i << " prints 8\n"; // prints 8
 
     for (auto i : views::maybe(pj))
         std::cout << "i=" << i << " prints 8\n"; // prints 8
@@ -211,8 +209,7 @@ int main() {
 
     std::cout << "j=" << j << " prints 27\n"; // prints 27
 
-    //int _ = views::maybe(std::optional{3});
-    for (auto&& i : views::maybe(s)) {
+    for (auto&& i : views::maybe(std::ref(s))) {
         i = 9;
         std::cout << "i=" << i << " prints 9\n"; // prints 9
     }
@@ -250,17 +247,15 @@ int main() {
     const std::optional      cs{3};
     const std::optional<int> ce{};
 
-    // ref_maybe_view vcs2{cs};
-    // std::cout << "cs=" << *begin(vcs2) << " prints 3\n";
-
     for (auto&& i : views::maybe(cs)) {
-        //i = 9 //does not compile
-        std::cout << "i=" << i << " prints 3\n"; // prints 3
+        i = 9;
+        std::cout << "i=" << i << " prints 9\n"; // prints 3
     }
     std::cout << "cs=" << *cs << " prints 3\n"; // prints 3
 
+
     for (auto&& i : views::maybe(ce)) {
-        //i = 9 //does not compile
+        i = 9;
         std::cout << "does not print i=" << i << '\n'; // does not print
     }
 
@@ -269,14 +264,15 @@ int main() {
     if (vs) {
         std::cout << "*vs = " << *vs << " prints 42\n";
     }
-    // ref_maybe_view vvs2{vs};
-    // std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
 
-    // for (auto&& i : views::maybe(vs)) {
-    //     i = 43;
-    //     std::cout << "i=" << i << " prints 43\n"; // prints 43
-    // }
-    // std::cout << "vs=" << *vs << " prints 43\n"; // prints 43
+    maybe_view vvs2{std::ref(vs)};
+    std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
+
+    for (auto&& i : views::maybe(vs)) {
+        i = 43;
+        std::cout << "i=" << i << " prints 43\n"; // prints 43
+    }
+    std::cout << "vs=" << *vs << " prints 42\n"; // prints 43
 
     const int          ci  = 11;
     volatile int       vi  = 12;
@@ -335,9 +331,6 @@ int main() {
     // auto ifunc_view = views::maybe(i_func);
 
 
-    // ref_maybe_view copy{pj};
-    // copy = vpj;
-
     std::vector<std::optional<int>> v{std::optional<int>{42},
                                       std::optional<int>{},
                                       std::optional<int>{6 * 9}};
@@ -345,28 +338,26 @@ int main() {
     auto&& x = std::ranges::views::transform(v, views::maybe);
     for (auto i : x) {
         for (auto j : i)
-            std::cout << j << '\t'; // prints 42 and 42
+            std::cout << j << '\t'; // prints 42 and 54
     }
     std::cout << '\n';
 
     auto r = std::ranges::views::join(x);
 
     for (auto i : r) {
-        std::cout << i << '\t'; // prints 42 and 42
+        std::cout << i << '\t'; // prints 42 and 54
     }
     std::cout << '\n';
 
-    std::cout << "XYZZY";
-    std::cout << '\n';
     for (auto i : ranges::views::join(ranges::views::transform(v, views::maybe))) {
-        std::cout << i; // prints 42 and 54
+        std::cout << i << '\t'; // prints 42 and 54
     }
 
     std::cout << '\n';
     for (auto i : v
              | ranges::views::transform(views::maybe)
              | ranges::views::join) {
-        std::cout << i; // prints 42 and 54
+        std::cout << i << '\t'; // prints 42 and 54
     }
 
     std::cout << '\n';
@@ -381,7 +372,7 @@ int main() {
              })
              | ranges::views::transform(views::maybe)
              | ranges::views::join) {
-        std::cout << i; // prints 1 9 49 and 81
+        std::cout << i << '\t'; // prints 1 9 49 and 81
     }
     std::cout << '\n';
 
@@ -401,6 +392,8 @@ int main() {
         std::cout << f(3) << '\n';
     }
 
+    // Function pointers are not objects
+    // Does not compile
     // {
     //     fptr f0 = nullptr;
     //     fptr f1 = &func1;
@@ -438,43 +431,8 @@ int main() {
         }
 
     }
-    // {
-    //     std::function<int(int)> f0 = nullptr;
-    //     std::function<int(int)> f1 = &func1;
-    //     std::function<int(int)>f2 = &func2;
-    //     //        auto fobj = [](auto f){return [f](int i){return f(i);};};
-    //     for (auto f : views::maybe(f0)) {
-    //         std::cout << f(1) << '\n';
-    //     }
 
-    //     auto w1 = fobj(f1);
-    //     for (auto f : views::maybe(f1)) {
-    //         std::cout << f(2) << '\n';
-    //     }
-
-    //     // for (auto f : views::maybe(f2)) {
-    //     //     std::cout << f(3) << '\n';
-    //     // }
-    // }
-
-    {
-        fptr* f0 = nullptr;
-        fptr f1 = &func1;
-        fptr f2 = &func2;
-
-        for (auto f : std::ranges::views::single(f0)) {
-            //            std::cout << (*f)(1) << '\n';
-            //segfault!
-        }
-
-        for (auto f : std::ranges::views::single(f1)) {
-            std::cout << f(2) << '\n';
-        }
-
-        // for (auto f : views::maybe(f2)) {
-        //     std::cout << f(3) << '\n';
-        // }
-    }
+    std::cout << "pointers to function pointers\n";
 
     {
         fptr* f0 = nullptr;
@@ -494,7 +452,7 @@ int main() {
         for (auto f : views::maybe(pf2)) {
             std::cout << f(3) << '\n';
         }
-}
+    }
 
     {
         std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
@@ -525,6 +483,8 @@ int main() {
         for (auto&& i : r) {
         };
 
+        std::cout << '\n';
+
         auto&& r2 = v |
             ranges::views::transform(test) |
             ranges::views::transform(views::maybe) |
@@ -538,18 +498,42 @@ int main() {
         for (auto&& i : r2) {
         };
 
-        auto&& r3 = v |
-            ranges::views::transform(test) |
-            ranges::views::filter([](auto x){return bool(x);}) |
-            ranges::views::transform([](auto x){return *x;}) |
-            ranges::views::transform(
-                [](int i) {
-                    std::cout << i;
-                    return i;
-                });
+        std::cout << '\n';
+
+        auto&& r3 = v | ranges::views::transform(test) |
+                    ranges::views::filter([](auto x) { return bool(x); }) |
+                    ranges::views::transform([](auto x) { return *x; }) |
+                    ranges::views::transform([](int i) {
+                        std::cout << i;
+                        return i;
+                    });
 
         for (auto&& i : r3) {
         };
 
+        std::cout << '\n';
     }
+    // {
+    //     std::cout << '\n';
+    //     std::optional<int>   o   = 99;
+    //     auto&&               o_r = std::reference_wrapper(o);
+    //     std::vector <std::reference_wrapper<std::optional<int>>> v;
+    //     v.emplace_back(o);
+    //     for (auto&& i : v) {
+    //         std::cout << *(i.get()) << ',';
+    //     };
+    //     std::cout << '\n';
+    //     std::cout << *o << '\n';
+
+    //     auto&& r =
+    //         v | ranges::views::transform(views::maybe) |
+    //         ranges::views::transform([](auto&& i) { i = i + 1; }) |
+    //         ranges::views::transform([](int i) {
+    //             std::cout << i;
+    //             return i;
+    //         });
+
+    //     for (auto&& i : r) {
+    //     };
+    // }
 }

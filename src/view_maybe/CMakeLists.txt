@@ -1,15 +1,29 @@
-
-include(GNUInstallDirs)
-
 add_library(view_maybe STATIC "")
 
-target_sources(view_maybe
+target_sources(
+  view_maybe
   PRIVATE
   view_maybe.cpp)
 
+include(GNUInstallDirs)
+
 target_include_directories(view_maybe PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_LOWER_PROJECT_NAME}>  # <prefix>/include/fringetree
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_LOWER_PROJECT_NAME}>  # <prefix>/include/scratch
+  )
+
+install(
+  TARGETS view_maybe
+  EXPORT ${TARGETS_EXPORT_NAME}
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+string(TOLOWER ${CMAKE_PROJECT_NAME} CMAKE_LOWER_PROJECT_NAME)
+
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_LOWER_PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.h"
   )
 
 target_link_libraries(view_maybe)
