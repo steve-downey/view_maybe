@@ -273,18 +273,12 @@ A publically available implementation at <https://github.com/steve-downey/view_m
 
 [Compiler Explorer Link to Before/After Examples](https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAM1QDsCBlZAQwBtMQBGAFlICsupVs1qhkAUgBMAISnTSAZ0ztkBPHUqZa6AMKpWAVwC2tLry3oAMnlqYAcsYBGmYiACsb0gAdUCwuto9QxMzb19/OmtbByNnVw9FZUxVAIYCZmICIONTHkSVNTo0jIIo%2BycXd08FdMzskLyakrKYuKqASkVUA2JkDgByKQBmG2RDLABqcSGdBAICLwUQAHpl4mYAdwA6YEIEA0cDJV66Ai0CLbQjZZrMADdMAFp0VA3bAE9lu7xMDYB9IzMd7OZaA27EG69L4/f6A4GYaG/AFA5xbBDTbDiAAMAEFsTiaugQCBUF5CrQ2NMdDYCBiJj4FH5HOw/nc2AZMBB2tNZLi7qg8OgJkdOTSJgRuUNeTj%2BYKJs4aMRMFiufjxAB2aUTbVTTX4nUTZgGIhSABsZompIIUyGABF6b4mSy2YZOZKtTq8FQJhAre0priDRqPQbtatDRMqL8Ji8AF5aCasGyYBQTLbp/Wh7UiiAAKj9PIm4bwqfzZImAHkANI2gBime1GttDd1zdxTbVfIFQuYVDOxBV/rVetxip9RpNknNU8t5ZAE2%2BvyWIDhzggDKdmFZ7Ld7SH7ZHOIN4eYkejcYTSdsqfTWxbOYLUqLy1n1pLlarw7bePV3/xsqFBUSEwTguQDH9pUJYkrQCNhLWDdUOylfEvR9VB9wglt8xte0AE4eRbKCUG6a0qSpKZJEkVBpmbSibR0cjsLImYKMkeliBpVN8LcHRaCkSQCIPb8iLQY16PI/jqLtfjxJYpiZgkuivA4%2BguPEHi%2BMowSfz/Ls5V7ftQIw4N8SImC6Dg6jNUQ39tLHCAJ2oqcLTwCZ50XDZl1XTkiKVKhfT3YzDwNVyaImfDkMDHURJI2SdFYvAaJk5j4tChSWJk5TOPC9TeP47SO1xGKxJS1ipNotjSvkhiMqUlSCDUjT8sinTOxlbt5UwRVMEkVUD0gggiRAB5VBIKkaTpO5g0kUgJiGWbeAmTwJlNWb1VmgAOWbcNmzgkOlRzxRTUi7SmNxZDcW0IDFPB/UeOkzLJWDWHG%2Bg6RMqLtQUDZCGQBAfVu3UQx1FglAmTgQBbbVQcwObIc%2BkHmDB9V4aPUMYfC1GDSVAgeloCZEparMsCoI1WAILGdRxvGgf2ltCtalr8Ucs0LWIHCF11BiEfWUQU2JDzlwIXmFEVIwIDOGoh3Vbm0e1XngH54aYWXKg8HJlwIHUi6rsOgAPblNWp4h8ccVB9AgA2CN/aXZexkRFeXQXiWFkRRZIcXtfU3XjVQCYraNzBcZNiZcz163bVtlsFaV52QFd2h3eIT2EaDc7veu%2BgCel4Gsy%2BwbiVEk6atS7S89DY38cJ3OdSbd18XslnnJnVz52IHO6fbIS2oAw0%2BxcXruX60yC%2BG5IiGIV7aSGbAF2m2b5omRbltWiZ1omLbwt2zucUOyWTvtL3Lszt87oe0fzIpF6ZgmmfaYR77fv%2B66O9TiYMYhqH36R2Ghkpg0MYoy/hjXC/8JiVwJmXUMJMyYU2jkHGmJlbJE1rrZbuTNcRN2nKacBHM7hc2jg7WOKsXYizFhLY6UceZEKdiQ%2BOZCPYQDjt5KhctwE0IFnQvgAp8YajtlTDhyslykLduQr%2BjZ07Hxuq/Nh5dirF3ItXcRFcEEhyUW/RsNs7IkHHL7VmLc3LgI7sg6UTZ%2BidFYCAfobh%2BikFMP0LEtjUBWIYjIOQEwFDdF6LDYYnBbEUwceYzoCBMDMCwK4LkpAADW7gsRCCsdwWx9jHGkGcf0WxSw4kBMcZ0OAsAYCIGIkYLw6sXDkEoFcEp7BXDAAUBSRYCBUAEFIGrDWxAlgQEcFYlJjgbAZHeFYvxpArhGHOBWWgrABmBNIFgQEoh2DdNsfgJUKQHhLGmZgPWyRjQDCGTSZQiyhB4EcOsYg7w9BYEGf4jiRgrmdBoPQJgbAOB5AEJwIQDsUByDkEcxwSxYAUlGSgIwyAaisBmg8VwwsDC0CiXuVJT06DrMeI8QkNEJBuJkJILEExHgViGBkpIKQNAQAsPUXIpALAtAqK4d5DIIiBH0DkQQ9LyTUtiJUd5SgCipFqFkJlDR8jj15c0ZMrROWKD5eSwQTRMjsraJwTonieh9C4BYqxNi7GHLSXrDappHimm4BMYAyBkA%2BmhbC/0EBcCEB0b42aehimlPZr4/0rjZAyH8Ys%2BFMS3BxMsf0RJpBbl%2Bq1dMtJGSQBZO9aQPJhSSJeGNOUiAlTnWCEwPgCeggHmMBYAsvIGx1heDufE6xSTtVWN8RMH6BB/q6v1Ya41przXEBhXCr1gT4UhLCZUSJAag0hrickpxVjI3Rs7Z0X1/qrEErDSkiNpBslBNLZIct4bR2Lu9Z0SFfgNDcCAA%3D%3D)
 
-# LEWG Attention
-
-~~Call LEWG's attention to the use of `ptrdiff_t` as the return type of `size` (which is consistent with `single_view`). The author has a weak preference for a signed type here, but a strong preference for consistency with other Range types.~~
-`single_view` now uses size_t.
-
-Call LEWG's attention to removing the conditional noexcept constructors, consistent with `single_view`.
 
 # Wording
 
 ## Synopsis
 
-Modify 24.2 Header <ranges> synopsis
+Modify 26.2 Header <ranges> synopsis
 
 ::: add
 ```cpp
@@ -388,7 +382,7 @@ namespace std::ranges {
   class maybe_view : public view_interface<maybe_view<Maybe>> {
   private:
     using T = /* @*see below*@ */
-    @*semiregular-box*@<Maybe> value_; // exposition only (see @[range.semi.wrap]{.sref}@)
+    @*copyable-box*@<Maybe> value_; // exposition only (see [range.copy.wrap])
 
   public:
     constexpr maybe_view() = default;
@@ -416,7 +410,8 @@ namespace std::ranges {
 
 ```cpp
 // For Exposition
-using T = remove_reference_t<iter_reference_t<typename unwrap_reference_t<Maybe>>>;
+    using T = std::remove_reference_t<
+        iter_reference_t<typename unwrap_reference_t<Maybe>>>;
 ```
 
 ```cpp
@@ -429,7 +424,7 @@ constexpr explicit maybe_view(Maybe const& maybe);
 constexpr explicit maybe_view(Maybe&& maybe);
 ```
 
-[2]{.pnum} *Effects*: Initializes value\_ with `move(maybe)`.
+[2]{.pnum} *Effects*: Initializes value\_ with `std::move(maybe)`.
 
 ```cpp
 template<class... Args>
@@ -453,7 +448,7 @@ constexpr const T* end() const noexcept;
 [5]{.pnum} *Effects*: Equivalent to: `return data() + size();`.
 
 ```cpp
-static constexpr ptrdiff_t size() noexcept;
+static constexpr size_t size() noexcept;
 ```
 
 [6]{.pnum} *Effects*: Equivalent to:
@@ -475,7 +470,7 @@ constexpr T* data() noexcept;
 [7]{.pnum} *Effects*: Equivalent to:
 
 ```cpp
-        Maybe& m = value_.get();
+        Maybe& m = *value_;
         if constexpr (@*is-reference-wrapper-v*@<Maybe>) {
             return m.get() ? addressof(*(m.get())) : nullptr;
         } else {
@@ -490,7 +485,7 @@ constexpr const T* data() const noexcept;
 [8]{.pnum} *Effects*: Equivalent to:
 
 ```cpp
-        const Maybe& m = value_.get();
+        const Maybe& m = *value_;
         if constexpr (@*is-reference-wrapper-v*@<Maybe>) {
             return m.get() ? addressof(*(m.get())) : nullptr;
         } else {
