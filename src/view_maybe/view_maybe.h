@@ -104,7 +104,14 @@ class maybe_view
     }
 };
 
+namespace std::ranges {
+template <typename T>
+constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
 
+template <typename T>
+constexpr inline bool
+    enable_borrowed_range<maybe_view<std::reference_wrapper<T>>> = true;
+}
 
 namespace views {
     struct __maybe_fn {

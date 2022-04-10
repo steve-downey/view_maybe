@@ -1,9 +1,11 @@
 #include <view_maybe/view_maybe.h>
 
+#include <bits/ranges_algo.h>
+#include <bits/ranges_base.h>
+#include <tuple>
 #include <view_maybe/view_maybe.h>
 
 #include <gtest/gtest.h>
-
 
 #include <ranges>
 #include <array>
@@ -11,9 +13,7 @@
 template <nullable_ref Maybe>
 void testMaybe(Maybe const&) {}
 
-TEST(ViewMaybeTest, TestGTest) {
-    ASSERT_EQ(1, 1);
-}
+TEST(ViewMaybeTest, TestGTest) { ASSERT_EQ(1, 1); }
 
 TEST(ViewMaybeTest, Concept) {
     static_assert(nullable<std::optional<int>>);
@@ -24,26 +24,19 @@ TEST(ViewMaybeTest, Concept) {
     static_assert(!nullable<int>);
 
     static_assert(nullable<int*>);
-    static_assert(!nullable<std::array<int,1>>);
+    static_assert(!nullable<std::array<int, 1>>);
     static_assert(!nullable<void*>);
 
-    std::optional<int> i;
+    std::optional<int>                         i;
     std::reference_wrapper<std::optional<int>> t = i;
     testMaybe(t);
-    //static_assert(nullable<std::reference_wrapper<std::optional<int>>>);
-
+    // static_assert(nullable<std::reference_wrapper<std::optional<int>>>);
 }
 
 TEST(ViewMaybeTest, Breathing) {
 
     std::optional      s{7};
     std::optional<int> e{};
-
-    // ref_maybe_view vs2{s};
-    // ASSERT_EQ(*begin(vs2), 7);
-
-    // for (auto i : vs2)
-    //     ASSERT_EQ(i, 7);
 
     for (auto i : views::maybe(s))
         ASSERT_EQ(i, 7);
@@ -56,11 +49,8 @@ TEST(ViewMaybeTest, Breathing) {
     for (int i : views::maybe(oe))
         ASSERT_TRUE(i != i);
 
-    int        j  = 8;
-    int*       pj = &j;
-    // ref_maybe_view vpj{pj};
-    // for (auto i : vpj)
-    //     ASSERT_EQ(i, 8);
+    int  j  = 8;
+    int* pj = &j;
 
     for (auto i : views::maybe(pj))
         ASSERT_EQ(i, 8);
@@ -74,13 +64,19 @@ TEST(ViewMaybeTest, Breathing) {
 
     ASSERT_EQ(j, 27);
 
-    int ixx = 0;
+    int  ixx = 0;
     auto vxx = ranges::views::single(std::ref(ixx));
-    for (auto&& jxx : vxx) { jxx.get() = 3;}
+    for (auto&& jxx : vxx) {
+        jxx.get() = 3;
+    }
     ASSERT_EQ(ixx, 3);
 
-    //    int _ = views::maybe(s);
-    // int nope = views::maybe(std::ref(s));
+    for (auto&& i : views::maybe(s)) {
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(*s, 7);
+
     for (auto&& i : views::maybe(std::ref(s))) {
         i = 9;
         ASSERT_EQ(i, 9);
@@ -172,15 +168,11 @@ TEST(ViewMaybeTest, Breathing) {
 }
 
 namespace {
-std::optional<int> tempOpt() {
-    return {9};
-}
+std::optional<int> tempOpt() { return {9}; }
 
-const std::optional<int> tempConstOpt() {
-    return {10};
-}
+const std::optional<int> tempConstOpt() { return {10}; }
 
-}
+} // namespace
 TEST(ViewMaybeTest, RValTest) {
 
     {
@@ -194,7 +186,7 @@ TEST(ViewMaybeTest, RValTest) {
     }
 
     for (auto&& i : views::maybe(tempOpt())) {
-         ++i;
+        ++i;
         ASSERT_EQ(i, 10);
     }
 
@@ -205,9 +197,9 @@ TEST(ViewMaybeTest, RValTest) {
 }
 
 TEST(ViewMaybeTest, CVTest) {
-    std::optional<int> o{6};
-    std::optional<const int> co{6};
-    std::optional<volatile int> vo{6};
+    std::optional<int>                o{6};
+    std::optional<const int>          co{6};
+    std::optional<volatile int>       vo{6};
     std::optional<const volatile int> cvo{6};
 
     for (auto&& i : views::maybe(o)) {
@@ -228,4 +220,50 @@ TEST(ViewMaybeTest, CVTest) {
         //        ++i;
         ASSERT_EQ(i, 6);
     }
+}
+
+TEST(ViewMaybeTest, Borrowable) {
+    const int num = 42;
+    auto      ptr = &num;
+    auto      opt = std::optional<int>{42};
+
+    auto found1 = std::ranges::find(views::maybe(std::ref(ptr)), num);
+    auto found2 = std::ranges::find(views::maybe(&num), num);
+    auto found3 = std::ranges::find(views::maybe(std::ref(opt)), num);
+
+    ASSERT_EQ(*found1, 42);
+    ASSERT_EQ(*found2, 42);
+    ASSERT_EQ(*found3, 42);
+}
+
+// "and_then" creates a new view by applying a
+// transformation to each element in an input
+// range, and flattening the resulting range of
+// ranges. A.k.a. bind
+// (This uses one syntax for constrained lambdas
+// in C++20.)
+inline constexpr auto and_then = [](auto&& r, auto fun) {
+    return decltype(r)(r) | std::ranges::views::transform(std::move(fun)) |
+           std::ranges::views::join;
+};
+
+// "yield_if" takes a bool and a value and
+// returns a view of zero or one elements.
+inline constexpr auto yield_if = [](bool b, auto x) {
+    return b ? maybe_view{std::optional{std::move(x)}}
+             : maybe_view<std::optional<decltype(x)>>{};
+};
+
+TEST(ViewMaybeTest, PythTripleTest) {
+    using std::ranges::views::iota;
+    auto triples = and_then(iota(1), [](int z) {
+        return and_then(iota(1, z + 1), [=](int x) {
+            return and_then(iota(x, z + 1), [=](int y) {
+                return yield_if(x * x + y * y == z * z,
+                                std::make_tuple(x, y, z));
+            });
+        });
+    });
+
+    ASSERT_EQ(*std::ranges::begin(triples), std::make_tuple(3, 4, 5));
 }
