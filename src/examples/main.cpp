@@ -151,6 +151,42 @@ int func2(int i) {return 2*i;}
 
 typedef int (*fptr)(int i);
 
+// "and_then" creates a new view by applying a
+// transformation to each element in an input
+// range, and flattening the resulting range of
+// ranges. A.k.a. bind
+// (This uses one syntax for constrained lambdas
+// in C++20.)
+inline constexpr auto and_then = [](auto&& r, auto fun) {
+    return decltype(r)(r) | std::ranges::views::transform(std::move(fun)) |
+           std::ranges::views::join;
+};
+
+// "yield_if" takes a bool and a value and
+// returns a view of zero or one elements.
+inline constexpr auto yield_if = [](bool b, auto x) {
+    return b ? maybe_view{std::optional{std::move(x)}}
+             : maybe_view<std::optional<decltype(x)>>{};
+};
+
+void print_triples() {
+    using std::ranges::views::iota;
+    auto triples = and_then(iota(1), [](int z) {
+        return and_then(iota(1, z + 1), [=](int x) {
+            return and_then(iota(x, z + 1), [=](int y) {
+                return yield_if(x * x + y * y == z * z,
+                                std::make_tuple(x, y, z));
+            });
+        });
+    });
+
+    // Display the first 10 triples
+    for (auto triple : triples | std::ranges::views::take(10)) {
+        std::cout << '(' << std::get<0>(triple) << ',' << std::get<1>(triple)
+                  << ',' << std::get<2>(triple) << ')' << '\n';
+    }
+}
+
 int main() {
 
     std::unordered_set<int> set{1,3,7,9};
@@ -536,4 +572,5 @@ int main() {
     //     for (auto&& i : r) {
     //     };
     // }
+    print_triples();
 }

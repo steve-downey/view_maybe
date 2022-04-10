@@ -1,8 +1,8 @@
 ---
 title: "A view of 0 or 1 elements: `views::maybe`"
-document: P1255R7
+document: D1255R7
 date: today
-audience: LEWG
+audience: SG9, LEWG
 author:
   - name: Steve Downey
     email: <sdowney2@bloomberg.net>, <sdowney@gmail.com>
@@ -15,6 +15,8 @@ Abstract: This paper proposes `views::maybe` a range adaptor that produces a vie
 
 # Changes
 ## Changes since R6
+- Track working draft changes for Ranges
+- Add discussion of ~borrowed_range~
 - Add an example where pipelines use references.
 - Add support for proxy references (explore std::pointer_traits, etc).
 - Make std::views::maybe model std::ranges::borrowed_range if it's not holding the object by value.
@@ -257,6 +259,49 @@ for (auto i : ranges::iota_view{1, 10} | ranges::views::transform(flt)) {
 // Produce 1 ring, 3 rings, 7 rings, and 9 rings
 ```
 
+# Lazy monadic pythagorean triples
+Eric Niebler's pythagorean triple example, using current C++ and proposed views::maybe.
+
+```C++
+
+// "and_then" creates a new view by applying a
+// transformation to each element in an input
+// range, and flattening the resulting range of
+// ranges. A.k.a. bind
+// (This uses one syntax for constrained lambdas
+// in C++20.)
+inline constexpr auto and_then = [](auto&& r, auto fun) {
+    return decltype(r)(r) | std::ranges::views::transform(std::move(fun)) |
+           std::ranges::views::join;
+};
+
+// "yield_if" takes a bool and a value and
+// returns a view of zero or one elements.
+inline constexpr auto yield_if = [](bool b, auto x) {
+    return b ? maybe_view{std::optional{std::move(x)}}
+             : maybe_view<std::optional<decltype(x)>>{};
+};
+
+void print_triples() {
+    using std::ranges::views::iota;
+    auto triples = and_then(iota(1), [](int z) {
+        return and_then(iota(1, z + 1), [=](int x) {
+            return and_then(iota(x, z + 1), [=](int y) {
+                return yield_if(x * x + y * y == z * z,
+                                std::make_tuple(x, y, z));
+            });
+        });
+    });
+
+    // Display the first 10 triples
+    for (auto triple : triples | std::ranges::views::take(10)) {
+        std::cout << '(' << std::get<0>(triple) << ',' << std::get<1>(triple)
+                  << ',' << std::get<2>(triple) << ')' << '\n';
+    }
+}
+```
+
+The implementation of yield\_if suggests a possible alternative design, where the template parameter for maybe\_view is the dereferenced type of the maybe, and a `maybe_view<int>` would be constructable from either an `optional<int>` or an `int*`. Early feedback suggested that relaxing the type system in this way could introduce confusion elsewhere in ranges code, and that code was never fully explored.
 
 # Proposal
 
@@ -267,9 +312,21 @@ Add a range adaptor object `views::maybe`, returning a view over a nullable obje
 
 The basis of the design is to hybridize `views::single` and `views::empty`. If the underlying object claims to hold a value, as determined by checking if the object when converted to bool is true, `begin` and `end` of the view are equivalent to the address of the held value within the underlying object and one past the underlying object. If the underlying object does not have a value, `begin` and `end` return `nullptr`.
 
+# Borrowed Range
+A `borrowed_range` is one whose iterators cannot be invalidated by ending the lifetime of the range. For views::maybe, the iterators are T*, where T is essentially the type of the dereferenced nullable. For raw pointers and `reference_wrapper` over nullable types, the iterator for `maybe_view` points directly to the underlying object, and thus matches the semantics of `borrowed_range`. This means that `maybe_view` is conditionally borrowed. A `maybe_view<shared_ptr>`, however, is not a borrowed range, as it participates in ownership of the shared_ptr and might invalidate the iterators if upon the end of its lifetime it is the last owner.
+
+An example of code that is enabled by borrowed ranges, if unlikely code:
+```C+++
+num = 42;
+int k = *std::ranges::find(views::maybe(&num), num);
+```
+
+Providing the facility is not a signficant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. Particularly as there is no real implementation impact, other than providing template variable specializations for `enable_borrowed_range`.
+
+
 # Implementation
 
-A publically available implementation at <https://github.com/steve-downey/view_maybe> based on the Ranges implementation in cmcstl2 at <https://github.com/CaseyCarter/cmcstl2> . There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as *Effects*.
+A publically available implementation at <https://github.com/steve-downey/view_maybe> based on the Ranges implementation in libstdc++ . There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as *Effects*.
 
 [Compiler Explorer Link to Before/After Examples](https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAM1QDsCBlZAQwBtMQBGAFlICsupVs1qhkAUgBMAISnTSAZ0ztkBPHUqZa6AMKpWAVwC2tLry3oAMnlqYAcsYBGmYiACsb0gAdUCwuto9QxMzb19/OmtbByNnVw9FZUxVAIYCZmICIONTHkSVNTo0jIIo%2BycXd08FdMzskLyakrKYuKqASkVUA2JkDgByKQBmG2RDLABqcSGdBAICLwUQAHpl4mYAdwA6YEIEA0cDJV66Ai0CLbQjZZrMADdMAFp0VA3bAE9lu7xMDYB9IzMd7OZaA27EG69L4/f6A4GYaG/AFA5xbBDTbDiAAMAEFsTiaugQCBUF5CrQ2NMdDYCBiJj4FH5HOw/nc2AZMBB2tNZLi7qg8OgJkdOTSJgRuUNeTj%2BYKJs4aMRMFiufjxAB2aUTbVTTX4nUTZgGIhSABsZompIIUyGABF6b4mSy2YZOZKtTq8FQJhAre0priDRqPQbtatDRMqL8Ji8AF5aCasGyYBQTLbp/Wh7UiiAAKj9PIm4bwqfzZImAHkANI2gBime1GttDd1zdxTbVfIFQuYVDOxBV/rVetxip9RpNknNU8t5ZAE2%2BvyWIDhzggDKdmFZ7Ld7SH7ZHOIN4eYkejcYTSdsqfTWxbOYLUqLy1n1pLlarw7bePV3/xsqFBUSEwTguQDH9pUJYkrQCNhLWDdUOylfEvR9VB9wglt8xte0AE4eRbKCUG6a0qSpKZJEkVBpmbSibR0cjsLImYKMkeliBpVN8LcHRaCkSQCIPb8iLQY16PI/jqLtfjxJYpiZgkuivA4%2BguPEHi%2BMowSfz/Ls5V7ftQIw4N8SImC6Dg6jNUQ39tLHCAJ2oqcLTwCZ50XDZl1XTkiKVKhfT3YzDwNVyaImfDkMDHURJI2SdFYvAaJk5j4tChSWJk5TOPC9TeP47SO1xGKxJS1ipNotjSvkhiMqUlSCDUjT8sinTOxlbt5UwRVMEkVUD0gggiRAB5VBIKkaTpO5g0kUgJiGWbeAmTwJlNWb1VmgAOWbcNmzgkOlRzxRTUi7SmNxZDcW0IDFPB/UeOkzLJWDWHG%2Bg6RMqLtQUDZCGQBAfVu3UQx1FglAmTgQBbbVQcwObIc%2BkHmDB9V4aPUMYfC1GDSVAgeloCZEparMsCoI1WAILGdRxvGgf2ltCtalr8Ucs0LWIHCF11BiEfWUQU2JDzlwIXmFEVIwIDOGoh3Vbm0e1XngH54aYWXKg8HJlwIHUi6rsOgAPblNWp4h8ccVB9AgA2CN/aXZexkRFeXQXiWFkRRZIcXtfU3XjVQCYraNzBcZNiZcz163bVtlsFaV52QFd2h3eIT2EaDc7veu%2BgCel4Gsy%2BwbiVEk6atS7S89DY38cJ3OdSbd18XslnnJnVz52IHO6fbIS2oAw0%2BxcXruX60yC%2BG5IiGIV7aSGbAF2m2b5omRbltWiZ1omLbwt2zucUOyWTvtL3Lszt87oe0fzIpF6ZgmmfaYR77fv%2B66O9TiYMYhqH36R2Ghkpg0MYoy/hjXC/8JiVwJmXUMJMyYU2jkHGmJlbJE1rrZbuTNcRN2nKacBHM7hc2jg7WOKsXYizFhLY6UceZEKdiQ%2BOZCPYQDjt5KhctwE0IFnQvgAp8YajtlTDhyslykLduQr%2BjZ07Hxuq/Nh5dirF3ItXcRFcEEhyUW/RsNs7IkHHL7VmLc3LgI7sg6UTZ%2BidFYCAfobh%2BikFMP0LEtjUBWIYjIOQEwFDdF6LDYYnBbEUwceYzoCBMDMCwK4LkpAADW7gsRCCsdwWx9jHGkGcf0WxSw4kBMcZ0OAsAYCIGIkYLw6sXDkEoFcEp7BXDAAUBSRYCBUAEFIGrDWxAlgQEcFYlJjgbAZHeFYvxpArhGHOBWWgrABmBNIFgQEoh2DdNsfgJUKQHhLGmZgPWyRjQDCGTSZQiyhB4EcOsYg7w9BYEGf4jiRgrmdBoPQJgbAOB5AEJwIQDsUByDkEcxwSxYAUlGSgIwyAaisBmg8VwwsDC0CiXuVJT06DrMeI8QkNEJBuJkJILEExHgViGBkpIKQNAQAsPUXIpALAtAqK4d5DIIiBH0DkQQ9LyTUtiJUd5SgCipFqFkJlDR8jj15c0ZMrROWKD5eSwQTRMjsraJwTonieh9C4BYqxNi7GHLSXrDappHimm4BMYAyBkA%2BmhbC/0EBcCEB0b42aehimlPZr4/0rjZAyH8Ys%2BFMS3BxMsf0RJpBbl%2Bq1dMtJGSQBZO9aQPJhSSJeGNOUiAlTnWCEwPgCeggHmMBYAsvIGx1heDufE6xSTtVWN8RMH6BB/q6v1Ya41przXEBhXCr1gT4UhLCZUSJAag0hrickpxVjI3Rs7Z0X1/qrEErDSkiNpBslBNLZIct4bR2Lu9Z0SFfgNDcCAA%3D%3D)
 
@@ -286,6 +343,12 @@ Modify 26.2 Header <ranges> synopsis
   template<copy_constructible T>
     requires @*see below*@
   class maybe_view;
+
+  template <typename T>
+  constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
+
+  template <typename T>
+  constexpr inline bool enable_borrowed_range<maybe_view<reference_wrapper<T>>> = true;
 
   namespace views { inline constexpr @_unspecified_@ maybe = @_unspecified_@; }
 ```
