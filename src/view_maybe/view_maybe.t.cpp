@@ -250,8 +250,8 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
 // "yield_if" takes a bool and a value and
 // returns a view of zero or one elements.
 inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? maybe_view{std::optional{std::move(x)}}
-             : maybe_view<std::optional<decltype(x)>>{};
+    return b ? maybe_view{std::move(x)}
+             : maybe_view<decltype(x)>{};
 };
 
 TEST(ViewMaybeTest, PythTripleTest) {
