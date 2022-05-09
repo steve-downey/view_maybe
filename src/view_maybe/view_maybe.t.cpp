@@ -271,6 +271,8 @@ TEST(ViewMaybeTest, PythTripleTest) {
 TEST(ViewMaybeTest, ValueBase) {
     int i = 7;
     maybe_view<int>      v1{};
+    ASSERT_TRUE(v1.size() == 0);
+
     maybe_view<int>      v2{i};
     for (auto i : v1)
         ASSERT_TRUE(i != i);
@@ -285,5 +287,17 @@ TEST(ViewMaybeTest, ValueBase) {
         ASSERT_EQ(i, 9);
     }
     ASSERT_EQ(s, 4);
+}
 
+namespace {
+class NoDefault {
+    int v_;
+  public:
+    NoDefault(int v) : v_(v) {}
+};
+}
+
+TEST(ViewMaybeTest, ValueNonDefaultConstruct) {
+    NoDefault       i = 7;
+    maybe_view<NoDefault> v1{};
 }
