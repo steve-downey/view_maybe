@@ -267,3 +267,23 @@ TEST(ViewMaybeTest, PythTripleTest) {
 
     ASSERT_EQ(*std::ranges::begin(triples), std::make_tuple(3, 4, 5));
 }
+
+TEST(ViewMaybeTest, ValueBase) {
+    int i = 7;
+    maybe_view<int>      v1{};
+    maybe_view<int>      v2{i};
+    for (auto i : v1)
+        ASSERT_TRUE(i != i);
+
+    for (auto i : v2)
+        ASSERT_EQ(i, 7);
+
+    int s = 4;
+    for (auto&& i : views::maybe(s)) {
+        ASSERT_EQ(i, 4);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(s, 4);
+
+}

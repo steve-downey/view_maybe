@@ -47,11 +47,63 @@ template<class T>
 inline constexpr bool is_reference_wrapper_v =
     is_v<T, std::reference_wrapper>;
 
-template <std::copy_constructible Maybe>
-requires (nullable_val<Maybe> ||
-          nullable_ref<Maybe>)
-class maybe_view
-    : public ranges::view_interface<maybe_view<Maybe>> {
+template <class T>
+concept copyable_ref = is_v<T, std::reference_wrapper> &&
+                       std::copy_constructible<typename T::type>;
+
+template <typename Value>
+requires(std::copy_constructible<Value>)
+class maybe_view : public ranges::view_interface<maybe_view<Value>> {
+  private:
+    using T = std::remove_reference_t<Value>;
+
+    ranges::__detail::__box<Value> value_;
+
+  public:
+    constexpr maybe_view() = default;
+
+    constexpr explicit maybe_view(Value const& value) : value_(value) {}
+
+    constexpr explicit maybe_view(Value&& value) : value_(std::move(value)) {}
+
+    template <class... Args>
+        requires std::constructible_from<Value, Args...>
+    constexpr maybe_view(std::in_place_t, Args&&... args)
+        : value_(std::in_place, std::forward<Args>(args)...) {}
+
+    constexpr T*       begin() noexcept { return data(); }
+    constexpr const T* begin() const noexcept { return data(); }
+    constexpr T*       end() noexcept { return data() + size(); }
+    constexpr const T* end() const noexcept { return data() + size(); }
+
+    constexpr size_t size() const noexcept {
+        if constexpr (is_reference_wrapper_v<Value>) {
+            return bool((*value_).get());
+        } else {
+            return bool(*value_);
+        }
+    }
+
+    constexpr T* data() noexcept {
+        if constexpr (is_reference_wrapper_v<Value>) {
+            return value_.has_value() ? std::addressof(*(value_.get()))
+                                      : nullptr;
+        }
+            return value_.has_value() ? std::addressof(*value_) : nullptr;
+        }
+
+    constexpr const T* data() const noexcept {
+        if constexpr (is_reference_wrapper_v<Value>) {
+            return value_.has_value() ? std::addressof(*(value_.get()))
+                                      : nullptr;
+        }
+        return value_.has_value() ? std::addressof(*value_) : nullptr;
+    }
+};
+
+template <typename Maybe>
+requires(std::copy_constructible<Maybe> && (nullable_val<Maybe> || nullable_ref<Maybe>))
+class maybe_view<Maybe> : public ranges::view_interface<maybe_view<Maybe>> {
   private:
     using T = std::remove_reference_t<
         std::iter_reference_t<typename std::unwrap_reference_t<Maybe>>>;
@@ -103,6 +155,7 @@ class maybe_view
         }
     }
 };
+
 
 namespace std::ranges {
 template <typename T>
