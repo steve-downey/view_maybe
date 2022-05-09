@@ -48,11 +48,10 @@ inline constexpr bool is_reference_wrapper_v =
     is_v<T, std::reference_wrapper>;
 
 template <class T>
-concept copyable_ref = is_v<T, std::reference_wrapper> &&
-                       std::copy_constructible<typename T::type>;
+concept copyable_object = (std::copy_constructible<T> && std::is_object_v<T>);
 
 template <typename Value>
-requires(std::copy_constructible<Value>)
+    requires(copyable_object<Value>)
 class maybe_view : public ranges::view_interface<maybe_view<Value>> {
   private:
     using T = std::remove_reference_t<Value>;
@@ -102,7 +101,8 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
 };
 
 template <typename Maybe>
-requires(std::copy_constructible<Maybe> && (nullable_val<Maybe> || nullable_ref<Maybe>))
+    requires(copyable_object<Maybe> &&
+             (nullable_val<Maybe> || nullable_ref<Maybe>))
 class maybe_view<Maybe> : public ranges::view_interface<maybe_view<Maybe>> {
   private:
     using T = std::remove_reference_t<
@@ -155,7 +155,6 @@ class maybe_view<Maybe> : public ranges::view_interface<maybe_view<Maybe>> {
         }
     }
 };
-
 
 namespace std::ranges {
 template <typename T>
