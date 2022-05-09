@@ -47,9 +47,7 @@ template <typename Value>
 requires(copyable_object<Value>) class maybe_view
     : public ranges::view_interface<maybe_view<Value>> {
   private:
-    using T = std::remove_reference_t<Value>;
-
-    ranges::__detail::__box<Value> value_;
+    std::optional<Value> value_;
 
   public:
     constexpr maybe_view() = default;
@@ -63,39 +61,24 @@ requires(copyable_object<Value>) class maybe_view
         std::in_place_t, Args&&... args)
         : value_(std::in_place, std::forward<Args>(args)...) {}
 
-    constexpr T*       begin() noexcept { return data(); }
-    constexpr const T* begin() const noexcept { return data(); }
-    constexpr T*       end() noexcept { return data() + size(); }
-    constexpr const T* end() const noexcept { return data() + size(); }
+    constexpr Value*       begin() noexcept { return data(); }
+    constexpr const Value* begin() const noexcept { return data(); }
+    constexpr Value*       end() noexcept { return data() + size(); }
+    constexpr const Value* end() const noexcept { return data() + size(); }
 
-    constexpr size_t size() const noexcept {
-        if constexpr (is_reference_wrapper_v<Value>) {
-            return bool((*value_).get());
-        } else {
-            return bool(*value_);
-        }
-    }
+    constexpr size_t size() const noexcept { return bool(value_); }
 
-    constexpr T* data() noexcept {
-        if constexpr (is_reference_wrapper_v<Value>) {
-            return value_.has_value() ? std::addressof(*(value_.get()))
-                                      : nullptr;
-        }
-        return value_.has_value() ? std::addressof(*value_) : nullptr;
-    }
+    constexpr Value* data() noexcept { return std::addressof(*value_); }
 
-    constexpr const T* data() const noexcept {
-        if constexpr (is_reference_wrapper_v<Value>) {
-            return value_.has_value() ? std::addressof(*(value_.get()))
-                                      : nullptr;
-        }
-        return value_.has_value() ? std::addressof(*value_) : nullptr;
+    constexpr const Value* data() const noexcept {
+        return std::addressof(*value_);
     }
 };
 
 template <typename Maybe>
 requires(copyable_object<Maybe> &&
-         (nullable_val<Maybe> || nullable_ref<Maybe>)) class maybe_view<Maybe>
+         (nullable_val<Maybe> || nullable_ref<Maybe>))
+class maybe_view<Maybe>
     : public ranges::view_interface<maybe_view<Maybe>> {
   private:
     using T = std::remove_reference_t<
