@@ -1,6 +1,6 @@
 ---
 title: "A view of 0 or 1 elements: `views::maybe`"
-document: D1255R7
+document: P1255R7
 date: today
 audience: SG9, LEWG
 author:
@@ -9,14 +9,15 @@ author:
 toc: false
 ---
 
-Abstract: This paper proposes `views::maybe` a range adaptor that produces a view with cardinality 0 or 1 which adapts nullable types such as `std::optional` and pointer to object types.
+Abstract: This paper proposes `views::maybe` a range adaptor that produces a view with cardinality 0 or 1 which adapts copyable object types, values, and nullable types such as `std::optional` and pointer to object types.
 
 
 
 # Changes
 ## Changes since R6
+- Extend to all object types in order to support list comprehension
 - Track working draft changes for Ranges
-- Add discussion of ~borrowed_range~
+- Add discussion of _borrowed_range_
 - Add an example where pipelines use references.
 - Add support for proxy references (explore std::pointer_traits, etc).
 - Make std::views::maybe model std::ranges::borrowed_range if it's not holding the object by value.
@@ -185,7 +186,7 @@ auto&& r = v |
 
 # Motivation
 
-In writing range transformation it is useful to be able to lift a nullable value into a view that is either empty or contains the value held by the nullable. The adapter `views::single` fills a similar purpose for non-nullable values, lifting a single value into a view, and `views::empty` provides a range of no values of a given type. A `views::maybe` adaptor also allows nullable values to be treated as ranges when it is otherwise undesirable to make them containers, for example `std::optional`.
+In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. For types that are `nullable`, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well. The adapter `views::single` fills a similar purpose for non-nullable values, lifting a single value into a view, and `views::empty` provides a range of no values of a given type. The type `views::maybe` can be used to unify `single` and `empty` into a single type for further processing. This is in particuluar useful when translating list comprehensions.
 
 ```C++
 std::vector<std::optional<int>> v{
@@ -278,8 +279,8 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
 // "yield_if" takes a bool and a value and
 // returns a view of zero or one elements.
 inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? maybe_view{std::optional{std::move(x)}}
-             : maybe_view<std::optional<decltype(x)>>{};
+    return b ? maybe_view{std::move(x)}
+             : maybe_view<decltype(x)>{};
 };
 
 void print_triples() {
@@ -301,16 +302,16 @@ void print_triples() {
 }
 ```
 
-The implementation of yield\_if suggests a possible alternative design, where the template parameter for maybe\_view is the dereferenced type of the maybe, and a `maybe_view<int>` would be constructable from either an `optional<int>` or an `int*`. Early feedback suggested that relaxing the type system in this way could introduce confusion elsewhere in ranges code, and that code was never fully explored.
+The implementation of yield\_if is essentially the type unification of `single` and `empty` into `maybe`, returning an empty on false, and a range containing one value on true.
 
 # Proposal
 
-Add a range adaptor object `views::maybe`, returning a view over a nullable object, capturing by value temporary nullables. A _`nullable`_ object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `std::optional`, and the proposed  `expected` [@P0323R9] types all model _`nullable`_. Function pointers do not, as functions are not objects. Iterators do not generally model _`nullable`_, as they are not required to be contextually convertible to bool.
+Add a range adaptor object `views::maybe`, returning a view over an object, capturing by value. Dor `nullable` objects, provide a zero size range for objects which are disengaged. A _`nullable`_ object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `std::optional`, and the proposed  `expected` [@P0323R9] types all models _`nullable`_. Function pointers do not, as functions are not objects. Iterators do not generally model _`nullable`_, as they are not required to be contextually convertible to bool.
 
 
 # Design
 
-The basis of the design is to hybridize `views::single` and `views::empty`. If the underlying object claims to hold a value, as determined by checking if the object when converted to bool is true, `begin` and `end` of the view are equivalent to the address of the held value within the underlying object and one past the underlying object. If the underlying object does not have a value, `begin` and `end` return `nullptr`.
+The basis of the design is to hybridize `views::single` and `views::empty`. If the view is over a value that is not `nullable` it is like a single view if constructed with a value, or is of size zero otherwise. For `nullable` types, if the underlying object claims to hold a value, as determined by checking if the object when converted to bool is true, `begin` and `end` of the view are equivalent to the address of the held value within the underlying object and one past the underlying object. If the underlying object does not have a value, `begin` and `end` return `nullptr`.
 
 # Borrowed Range
 A `borrowed_range` is one whose iterators cannot be invalidated by ending the lifetime of the range. For views::maybe, the iterators are T*, where T is essentially the type of the dereferenced nullable. For raw pointers and `reference_wrapper` over nullable types, the iterator for `maybe_view` points directly to the underlying object, and thus matches the semantics of `borrowed_range`. This means that `maybe_view` is conditionally borrowed. A `maybe_view<shared_ptr>`, however, is not a borrowed range, as it participates in ownership of the shared_ptr and might invalidate the iterators if upon the end of its lifetime it is the last owner.
@@ -324,11 +325,71 @@ int k = *std::ranges::find(views::maybe(&num), num);
 Providing the facility is not a signficant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. Particularly as there is no real implementation impact, other than providing template variable specializations for `enable_borrowed_range`.
 
 
+# List Comprehension Desugaring
+The case for having maybe_view available is seen in desugaring list comprehensions, where they naturally show up in guard clauses.
+
+Looking at Haskell for a [formal lowering of comprehensions](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/monad_comprehensions.html):
+
+We write `Desugar[ e | Q]` to mean the desugaring of the comprehension `[ e | Q]`
+
+Expressions: `e`
+
+Lists of qualifiers: `Q`,`R`,`S`
+
+-- Basic forms
+
+`Desugar[ e | ]`               = `return e`
+
+`Desugar[ e | p <- e, Q ]`     = `e >>= \p -> Desugar[ e | Q ]`
+
+`Desugar[ e | e, Q ]`          = `guard e >> \p -> Desugar[ e | Q ]`
+
+Where:
+
+`>>=` is the normal bind operator
+
+`(>>=) :: m a -> (a -> m b) -> m b `
+
+equivalent to
+
+`\x -> join (fmap f x)`
+
+See the `abd_then` function above.
+
+`>>` is a bind that sequences but discards the left side
+
+`(>>) :: m a -> m b -> m b`
+
+defined as
+
+`k >> f =
+    k >>= (\_ -> f)`
+
+`guard` has the type `guard :: Alternative f => Bool -> f ()` and is defined as
+
+```haskell
+guard True  = return ()
+guard False = empty
+```
+
+See the `yield_if` above.
+
+`return` is a constructor for a monad over T, lifting a value into the monad. `return :: Monad m => t -> m t`
+
+The pythagorean triple example above is a typical hand desugaring of a list comprehension.
+```
+ [(x,y,z) | z <- [1..x], y <- [1..z], x <- [1..y], x*x + y*y== z*z]
+```
+
+The `guard` function functions as a filter. It's usually possible to rewrite the guard and join into a filter function, but fusing the guard conditions may not be straightforward.
+
+
+
 # Implementation
 
 A publically available implementation at <https://github.com/steve-downey/view_maybe> based on the Ranges implementation in libstdc++ . There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as *Effects*.
 
-[Compiler Explorer Link to Before/After Examples](https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAM1QDsCBlZAQwBtMQBGAFlICsupVs1qhkAUgBMAISnTSAZ0ztkBPHUqZa6AMKpWAVwC2tLry3oAMnlqYAcsYBGmYiACsb0gAdUCwuto9QxMzb19/OmtbByNnVw9FZUxVAIYCZmICIONTHkSVNTo0jIIo%2BycXd08FdMzskLyakrKYuKqASkVUA2JkDgByKQBmG2RDLABqcSGdBAICLwUQAHpl4mYAdwA6YEIEA0cDJV66Ai0CLbQjZZrMADdMAFp0VA3bAE9lu7xMDYB9IzMd7OZaA27EG69L4/f6A4GYaG/AFA5xbBDTbDiAAMAEFsTiaugQCBUF5CrQ2NMdDYCBiJj4FH5HOw/nc2AZMBB2tNZLi7qg8OgJkdOTSJgRuUNeTj%2BYKJs4aMRMFiufjxAB2aUTbVTTX4nUTZgGIhSABsZompIIUyGABF6b4mSy2YZOZKtTq8FQJhAre0priDRqPQbtatDRMqL8Ji8AF5aCasGyYBQTLbp/Wh7UiiAAKj9PIm4bwqfzZImAHkANI2gBime1GttDd1zdxTbVfIFQuYVDOxBV/rVetxip9RpNknNU8t5ZAE2%2BvyWIDhzggDKdmFZ7Ld7SH7ZHOIN4eYkejcYTSdsqfTWxbOYLUqLy1n1pLlarw7bePV3/xsqFBUSEwTguQDH9pUJYkrQCNhLWDdUOylfEvR9VB9wglt8xte0AE4eRbKCUG6a0qSpKZJEkVBpmbSibR0cjsLImYKMkeliBpVN8LcHRaCkSQCIPb8iLQY16PI/jqLtfjxJYpiZgkuivA4%2BguPEHi%2BMowSfz/Ls5V7ftQIw4N8SImC6Dg6jNUQ39tLHCAJ2oqcLTwCZ50XDZl1XTkiKVKhfT3YzDwNVyaImfDkMDHURJI2SdFYvAaJk5j4tChSWJk5TOPC9TeP47SO1xGKxJS1ipNotjSvkhiMqUlSCDUjT8sinTOxlbt5UwRVMEkVUD0gggiRAB5VBIKkaTpO5g0kUgJiGWbeAmTwJlNWb1VmgAOWbcNmzgkOlRzxRTUi7SmNxZDcW0IDFPB/UeOkzLJWDWHG%2Bg6RMqLtQUDZCGQBAfVu3UQx1FglAmTgQBbbVQcwObIc%2BkHmDB9V4aPUMYfC1GDSVAgeloCZEparMsCoI1WAILGdRxvGgf2ltCtalr8Ucs0LWIHCF11BiEfWUQU2JDzlwIXmFEVIwIDOGoh3Vbm0e1XngH54aYWXKg8HJlwIHUi6rsOgAPblNWp4h8ccVB9AgA2CN/aXZexkRFeXQXiWFkRRZIcXtfU3XjVQCYraNzBcZNiZcz163bVtlsFaV52QFd2h3eIT2EaDc7veu%2BgCel4Gsy%2BwbiVEk6atS7S89DY38cJ3OdSbd18XslnnJnVz52IHO6fbIS2oAw0%2BxcXruX60yC%2BG5IiGIV7aSGbAF2m2b5omRbltWiZ1omLbwt2zucUOyWTvtL3Lszt87oe0fzIpF6ZgmmfaYR77fv%2B66O9TiYMYhqH36R2Ghkpg0MYoy/hjXC/8JiVwJmXUMJMyYU2jkHGmJlbJE1rrZbuTNcRN2nKacBHM7hc2jg7WOKsXYizFhLY6UceZEKdiQ%2BOZCPYQDjt5KhctwE0IFnQvgAp8YajtlTDhyslykLduQr%2BjZ07Hxuq/Nh5dirF3ItXcRFcEEhyUW/RsNs7IkHHL7VmLc3LgI7sg6UTZ%2BidFYCAfobh%2BikFMP0LEtjUBWIYjIOQEwFDdF6LDYYnBbEUwceYzoCBMDMCwK4LkpAADW7gsRCCsdwWx9jHGkGcf0WxSw4kBMcZ0OAsAYCIGIkYLw6sXDkEoFcEp7BXDAAUBSRYCBUAEFIGrDWxAlgQEcFYlJjgbAZHeFYvxpArhGHOBWWgrABmBNIFgQEoh2DdNsfgJUKQHhLGmZgPWyRjQDCGTSZQiyhB4EcOsYg7w9BYEGf4jiRgrmdBoPQJgbAOB5AEJwIQDsUByDkEcxwSxYAUlGSgIwyAaisBmg8VwwsDC0CiXuVJT06DrMeI8QkNEJBuJkJILEExHgViGBkpIKQNAQAsPUXIpALAtAqK4d5DIIiBH0DkQQ9LyTUtiJUd5SgCipFqFkJlDR8jj15c0ZMrROWKD5eSwQTRMjsraJwTonieh9C4BYqxNi7GHLSXrDappHimm4BMYAyBkA%2BmhbC/0EBcCEB0b42aehimlPZr4/0rjZAyH8Ys%2BFMS3BxMsf0RJpBbl%2Bq1dMtJGSQBZO9aQPJhSSJeGNOUiAlTnWCEwPgCeggHmMBYAsvIGx1heDufE6xSTtVWN8RMH6BB/q6v1Ya41przXEBhXCr1gT4UhLCZUSJAag0hrickpxVjI3Rs7Z0X1/qrEErDSkiNpBslBNLZIct4bR2Lu9Z0SFfgNDcCAA%3D%3D)
+[Compiler Explorer Link to Before/After Examples](https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAMzwBtMA7AQwFtMQByARg9KtQYEAysib0QXACx8BBAKoBnTAAUAHpwAMvAFYTStJg1DIApACYAQuYukl9ZATwDKjdAGFUtAK4sGe1wAyeAyYAHI%2BAEaYxCDSAA6oCoRODB7evnoJSY4CQSHhLFEx0naYDilCBEzEBGk%2Bfly2mPY5DJXVBHlhkdGxtlU1dRmNCgOdwd2FvZIAlLaoXsTI7BzmAMzByN5YANQma24IBARxCiAA9OfETADuAHTAhAheEV5KS7KMBHdoLOejmAAbpgALToVA3EIAT3OgLwmBuAH0WEwoVFziiAcR/ktYfCkSi0Zg8QjkaioncEPtsCYNABBWkMswbBhbLy7fZuYEOEjUxmM0boEAgVBxVpiTnBAjUnZZJIReiIwFiLyYCAzfZWemA1B4dA7N5qqU7AgatZauk6vU7KL8YiYDTq/kAdgtO3de1djI9OyYXiI5gAbEGdqKCHs1gARWWJeWK5XeNVmt0evBUHYQMMzPb0n0mL25n0ey6%2BnZUBE7cEAL0YO1oEwUOzuze9RfdhogACos5qdiW8I3u2KdgB5ADSEYAYq33fnIzPPfP6XP%2BdrdfqmFQCNFHdmXRa7Rm/QGzMHT6HhyAdnCEWcQISohA5XgFZglSqkzM98uC3SfSWmDLCtq1resQkbZs7gXDse3NPtzgvcMB1HMcXSXBlnXQxkrX1W0SEwLh1RzDCLUFYUwxSMRQ3zCxnRXc1GTTDNUG/EiF27CNowATk1BcyJQBZw05Tk9jMMxUH2ecxIjNwRI44SDlEsxZWIKVGx4gBWNwGHMMxeJ/dD%2BLQf0ZJE3SJKjXTTMU%2BSDjM6S4lUwR1JMLSdLE/SMKwtdrU3bdiEI1iaIFAghRFMVKNoajXTozDPMPCBjwk08QzwHYrxvG47wfNV%2BPtKhMy/ILfx9NLJJ2HiGMLd0jME6y3CUvBJKshSGrKuzFKsxy1Iq1ztN0zyV3pWqTNapSLKk5Sxts2TOocpyCBctyBqqrzV0tdcbUwO1MDMJ0f1I0LhW5IhiElQQZUBGizFIHY1lu6Qdg027A1u51boADlurjbq4eiLSSk1MFGTi9g0qwNMjCBjTwbMQRlfiKIECUDilGVguqnYFBuQhkAQDNYc9FMfVEJQdi4EAF3dUnMDuynMeppgyedem/yLGmKtZn17QIRYGB2JrVrbLAqD9WgCC5j0eb5on/oXIa1tWxkkqDENiFBwFPVkzHriMYHjvxO8CF1hQ7RYCBt1GPdnW1tn3V14B9ZATK7xocXoggVyIahwHVA1V1peIfmIlQTwID93jMOt23ucMR27xd4VjcMU2SHNr3XJ9/1UB2COA8wXmg52TtVEjyNo4XB2ncTkBk4YVPiHThmPQzyHocEAXreJtsPRGoSOrazye6LQP%2BcF7u8yj%2BKSCPbPVfPNKr2ILu5eXAz1pw30t2iPaNQOkKwpO3lUYutZsGva7bvunZHuenZXp2d6di%2BirftXulAct/vo1bqGYbhhGR1wriloOdaUZ9ZaY2xrjfG0MV7Nw5hTKmOwOZrEliTJmtMWbII5lxdBOxR4CyHkWEWYsJaVwLjLYKcUhYtziuvJW9IVYpXPOrcqmt8wxylnHauhsk4mzNhbYGpotaVx4QnPhtcBFpwgDXHKFcdbiINreYU2hdT804WIvWEiVFSJToI5Bs5waZ3bkheBdth5YyAcZfus1B60MsQQyhRdx6GMXMmRkCVmFnkDALdKBCV40ItHODgcxaCcA0rwPwHAtCkFQJwWSlhrBYwWEsWm6weCkAljE0JcwECYCYFgGI6pSAAGsQAaQ0PoTgkgomaF4PEjgvAzhVOyVoOYcBYAwEQAJFgcQ6DRHIJQX4/T6AxGAAoZgpwECoAIHwOg/kzgQAiPU0gERgjVChJwTJvw2CCBHAwWgWycmkCwCiIw4gTn4HtOUYEZwTmYFUGUf0KxYlSmaKs%2BsERrjEChB4LA2zeDGzwCwQFcwqAGAmQANXxCOOIjBAUyEECIMQ7ApBIvkEoNQqzdCNAMEYFA1hrD6BfGcWAzA2AoBYMgUYtAbrAhiMbLwDBSlfjiRFAQ9yQQgkFJJUwSTLBmA0DsEEI41jNOaGUVoLgGDuE8PUfwsqugFCKJkRIyQBBDAaKQLIGqGDKp6DEEYkrygCHaIMeVwwmgtAqGMA1UwjX9A6FqvQowOj2tVVwOYChUnLD0MbTAKweBhIiXUk5jTVAfUDCCQMkgdjAGQMgDMTKWXZggIkqwlhbq4EIDPDJt0PB9IGWw5kXqgX1LZeUyp1SOC1NIKC6t0TYmNOaSAVpFbSCdJ6YJOI/ohkQEwPgU6eo9D8GRaIcQ6Kx2YpUOoE5uLSA3GuHEMFNbImkCbQ0zgI5/S9vDKgdMkbo2xvjYm5NxBmWsozIW0Z0RRJrDLVkiteSClFMoCG2tvAG1VM3XEzgrb205MrRUqp4SODio3asltT6gMfrMGG5t/6YPtLmAypIzhJBAA%3D)
 
 
 # Wording
