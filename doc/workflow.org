@@ -1,0 +1,179 @@
+#+POSTID: 322
+l#+BLOG: sdowney
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:nil arch:headline author:t
+#+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+options: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
+#+options: tasks:t tex:t timestamp:t title:t toc:nil todo:t |:t
+#+title: A local CMake workflow with Docker
+#+date:<2021-10-03 Sun>
+#+author: Steve Downey
+#+email: sdowney@sdowney.org
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+options: html-link-use-abs-url:nil html-postamble:nil html-preamble:t
+#+options: html-scripts:t html-style:t html5-fancy:nil tex:t
+#+html_doctype: xhtml-strict
+#+html_container: div
+#+description:
+#+keywords:
+#+html_link_home:
+#+html_link_up:
+#+html_mathjax:
+#+html_head: <link rel="stylesheet" type="text/css" href="http://sdowney.org/css/smd-zenburn.css" />
+#+html_head_extra:
+#+subtitle:
+#+infojs_opt:
+#+latex_header:
+
+An outline of a template that provides an automated workflow driving a CMake project in a docker container.
+
+This post must be read in concert with https://github.com/steve-downey/scratch of which it is part.
+
+* Routine process should be automated
+
+Building a project that uses cmake runs through a predictable lifecycle that you should be able to pick up where you left off without remembering, and for which you should be able to state your goal, not the step you are on. ~make~ is designed for this, and can drive the processs.
+
+** The workflow
+    - Update any submodules
+    - Create a build area specific to the toolchain
+    - Run cmake with that toolchain in the build area
+    - Run the build in the build area
+    - Run tests, either dependent or independent of rebuild
+    - Run the intall
+    - (optionally) Clean the build
+    - (optionally) Clean the configuration
+
+All of the steps have recognizable filesystem artifacts, need to be run in order, and if there are any failures, the process should stop.
+
+So we want a ~make~ system on top of our meta-make build system.
+
+The one thing this system does, that plain cmake doesn't automate, is making sure that any changes are incorporated into a build before tests are run. CMake splits these, in order to provide the option of running tests without a recompile. I think that is a mistake to automate, but I do provide a target that just runs ctest.
+
+My normal target is ~test~
+#+begin_src bash
+make test
+#+end_src
+
+This will run through all of the steps, but only those, necessary to compile and run tests. The core commands for the build driver are
+- compile :: Compile all out of date source
+- install :: Install into the INSTALL_PREFIX
+- ctest :: Run the currently build test suite
+- test :: Build and run the test suite
+- cmake :: run cmake again in the build area
+- clean :: Clean the build area
+- realclean :: Delete the build area
+
+There are several makefile variables controlling the details of what toolchain is used and where things are located. By default the build and install are completely out of the source tree, in ../cmake.bld and ../install respectively, with the build directory further refined by the project name, which defaults to the current directory name, and the toolchain if that is overridden.
+
+The build is a Ninja Multi-config build, supporting RelWithDebInfo, Debug, Tsan, and Asan, with the particular flavor being selectable by the CONFIG variable. See ~targets.mk~ for the variables and details, such as they are.
+
+Because other tools, unfortunately, rely on a ~compile_commands.json~ this system symlinks one from the build area when reconfiguration is done.
+
+#+begin_src makefile
+default: compile
+
+$(_build_path):
+	mkdir -p $(_build_path)
+
+$(_build_path)/CMakeCache.txt: | $(_build_path) .gitmodules
+	cd $(_build_path) && $(run_cmake)
+	-rm compile_commands.json
+	ln -s $(_build_path)/compile_commands.json
+
+compile: $(_build_path)/CMakeCache.txt ## Compile the project
+	cmake --build $(_build_path)  --config $(CONFIG) --target all -- -k 0
+
+install: $(_build_path)/CMakeCache.txt ## Install the project
+	DESTDIR=$(abspath $(DEST)) ninja -C $(_build_path) -k 0  install
+
+ctest: $(_build_path)/CMakeCache.txt ## Run CTest on current build
+	cd $(_build_path) && ctest
+
+ctest_ : compile
+	cd $(_build_path) && ctest
+
+test: ctest_ ## Rebuild and run tests
+
+cmake: |  $(_build_path)
+	cd $(_build_path) && ${run_cmake}
+
+clean: $(_build_path)/CMakeCache.txt ## Clean the build artifacts
+	cmake --build $(_build_path)  --config $(CONFIG) --target clean
+
+realclean: ## Delete the build directory
+	rm -rf $(_build_path)
+
+#+end_src
+
+* To Docker or Not to Docker
+The reason for the separate ~targets.mk~ file is to simplify running the build purely locally in the host, or in a docker containter. The structure of the build is the same either way. In fact, before I dockerized this template project, there was a single makefile which was mostly the current contents of targets.mk. However, splitting does make the template easier, as project specific targets can naturally be placed in ~targets~.
+
+Tha outer ~Makefile~ is responsible for checking if Docker has been requested and for making sure the container is ready. The makefile has a handful of targets of its own, but otherwide defers everything to ~targets.mk~.
+
+- use-docker :: set a flag file, USE_DOCKER_FILE, indicating to forward to docker
+- remove-docker :: remove the flag file
+- docker-rebuild :: rebuild the docker image
+- docker-clean :: Clean volumes and rebuild image
+- docker-shell :: Shell in the docker container
+
+The docker container is build via ~docker-compose~ with the configuration ~docker-compose.yml~. It uses the ~Dockerfile~ which uses ~steve-downey/cxx-dev:latest~ as the base image, and mounts the current source directory as a bind mount and a volume for ../cmake.bld.
+
+I don't publish steve-downey/cxx-dev:latest and you should build your own BASE. I do provide the recipe for the base image as a subprojct in ~docker-inf/docker-cxx-dev~.
+
+You running unknown things as root scares me.
+
+The image is assumed to provide current version of gcc and clang as c++ or gcc, or clang++ respectively.
+
+The intent of the image is to provide compilation services and operate as an lsp server using clangd. Mine doesn't provide X, editors, IDEs, etc. The intent isn't a VM, it's a controlled compiler installation.
+
+Compiler installations bleed in to each other. Mutliple compilers installed onto the same base system can't be assumed to behave the same way as a compier installed as the only compiler. The ABI libraries vary, as do the standard libaries. Deployment just makes this all an even worse problem. As a Rule I use for production Red Hat's DTS compilers and only deploy on later OSs than I've built on, with strict controls on OS deployments and statically linking everything I possibly can.
+
+The base image I am using here, steve-downey/cxx-dev, works for me, and is avaiable at https://github.com/steve-downey/docker-cxx-dev as a definition as well.
+
+It is based on current Ubuntu (jammy), installs gcc-12 from the ubuntu repositories, adds the LLVM repos and installs clang-14 from them based on how https://apt.llvm.org/llvm.sh does.
+
+It then installs the current release of cmake from https://apt.kitware.com/ubuntu/ because using out of date build tools is a bad idea all around.
+
+I also configure it to run as USER 1000, because running everything as root is strictly worse, and 1000 is a 99.99 percent solution/
+
+#+begin_src makefile
+.update-submodules:
+	git submodule update --init --recursive
+	touch .update-submodules
+
+.gitmodules: .update-submodules
+
+.PHONY: use-docker
+use-docker: ## Create docker switch file so that subsequent `make` commands run inside docker container.
+	touch $(USE_DOCKER_FILE)
+
+.PHONY: remove-docker
+remove-docker: ## Remove docker switch file so that subsequent `make` commands run locally.
+	$(RM) $(USE_DOCKER_FILE)
+
+.PHONY: docker-rebuild
+docker-rebuild: ## Rebuilds the docker file using the latest base image.
+	docker-compose build
+
+.PHONY: docker-clean
+docker-clean: ## Clean up the docker volumes and rebuilds the image from scratch.
+	docker-compose down -v
+	docker-compose build
+
+.PHONY: docker-shell
+docker-shell: ## Shell in container
+	docker-compose run --rm dev
+
+#+end_src
+
+* Work In Progress
+
+I expect I will make many changes to all of this. I'm providing no facilities for you to pick them up. Sorry.
+
+Please consider this as an exhibition of techniques rather than as a solution.
+
+# Local Variables:
+# org-html-htmlize-output-type: inline-css
+# org-html-head: ""
+# End:

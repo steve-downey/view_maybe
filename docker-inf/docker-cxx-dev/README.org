@@ -1,0 +1,28 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t
+#+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+options: email:nil f:t inline:t num:t p:nil pri:nil prop:nil stat:t tags:t
+#+options: tasks:t tex:t timestamp:t title:t toc:t todo:t |:t
+#+title: README
+#+date: <2022-07-03 Sun>
+#+author: Steve Downey
+#+email: sdowney@sdowney.org
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 28.1.50 (Org mode 9.5.4)
+#+cite_export:
+
+* A base Dockerfile for C++ compilation and testing
+
+This produces a base image with current versions of GCC and Clang suitable for building C++ projects.
+
+It is intended as a base image for projects.
+
+Currently provides, by default, gcc 12 and clang 14 with all associated tools, current CMake, ninja, and the build essential.
+
+It is intended for building projects, not for deployment.
+
+It is also not intended to host development, other than the build/test cycle.
+
+
+You probably shouldn't use it. Find or build a base image you trust.
