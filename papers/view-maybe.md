@@ -9,12 +9,16 @@ author:
 toc: false
 ---
 
-Abstract: This paper proposes `views::maybe` a range adaptor that produces a view with cardinality 0 or 1 which adapts copyable object types, values, and nullable types such as `std::optional` and pointer to object types.
+Abstract: This paper proposes `views::maybe` a range adaptor that produces a view with cardinality 0 or 1 which adapts object types that model copy_constructible, values, and nullable types such as `std::optional` and pointer to object types.
 
 
 
 # Changes
 ## Changes since R7
+<<<<<<< Updated upstream
+=======
+- optional doesn't necessarily model copy_constructible, but std::ref(optional) does.
+>>>>>>> Stashed changes
 
 ## Changes since R6
 - Extend to all object types in order to support list comprehension
@@ -308,7 +312,7 @@ The implementation of yield\_if is essentially the type unification of `single` 
 
 # Proposal
 
-Add a range adaptor object `views::maybe`, returning a view over an object, capturing by value. Dor `nullable` objects, provide a zero size range for objects which are disengaged. A _`nullable`_ object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `std::optional`, and the proposed  `expected` [@P0323R9] types all models _`nullable`_. Function pointers do not, as functions are not objects. Iterators do not generally model _`nullable`_, as they are not required to be contextually convertible to bool.
+Add a range adaptor object `views::maybe`, returning a view over an object, capturing by value. For `nullable` objects, provide a zero size range for objects which are disengaged. A _`nullable`_ object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `std::optional`, and the proposed  `expected` [@P0323R9] types all model _`nullable`_. Function pointers do not, as functions are not objects. Iterators do not generally model _`nullable`_, as they are not required to be contextually convertible to bool.
 
 
 # Design
@@ -326,6 +330,35 @@ int k = *std::ranges::find(views::maybe(&num), num);
 
 Providing the facility is not a signficant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. Particularly as there is no real implementation impact, other than providing template variable specializations for `enable_borrowed_range`.
 
+# Copy constructible requirement
+views::maybe uses copyable-box to hold the value, which means that not all optionals can be adapted directly. However, std::reference\_wrapper support provides an escape hatch.
+```C++
+#include <optional>
+#include <functional>
+
+namespace {
+class MoveOnly {
+  public:
+    MoveOnly() = default;
+
+    MoveOnly(const MoveOnly&) = delete;
+    MoveOnly& operator=(const MoveOnly&) = delete;
+
+    MoveOnly(MoveOnly&&) = default;
+    MoveOnly& operator=(MoveOnly&&) = default;
+};
+} // namespace
+
+static_assert(
+    std::copy_constructible<std::reference_wrapper<std::optional<MoveOnly>>>);
+
+void use(MoveOnly&& m);
+void testMoveOnly() {
+    std::optional o{MoveOnly{}};
+    for (auto& opt : views::maybe(std::ref(o))) {
+        use(std::move(opt));
+    }
+```
 
 # List Comprehension Desugaring
 The case for having maybe_view available is seen in desugaring list comprehensions, where they naturally show up in guard clauses.
@@ -356,7 +389,7 @@ equivalent to
 
 `\x -> join (fmap f x)`
 
-See the `abd_then` function above.
+See the `and_then` function above.
 
 `>>` is a bind that sequences but discards the left side
 
@@ -587,7 +620,7 @@ static constexpr size_t size() noexcept;
         }
 ```
 
-🔗
+
 
 ```cpp
 constexpr T* data() noexcept;
