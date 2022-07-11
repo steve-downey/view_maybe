@@ -1,6 +1,6 @@
 ---
 title: "A view of 0 or 1 elements: `views::maybe`"
-document: P1255R7
+document: D1255R8
 date: today
 audience: SG9, LEWG
 author:
@@ -14,6 +14,8 @@ Abstract: This paper proposes `views::maybe` a range adaptor that produces a vie
 
 
 # Changes
+## Changes since R7
+
 ## Changes since R6
 - Extend to all object types in order to support list comprehension
 - Track working draft changes for Ranges

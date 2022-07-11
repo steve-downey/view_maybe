@@ -1,0 +1,506 @@
+\documentclass[a4paper,10pt,oneside,openany,final,article]{memoir}
+\input{common}
+
+\usepackage{minted}
+
+\begin{document}
+\title{A view of $0$ or $1$ elements: \tcode{views::maybe}}
+\author{
+Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
+}
+\date{} %unused. Type date explicitly below.
+\maketitle
+
+\begin{tabular}{ll}
+  Document \#: & D1255R8 \\
+  Date: &2022-07-06 \\
+  Project: & Programming Language C++ \\
+  Audience: & SG9, LEWG
+\end{tabular}
+
+\begin{abstract}
+  This paper proposes \tcode{views::maybe} a range adaptor that produces a view with cardinality $0$ or $1$ which adapts copyable object types, values, and nullable types such as \tcode{std::optional} and pointer to object types.
+\end{abstract}
+
+\tableofcontents*
+
+\chapter{Before / After Table}
+\begin{tabular}{ ll }
+\begin{minipage}[t]{0.45\columnwidth}
+  \begin{minted}[fontsize=\footnotesize]{c++}
+{
+    auto&& opt = possible_value();
+    if (opt) {
+        // a few dozen lines ...
+        use(*opt); // is *opt OK ?
+    }
+}
+
+\end{minted}
+\end{minipage}
+&
+\begin{minipage}[t]{0.45\columnwidth}
+\begin{minted}[fontsize=\footnotesize]{c++}
+
+for (auto&& opt :
+         views::maybe(possible_value())) {
+    // a few dozen lines ...
+    use(opt); // opt is OK
+}
+
+\end{minted}
+\end{minipage}
+\\ \midrule
+\begin{minipage}[t]{0.45\columnwidth}
+\begin{minted}[fontsize=\footnotesize]{c++}
+ std::optional o{7};
+ if (o) {
+  *o = 9;
+   std::cout << "o=" << *o << " prints 9\n";
+ }
+ std::cout << "o=" << *o << " prints 9\n";
+
+\end{minted}
+\end{minipage}
+&
+\begin{minipage}[t]{0.45\columnwidth}
+  \begin{minted}[fontsize=\footnotesize]{c++}
+ std::optional o{7};
+ for (auto&& i : views::maybe(std::ref(o))) {
+  i = 9;
+   std::cout << "i=" << i << " prints 9\n";
+ }
+ std::cout << "o=" << *o << " prints 9\n";
+
+\end{minted}
+\end{minipage}
+\\ \midrule
+\begin{minipage}[t]{0.45\columnwidth}
+  \begin{minted}[fontsize=\footnotesize]{c++}
+std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
+auto test = [](int i) -> std::optional<int> {
+    switch (i) {
+    case 1:
+    case 3:
+    case 7:
+    case 9:
+        return i;
+    default:
+        return {};
+    }
+};
+
+auto&& r =
+    v | ranges::views::transform(test) |
+    ranges::views::filter(
+        [](auto x) { return bool(x); }) |
+    ranges::views::transform(
+        [](auto x) { return *x; }) |
+    ranges::views::transform([](int i) {
+        std::cout << i;
+        return i;
+    });
+\end{minted}
+\end{minipage}
+&
+\begin{minipage}[t]{0.45\columnwidth}
+  \begin{minted}[fontsize=\footnotesize]{c++}
+std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
+auto test = [](int i) -> std::optional<int> {
+    switch (i) {
+    case 1:
+    case 3:
+    case 7:
+    case 9:
+        return i;
+    default:
+        return {};
+    }
+};
+
+auto&& r =
+    v | ranges::views::transform(test) |
+    ranges::views::transform(views::maybe) |
+    ranges::views::join |
+    ranges::views::transform([](int i) {
+        std::cout << i;
+        return i;
+    });
+ \end{minted}
+ \end{minipage}
+\end{tabular}
+
+\chapter{Motivation}
+
+In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. For types that are `nullable`, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well. The adapter `views::single` fills a similar purpose for non-nullable values, lifting a single value into a view, and `views::empty` provides a range of no values of a given type. The type `views::maybe` can be used to unify `single` and `empty` into a single type for further processing. This is in particuluar useful when translating list comprehensions.
+
+\begin{minipage}[t]{0.45\columnwidth}
+  \begin{minted}{c++}
+std::vector<std::optional<int>> v{
+    std::optional<int>{42},
+    std::optional<int>{},
+    std::optional<int>{6 * 9}};
+
+auto r = views::join(
+    views::transform(v, views::maybe));
+
+for (auto i : r) {
+    std::cout << i; // prints 42 and 54
+}
+  \end{minted}
+\end{minipage}
+
+
+In addition to range transformation pipelines, \mintinline{C++}{views::maybe} can be used in range based for loops, allowing the nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the for loop eliminates some boilerplate code, the same way that range based for loops do.
+
+\begin{minipage}[t]{\columnwidth}
+  \begin{minted} {c++}
+{
+    auto&& opt = possible_value();
+    if (opt) {
+        // a few dozen lines ...
+        use(*opt); // is *opt OK ?
+    }
+}
+
+for (auto&& opt :
+     views::maybe(possible_value())) {
+    // a few dozen lines ...
+    use(opt); // opt is OK
+}
+
+\end{minted}
+\end{minipage}
+
+The view can be on a \mintinline{C++}{std::reference_wrapper}, allowing the underlying nullable to be modified:
+
+\begin{minipage}[t]{\columnwidth}
+  \begin{minted} {c++}
+std::optional o{7};
+for (auto&& i : views::maybe(std::ref(o))) {
+    i = 9;
+    std::cout << "i=" << i << " prints 9\n";
+}
+std::cout << "o=" << *o << " prints 9\n";
+
+\end{minted}
+\end{minipage}
+
+Of course, if the nullable is empty, there is nothing in the view to modify.
+
+\begin{minipage}[t]{\columnwidth}
+  \begin{minted} {c++}
+
+auto oe = std::optional<int>{};
+for (int i : views::maybe(std::ref(oe)))
+    std::cout << "i=" << i
+              << '\n'; // does not print
+
+\end{minted}
+\end{minipage}
+
+Converting an optional type into a view can make APIs that return optional types, such a lookup operations, easier to work with in range pipelines.
+
+\begin{minipage}[t]{\columnwidth}
+  \begin{minted} {c++}
+
+std::unordered_set<int> set{1, 3, 7, 9};
+
+auto flt = [=](int i) -> std::optional<int> {
+    if (set.contains(i))
+        return i;
+    else
+        return {};
+};
+
+for (auto i :
+     ranges::iota_view{1, 10} |
+         ranges::views::transform(flt)) {
+    for (auto j : views::maybe(i)) {
+        for (auto k :
+             ranges::iota_view(0, j))
+            std::cout << '\a';
+        std::cout << '\n';
+    }
+}
+
+\end{minted}
+\end{minipage}
+
+
+\chapter{Lazy monadic pythagorean triples}
+
+Eric Niebler's pythagorean triple example, using current C++ and proposed views::maybe.
+
+\begin{minipage}[t]{\columnwidth}
+  \begin{minted} {c++}
+
+
+// "and_then" creates a new view by applying
+// a transformation to each element in an
+// input range, and flattening the resulting
+// range of ranges. A.k.a. bind (This uses
+// one syntax for constrained lambdas in
+// C++20.)
+inline constexpr auto and_then = [](auto&& r, auto fun) {
+    return decltype(r)(r) |
+           std::ranges::views::transform(std::move(fun)) |
+           std::ranges::views::join;
+};
+
+// "yield_if" takes a bool and a value and
+// returns a view of zero or one elements.
+inline constexpr auto yield_if = [](bool b, auto x) {
+    return b ? maybe_view{std::move(x)}
+             : maybe_view<decltype(x)>{};
+};
+
+void print_triples() {
+    using std::ranges::views::iota;
+    auto triples = and_then(iota(1), [](int z) {
+        return and_then(iota(1, z + 1), [=](int x) {
+            return and_then(iota(x, z + 1), [=](int y) {
+                return yield_if(x * x + y * y == z * z,
+                                std::make_tuple(x, y, z));
+            });
+        });
+    });
+
+    // Display the first 10 triples
+    for (auto triple :
+         triples | std::ranges::views::take(10)) {
+        std::cout << '(' << std::get<0>(triple) << ','
+                  << std::get<1>(triple) << ','
+                  << std::get<2>(triple) << ')' << '\n';
+    }
+}
+
+\end{minted}
+\end{minipage}
+
+The implementation of \tcode{yield_if} is essentially the type unification of \tcode{single} and \tcode{empty} into \tcode{maybe}, returning an empty on false, and a range containing one value on true.
+
+\chapter{Proposal}
+
+Add a range adaptor object \tcode{views::maybe}, returning a view over an object, capturing by value. For \exposid{nullable} objects, provide a zero size range for objects which are disengaged. A \exposid{nullable} object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `\tcode{std::optional}`, and the proposed  `\tcode{expected}` [@P0323R9] types all models \exposid{nullable}. Function pointers do not, as functions are not objects. Iterators do not generally model \exposid{nullable}, as they are not required to be contextually convertible to bool.
+
+
+\chapter{Design}
+
+The basis of the design is to hybridize \tcode{views::single} and \tcode{views::empty}. If the view is over a value that is not \exposid{nullable} it is like a single view if constructed with a value, or is of size zero otherwise. For \exposid{nullable} types, if the underlying object claims to hold a value, as determined by checking if the object when converted to bool is true, \tcode{begin} and \tcode{end} of the view are equivalent to the address of the held value within the underlying object and one past the underlying object. If the underlying object does not have a value, \tcode{begin} and \tcode{end} return \tcode{nullptr}.
+
+\chapter{Borrowed Range}
+A borrowed_range is one whose iterators cannot be invalidated by ending the lifetime of the range. For \tcode{views::maybe}, the iterators are \tcode{T*}, where \tcode{T} is essentially the type of the dereferenced nullable. For raw pointers and reference_wrapper over \libconcept{nullable} types, the iterator for \tcode{maybe_view} points directly to the underlying object, and thus matches the semantics of \libconcept{borrowed_range}. This means that \tcode{maybe_view} is conditionally borrowed. A \tcode{maybe_view<shared_ptr>}, however, is not a borrowed range, as it participates in ownership of the shared_ptr and might invalidate the iterators if upon the end of its lifetime it is the last owner.
+
+An example of code that is enabled by borrowed ranges, if unlikely code:
+
+\begin{minipage}[t]{\columnwidth}
+\begin{minted} {c++}
+num = 42;
+int k = *std::ranges::find(views::maybe(&num), num);
+\end{minted}
+\end{minipage}
+
+Providing the facility is not a signficant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. Particularly as there is no real implementation impact, other than providing template variable specializations for enable_borrowed_range.
+
+
+\chapter{Implementation}
+
+A publically available implementation at <https://github.com/steve-downey/view_maybe> based on the Ranges implementation in libstdc++ . There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as *Effects*.
+
+\href{https://godbolt.org/\#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAMzwBtMA7AQwFtMQByARg9KtQYEAysib0QXACx8BBAKoBnTAAUAHpwAMvAFYTStJg1DIApACYAQuYukl9ZATwDKjdAGFUtAK4sGe1wAyeAyYAHI\%2BAEaYxCDSAA6oCoRODB7evnoJSY4CQSHhLFEx0naYDilCBEzEBGk\%2Bfly2mPY5DJXVBHlhkdGxtlU1dRmNCgOdwd2FvZIAlLaoXsTI7BzmAMzByN5YANQma24IBARxCiAA9OfETADuAHTAhAheEV5KS7KMBHdoLOejmAAbpgALToVA3EIAT3OgLwmBuAH0WEwoVFziiAcR/ktYfCkSi0Zg8QjkaioncEPtsCYNABBWkMswbBhbLy7fZuYEOEjUxmM0boEAgVBxVpiTnBAjUnZZJIReiIwFiLyYCAzfZWemA1B4dA7N5qqU7AgatZauk6vU7KL8YiYDTq/kAdgtO3de1djI9OyYXiI5gAbEGdqKCHs1gARWWJeWK5XeNVmt0evBUHYQMMzPb0n0mL25n0ey6\%2BnZUBE7cEAL0YO1oEwUOzuze9RfdhogACos5qdiW8I3u2KdgB5ADSEYAYq33fnIzPPfP6XP\%2BdrdfqmFQCNFHdmXRa7Rm/QGzMHT6HhyAdnCEWcQISohA5XgFZglSqkzM98uC3SfSWmDLCtq1resQkbZs7gXDse3NPtzgvcMB1HMcXSXBlnXQxkrX1W0SEwLh1RzDCLUFYUwxSMRQ3zCxnRXc1GTTDNUG/EiF27CNowATk1BcyJQBZw05Tk9jMMxUH2ecxIjNwRI44SDlEsxZWIKVGx4gBWNwGHMMxeJ/dD\%2BLQf0ZJE3SJKjXTTMU\%2BSDjM6S4lUwR1JMLSdLE/SMKwtdrU3bdiEI1iaIFAghRFMVKNoajXTozDPMPCBjwk08QzwHYrxvG47wfNV\%2BPtKhMy/ILfx9NLJJ2HiGMLd0jME6y3CUvBJKshSGrKuzFKsxy1Iq1ztN0zyV3pWqTNapSLKk5Sxts2TOocpyCBctyBqqrzV0tdcbUwO1MDMJ0f1I0LhW5IhiElQQZUBGizFIHY1lu6Qdg027A1u51boADlurjbq4eiLSSk1MFGTi9g0qwNMjCBjTwbMQRlfiKIECUDilGVguqnYFBuQhkAQDNYc9FMfVEJQdi4EAF3dUnMDuynMeppgyedem/yLGmKtZn17QIRYGB2JrVrbLAqD9WgCC5j0eb5on/oXIa1tWxkkqDENiFBwFPVkzHriMYHjvxO8CF1hQ7RYCBt1GPdnW1tn3V14B9ZATK7xocXoggVyIahwHVA1V1peIfmIlQTwID93jMOt23ucMR27xd4VjcMU2SHNr3XJ9/1UB2COA8wXmg52TtVEjyNo4XB2ncTkBk4YVPiHThmPQzyHocEAXreJtsPRGoSOrazye6LQP\%2BcF7u8yj\%2BKSCPbPVfPNKr2ILu5eXAz1pw30t2iPaNQOkKwpO3lUYutZsGva7bvunZHuenZXp2d6di\%2BirftXulAct/vo1bqGYbhhGR1wriloOdaUZ9ZaY2xrjfG0MV7Nw5hTKmOwOZrEliTJmtMWbII5lxdBOxR4CyHkWEWYsJaVwLjLYKcUhYtziuvJW9IVYpXPOrcqmt8wxylnHauhsk4mzNhbYGpotaVx4QnPhtcBFpwgDXHKFcdbiINreYU2hdT804WIvWEiVFSJToI5Bs5waZ3bkheBdth5YyAcZfus1B60MsQQyhRdx6GMXMmRkCVmFnkDALdKBCV40ItHODgcxaCcA0rwPwHAtCkFQJwWSlhrBYwWEsWm6weCkAljE0JcwECYCYFgGI6pSAAGsQAaQ0PoTgkgomaF4PEjgvAzhVOyVoOYcBYAwEQAJFgcQ6DRHIJQX4/T6AxGAAoZgpwECoAIHwOg/kzgQAiPU0gERgjVChJwTJvw2CCBHAwWgWycmkCwCiIw4gTn4HtOUYEZwTmYFUGUf0KxYlSmaKs\%2BsERrjEChB4LA2zeDGzwCwQFcwqAGAmQANXxCOOIjBAUyEECIMQ7ApBIvkEoNQqzdCNAMEYFA1hrD6BfGcWAzA2AoBYMgUYtAbrAhiMbLwDBSlfjiRFAQ9yQQgkFJJUwSTLBmA0DsEEI41jNOaGUVoLgGDuE8PUfwsqugFCKJkRIyQBBDAaKQLIGqGDKp6DEEYkrygCHaIMeVwwmgtAqGMA1UwjX9A6FqvQowOj2tVVwOYChUnLD0MbTAKweBhIiXUk5jTVAfUDCCQMkgdjAGQMgDMTKWXZggIkqwlhbq4EIDPDJt0PB9IGWw5kXqgX1LZeUyp1SOC1NIKC6t0TYmNOaSAVpFbSCdJ6YJOI/ohkQEwPgU6eo9D8GRaIcQ6Kx2YpUOoE5uLSA3GuHEMFNbImkCbQ0zgI5/S9vDKgdMkbo2xvjYm5NxBmWsozIW0Z0RRJrDLVkiteSClFMoCG2tvAG1VM3XEzgrb205MrRUqp4SODio3asltT6gMfrMGG5t/6YPtLmAypIzhJBAA\%3D}{Compiler
+  Explorer Link to Before/After Examples}
+
+
+\chapter{Wording}
+
+\section{Synopsis}
+
+Modify 26.2 Header <ranges> synopsis
+
+\begin{adjustwidth}{1cm}{1cm}
+  \begin{addedblock}
+    \begin{codeblock}
+      // \ref{range.maybe}, maybe view
+      template<copy_constructible T>
+      requires @\seebelow@;
+      class maybe_view;
+
+      template <typename T>
+      constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
+
+      template <typename T>
+      constexpr inline bool enable_borrowed_range<maybe_view<reference_wrapper<T>>> = true;
+
+      namespace views { inline constexpr @\unspec@ maybe = @\unspec@; }
+    \end{codeblock}
+  \end{addedblock}
+\end{adjustwidth}
+
+\rSec2[range.maybe]{Maybe View}
+
+\rSec3[range.maybe.overview]{Overview}
+
+\pnum
+\tcode{maybe_view} produces a \libconcept{view} over a \exposid{nullable} that is either empty if the \exposid{nullable} is empty, or provides access to the contents of the \exposid{nullable} object.
+
+\pnum
+The name \tcode{views::maybe} denotes a customization point object ([customization.point.object]). For some subexpression \tcode{E}, the expression \tcode{views::maybe<E>} is expression-equivalent to:
+\begin{itemize}
+\item
+  \tcode{maybe_view(E)}, the \libconcept{view} specified below, if the expression is well formed, where \tcode{\placeholdernc{decay-copy}(E)} is moved into the \tcode{maybe_view}
+\item
+ otherwise \tcode{views::maybe(E)} is ill-formed.
+\end{itemize}
+
+
+\begin{note}
+  Whenever \tcode{views::maybe(E)} is a valid expression, it is a prvalue whose type models \libconcept{view}.
+\end{note}
+\pnum
+
+\begin{example}
+  \begin{codeblock}
+  optional o{4};
+  maybe_view m{o};
+  for (int i : m)
+  cout << i;        // prints 4
+\end{codeblock}
+\end{example}
+
+\rSec3[range.maybe.nullable]{Concept nullable}
+
+\pnum
+Types that:
+
+\begin{itemize}
+\item - are contextually convertible to \tcode{bool}
+\item are dereferenceable
+\item have const references which are dereferenceable
+\item the \tcode{iter_reference_t} of the type and the \tcode{iter_reference_t} of the const type, will :
+  \begin{itemize}
+  \item satisfy \tcode{is_lvalue_reference}
+  \item satisfy \tcode{is_object} when the reference is removed
+  \item for const pointers to the referred to types, satisfy \tcode{convertible_to}
+  \end{itemize}
+\item or are a reference_wrapper around a type that satifies \libconcept{nullable}
+\end{itemize}
+model the exposition only \libconcept{nullable} concept
+
+\pnum
+Given a value `i` of type `I`, `I` models _`nullable`_ only if the expression `*i` is equality-preserving.
+\begin{note}
+  The expression `*i` is required to be valid via the exposition-only \libconcept{nullable} concept).
+\end{note}
+
+\pnum
+For convienence, the exposition-only \libconcept{is-reference-wrapper-v} is used below.
+\begin{codeblock}
+  // For Exposition
+  template <typename T>
+  struct is_reference_wrapper : false_type {};
+
+  template <typename T>
+  struct is_reference_wrapper<reference_wrapper<T>> : true_type {};
+
+  template <typename T>
+  inline constexpr bool is_reference_wrapper_v
+  = is_reference_wrapper<T>::value;
+\end{codeblock}
+
+\begin{codeblock}
+// For Exposition
+template <class Ref, class ConstRef>
+concept readable_references =
+    is_lvalue_reference_v<Ref> &&
+    is_object_v<remove_reference_t<Ref>> &&
+    is_lvalue_reference_v<ConstRef> &&
+    is_object_v<remove_reference_t<ConstRef>> &&
+    convertible_to<add_pointer_t<ConstRef>,
+                   const remove_reference_t<Ref>*>;
+
+template <class T>
+concept nullable =
+    is_object_v<T> &&
+    requires(T& t, const T& ct) {
+        bool(ct); // Contextually bool
+        *t;       // T\& is deferenceable
+        *ct;      // const T\& is deferenceable
+    } &&
+    readable_references<
+        iter_reference_t<T>,        // Ref
+        iter_reference_t<const T>>; // ConstRef
+
+template <class T>
+concept wrapped_nullable =
+    is-reference-wrapper-v<T>&& nullable<typename T::type>;
+\end{codeblock}
+
+\chapter{A section}
+\label{sec:a section}
+
+This is a section. You can add code blocks like this:
+
+\begin{codeblock}
+  #include <iostream>
+  int main() {
+    std::cout << "Hello, World!\n"; // This is a comment
+  }
+\end{codeblock}
+
+You can use inline code like this: \tcode{main()}.
+
+\chapter{Proposed wording}
+\label{sec:solution}
+
+You can mark your proposed wording changes like this:
+
+\begin{adjustwidth}{1cm}{1cm}
+  Here's some \added{added} and some \removed{removed} wording.
+\end{adjustwidth}
+
+Alternatively, you can:
+
+\begin{adjustwidth}{1cm}{1cm}
+  \begin{addedblock}
+    // @[range.maybe]{.sref}@, maybe view
+    template<copy_constructible T>
+    requires @*see below*@
+    class maybe_view;
+
+    template <typename T>
+    constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
+
+    template <typename T>
+    constexpr inline bool enable_borrowed_range<maybe_view<reference_wrapper<T>>> = true;
+
+    namespace views { inline constexpr @_unspecified_@ maybe = @_unspecified_@; }
+  \end{addedblock}
+\end{adjustwidth}
+
+and
+
+\begin{adjustwidth}{1cm}{1cm}
+  \begin{removedblock}
+    Remove a whole paragraph.
+  \end{removedblock}
+\end{adjustwidth}
+
+The proposed changes are relative to the current working draft \cite{N4910}.
+
+\chapter*{Document history}
+
+\begin{itemize}
+  \item \textbf{R0}, 20XX-XX-XX: Initial version.
+  \item \textbf{R1}, 20XX-XX-XX: Changed something.
+\end{itemize}
+
+\chapter*{Acknowledgements}
+
+Many thanks to XXX.
+
+\renewcommand{\bibname}{References}
+\bibliographystyle{alpha}
+\bibliography{wg21}
+
+\end{document}
