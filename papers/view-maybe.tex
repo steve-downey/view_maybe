@@ -1,6 +1,6 @@
 \documentclass[a4paper,10pt,oneside,openany,final,article]{memoir}
 \input{common}
-
+\settocdepth{chapter}
 \usepackage{minted}
 
 \begin{document}
@@ -11,12 +11,14 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \date{} %unused. Type date explicitly below.
 \maketitle
 
+\begin{flushright}
 \begin{tabular}{ll}
-  Document \#: & D1255R8 \\
-  Date: &2022-07-06 \\
+  Document \#: & P1255R8 \\
+  Date: & \today \\
   Project: & Programming Language C++ \\
   Audience: & SG9, LEWG
 \end{tabular}
+\end{flushright}
 
 \begin{abstract}
   This paper proposes \tcode{views::maybe} a range adaptor that produces a view with cardinality $0$ or $1$ which adapts copyable object types, values, and nullable types such as \tcode{std::optional} and pointer to object types.
@@ -132,7 +134,7 @@ auto&& r =
 
 \chapter{Motivation}
 
-In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. For types that are `nullable`, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well. The adapter `views::single` fills a similar purpose for non-nullable values, lifting a single value into a view, and `views::empty` provides a range of no values of a given type. The type `views::maybe` can be used to unify `single` and `empty` into a single type for further processing. This is in particuluar useful when translating list comprehensions.
+In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. For types that are \tcode{nullable}, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well. The adapter \tcode{views::single} fills a similar purpose for non-nullable values, lifting a single value into a view, and \tcode{views::empty} provides a range of no values of a given type. The type \tcode{views::maybe} can be used to unify \tcode{single} and \tcode{empty} into a single type for further processing. This is in particuluar useful when translating list comprehensions.
 
 \begin{minipage}[t]{0.45\columnwidth}
   \begin{minted}{c++}
@@ -282,11 +284,11 @@ The implementation of \tcode{yield_if} is essentially the type unification of \t
 
 \chapter{Proposal}
 
-Add a range adaptor object \tcode{views::maybe}, returning a view over an object, capturing by value. For \exposid{nullable} objects, provide a zero size range for objects which are disengaged. A \exposid{nullable} object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, `\tcode{std::optional}`, and the proposed  `\tcode{expected}` [@P0323R9] types all models \exposid{nullable}. Function pointers do not, as functions are not objects. Iterators do not generally model \exposid{nullable}, as they are not required to be contextually convertible to bool.
+Add a range adaptor object \tcode{views::maybe}, returning a view over an object, capturing by value. For \exposid{nullable} objects, provide a zero size range for objects which are disengaged. A \exposid{nullable} object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, \tcode{std::optional}, and the proposed  \tcode{std::expected} \cite{P0323R9} types all models \exposid{nullable}. Function pointers do not, as functions are not objects. Iterators do not generally model \exposid{nullable}, as they are not required to be contextually convertible to bool.
 
 
 \chapter{Borrowed Range}
-A borrowed_range is one whose iterators cannot be invalidated by ending the lifetime of the range. For \tcode{views::maybe}, the iterators are \tcode{T*}, where \tcode{T} is essentially the type of the dereferenced nullable. For raw pointers and reference_wrapper over \libconcept{nullable} types, the iterator for \tcode{maybe_view} points directly to the underlying object, and thus matches the semantics of \libconcept{borrowed_range}. This means that \tcode{maybe_view} is conditionally borrowed. A \tcode{maybe_view<shared_ptr>}, however, is not a borrowed range, as it participates in ownership of the shared_ptr and might invalidate the iterators if upon the end of its lifetime it is the last owner.
+A \tcode{borrowed_range} is one whose iterators cannot be invalidated by ending the lifetime of the range. For \tcode{views::maybe}, the iterators are \tcode{T*}, where \tcode{T} is essentially the type of the dereferenced nullable. For raw pointers and reference_wrapper over \libconcept{nullable} types, the iterator for \tcode{maybe_view} points directly to the underlying object, and thus matches the semantics of \libconcept{borrowed_range}. This means that \tcode{maybe_view} is conditionally borrowed. A \tcode{maybe_view<shared_ptr>}, however, is not a borrowed range, as it participates in ownership of the \tcode{shared_ptr} and might invalidate the iterators if upon the end of its lifetime it is the last owner.
 
 An example of code that is enabled by borrowed ranges, if unlikely code:
 
@@ -313,8 +315,10 @@ A publically available implementation at \url{https://github.com/steve-downey/vi
 
 
 \chapter{Wording}
+\setcounter{chapter}{26}
+\setcounter{section}{1}
 
-\section{Synopsis}
+\Sec1[range.synopsis]{Synopsis}
 
 Modify 26.2 Header <ranges> synopsis
 
@@ -337,9 +341,9 @@ Modify 26.2 Header <ranges> synopsis
   \end{addedblock}
 \end{adjustwidth}
 
-\rSec2[range.maybe]{Maybe View}
+\Sec2[range.maybe]{Maybe View}
 
-\rSec3[range.maybe.overview]{Overview}
+\Sec3[range.maybe.overview]{Overview}
 
 \pnum
 \tcode{maybe_view} is a range adaptor that produces a \libconcept{view} with cardinality 0 or 1. It adapts \libconcept{copyable} object types and \exposid{nullable} types. If the type is \exposid{nullable}, the view is empty if the \exposid{nullable} is empty.
@@ -369,7 +373,7 @@ The name \tcode{views::maybe} denotes a customization point object ([customizati
 \end{codeblock}
 \end{example}
 
-\rSec3[range.maybe.nullable]{Concept nullable}
+\Sec3[range.maybe.nullable]{Concept nullable}
 
 \pnum{}
 Types that:
@@ -395,7 +399,7 @@ Given a value \tcode{i} of type \tcode{I}, \tcode{I} models \exposconcept{nullab
 \end{note}
 
 \pnum{}
-For convience, the exposition-only concepts \exposconcept{is-reference-wrapper-v}. \exposconcept{nuullable}, \exposconcept{nuullable_ref}, and \exposconcept{copyable_object} are used below.
+For convience, the exposition-only concepts \exposconcept{is-reference-wrapper-v}. \exposconcept{nullable}, \exposconcept{nullable_ref}, and \exposconcept{copyable_object} are used below.
 
 \begin{codeblock}
 // \expos{}
@@ -433,7 +437,7 @@ concept copyable_object = (std::copy_constructible<T> &&
                            std::is_object_v<T>);
 \end{codeblock}
 
-\rSec3[range.maybe.view]{Class template \tcode{maybe_view}}
+\Sec3[range.maybe.view]{Class template \tcode{maybe_view}}
 
 \begin{codeblock}
 
@@ -485,7 +489,7 @@ requires(copyable_object<Value>) class maybe_view
 \begin{itemdescr}
   \pnum{}
   \effects{}
-  Initializes value_ with `std::move(maybe)`.
+  Initializes value_ with \tcode{std::move(maybe)}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -616,7 +620,7 @@ constexpr explicit maybe_view(Maybe&& maybe);
 \begin{itemdescr}
   \pnum{}
   \effects{}
-  Initializes value\_ with `std::move(maybe)`.
+  Initializes value\_ with \tcode{std::move(maybe)}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -627,7 +631,7 @@ constexpr maybe_view(in_place_t, Args&&... args);
 \begin{itemdescr}
   \pnum{}
   \effects{}
-  Initializes value\_ as if by `value_{in_place, forward<Args>(args)...}`.
+  Initializes value\_ as if by \tcode{value_{in_place, forward<Args>(args)...}}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -637,8 +641,8 @@ constexpr const T* begin() const noexcept;
 
 \begin{itemdescr}
   \pnum{}
-  \effects{}
-  Equivalent to: `return data();`.
+  \returns
+  \tcode{data();}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -648,8 +652,8 @@ constexpr const T* end() const noexcept;
 
 \begin{itemdescr}
   \pnum{}
-  \effects{}
-  Equivalent to: `return data() + size();`.
+  \returns
+  \tcode{data() + size();}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -708,6 +712,7 @@ constexpr const T* data() const noexcept;
   \end{codeblock}
 \end{itemdescr}
 
+\setcounter{chapter}{8}
 \chapter{Impact on the standard}
 
 A pure library extension, affecting no other parts of the library or language.
@@ -717,6 +722,16 @@ The proposed changes are relative to the current working draft~\cite{N4910}.
 \chapter*{Document history}
 
 \begin{itemize}
+\item \textbf{Changes since D7}, presented to SG9 on 2022.07.11
+  \begin{itemize}
+  \item Layout issues
+  \item References include paper source
+  \item Citation abbreviation form to `abstract'
+  \item `nuulable' typo fix
+  \item Markdown backticks to tcode
+  \item ToC depth and chapter numbers for Ranges
+  \item No technical changes to paper --- all presentation
+  \end{itemize}
 \item \textbf{Changes since R7}
   \begin{itemize}
   \item Update all Wording.
@@ -778,7 +793,9 @@ The proposed changes are relative to the current working draft~\cite{N4910}.
 \end{itemize}
 
 \renewcommand{\bibname}{References}
-\bibliographystyle{alpha}
-\bibliography{wg21}
+\bibliographystyle{abstract}
+\bibliography{wg21,mybiblio}
+
+\nocite{viewmayb27:online}
 
 \end{document}
