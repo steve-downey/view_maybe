@@ -2,6 +2,10 @@
 \input{common}
 \settocdepth{chapter}
 \usepackage{minted}
+\usepackage{fontspec}
+\setromanfont{Source Serif Pro}
+\setsansfont{Source Sans Pro}
+\setmonofont{Source Code Pro}
 
 \begin{document}
 \title{A view of $0$ or $1$ elements: \tcode{views::maybe}}
@@ -315,10 +319,10 @@ A publically available implementation at \url{https://github.com/steve-downey/vi
 
 
 \chapter{Wording}
-\setcounter{chapter}{26}
-\setcounter{section}{1}
+\begin{wording}
 
 \Sec1[range.synopsis]{Synopsis}
+
 
 Modify 26.2 Header <ranges> synopsis
 
@@ -712,7 +716,7 @@ constexpr const T* data() const noexcept;
   \end{codeblock}
 \end{itemdescr}
 
-\setcounter{chapter}{8}
+\end{wording}
 \chapter{Impact on the standard}
 
 A pure library extension, affecting no other parts of the library or language.

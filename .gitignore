@@ -3,3 +3,4 @@ cmake.bld
 compile_commands.json
 .update-submodules
 .use-docker
+/papers/.venv/
