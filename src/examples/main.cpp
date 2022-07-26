@@ -21,8 +21,8 @@ template <class...>
 class show_type;
 
 
-template <nullable Maybe>
-void testMaybe(Maybe const&) {}
+template <nullable_object Nullable>
+void testNullable(Nullable const&) {}
 
 template <std::indirectly_readable Read>
 void testRead(Read) {}
@@ -43,27 +43,27 @@ struct no_ex_bool {
 };
 
 void checks() {
-    nullable auto m{std::optional{3}};
+    nullable_object auto m{std::optional{3}};
     // testRead(&std::optional{3});
-    testMaybe(std::optional{3});
-    //testMaybe(3);
+    testNullable(std::optional{3});
+    //testNullable(3);
     // std::array ar = {1};
-    // testMaybe(ar);
+    // testNullable(ar);
     int *p;
-    testMaybe(p);
+    testNullable(p);
     // void *v;
-    //     testMaybe(v);
-    //    testMaybe(v_func);
-    // testMaybe(v_func());
+    //     testNullable(v);
+    //    testNullable(v_func);
+    // testNullable(v_func());
 
     // bool b = true;
-    // testMaybe(b);
+    // testNullable(b);
 
     // deref d;
-    // testMaybe(d);
+    // testNullable(d);
 
     // no_ex_bool neb;
-    // testMaybe(neb);
+    // testNullable(neb);
 }
 
 
@@ -165,8 +165,8 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
 // "yield_if" takes a bool and a value and
 // returns a view of zero or one elements.
 inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? maybe_view{std::optional{std::move(x)}}
-             : maybe_view<std::optional<decltype(x)>>{};
+    return b ? nullable_view{std::optional{std::move(x)}}
+             : nullable_view<std::optional<decltype(x)>>{};
 };
 
 void print_triples() {
@@ -199,7 +199,7 @@ int main() {
     };
 
     for (auto i : ranges::iota_view{1, 10} | ranges::views::transform(flt)) {
-        for (auto j : views::maybe(i)) {
+        for (auto j : views::nullable(i)) {
             for (auto k : ranges::iota_view(0, j))
                 std::cout << '\a';
             std::cout << '\n';
@@ -213,45 +213,45 @@ int main() {
     for (auto i : ranges::views::single(s))
         std::cout << "i=" << *i << " prints 7\n"; // prints 7
 
-    maybe_view vs2{std::ref(s)};
+    nullable_view vs2{std::ref(s)};
     std::cout << *begin(vs2) << " prints 7\n";
 
     for (auto i : vs2)
         std::cout << "i=" << i << " prints 7\n";
 
-    for (auto i : views::maybe(s))
+    for (auto i : views::nullable(s))
         std::cout << "i=" << i << " prints 7\n"; // prints 7
 
-    maybe_view e2{std::optional<int>{}};
+    nullable_view e2{std::optional<int>{}};
     for (int i : e2)
         std::cout << "i=" << i << '\n'; // does not print
 
     auto oe = std::optional<int>{};
-    for (int i : views::maybe(oe))
+    for (int i : views::nullable(oe))
         std::cout << "i=" << i << '\n'; // does not print
 
     int        j  = 8;
     int*       pj = &j;
 
-    for (auto i : views::maybe(pj))
+    for (auto i : views::nullable(pj))
         std::cout << "i=" << i << " prints 8\n"; // prints 8
 
     std::cout << "j=" << j << " prints 8\n"; // prints 8
 
-    for (auto&& i : views::maybe(pj)) {
+    for (auto&& i : views::nullable(pj)) {
         i = 27;
         std::cout << "i=" << i << " prints 27\n"; // prints 27
     }
 
     std::cout << "j=" << j << " prints 27\n"; // prints 27
 
-    for (auto&& i : views::maybe(std::ref(s))) {
+    for (auto&& i : views::nullable(std::ref(s))) {
         i = 9;
         std::cout << "i=" << i << " prints 9\n"; // prints 9
     }
     std::cout << "s=" << *s << " prints 9\n"; // prints 9
 
-    for (auto&& i : views::maybe(std::optional{9})) {
+    for (auto&& i : views::nullable(std::optional{9})) {
         std::cout << "i=" << i << " prints 9\n"; // prints 9
     }
     std::cout << "s=" << *s << " prints 9\n"; // prints 9
@@ -263,7 +263,7 @@ int main() {
     std::cout << "j=" << *s << " prints 9\n"; // prints 9
 
     {
-        auto&& __range = views::maybe(s);
+        auto&& __range = views::nullable(s);
         auto   __begin = std::begin(__range);
         auto   __end   = std::end(__range);
         for (; __begin != __end; ++__begin) {
@@ -275,7 +275,7 @@ int main() {
 
     // Does not compile
     // std::array<int, 2> a2 = {2, 3};
-    // for (auto&& i : views::maybe(a2)) {
+    // for (auto&& i : views::nullable(a2)) {
     //     i = 9;
     //     std::cout << "i=" << i << '\n'; // prints 7
     // }
@@ -283,14 +283,14 @@ int main() {
     const std::optional      cs{3};
     const std::optional<int> ce{};
 
-    for (auto&& i : views::maybe(cs)) {
+    for (auto&& i : views::nullable(cs)) {
         i = 9;
         std::cout << "i=" << i << " prints 9\n"; // prints 3
     }
     std::cout << "cs=" << *cs << " prints 3\n"; // prints 3
 
 
-    for (auto&& i : views::maybe(ce)) {
+    for (auto&& i : views::nullable(ce)) {
         i = 9;
         std::cout << "does not print i=" << i << '\n'; // does not print
     }
@@ -301,10 +301,10 @@ int main() {
         std::cout << "*vs = " << *vs << " prints 42\n";
     }
 
-    maybe_view vvs2{std::ref(vs)};
+    nullable_view vvs2{std::ref(vs)};
     std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
 
-    for (auto&& i : views::maybe(vs)) {
+    for (auto&& i : views::nullable(vs)) {
         i = 43;
         std::cout << "i=" << i << " prints 43\n"; // prints 43
     }
@@ -315,27 +315,27 @@ int main() {
     const volatile int cvi = 13;
 
     auto pci = &ci;
-    for (auto&& i : views::maybe(pci)) {
+    for (auto&& i : views::nullable(pci)) {
         std::cout << "i=" << i << " prints 11\n"; // prints 11
     }
     std::cout << "pci=" << *pci << " prints 11\n"; // prints 11
 
     auto pvi = &vi;
     std::cout << "pvi=" << *pvi << " prints 12\n"; // prints 12
-    for (auto&& i : views::maybe(pvi)) {
+    for (auto&& i : views::nullable(pvi)) {
         i++;
         std::cout << "i=" << i << " prints 13\n"; // prints 13
     }
     std::cout << "pvi=" << *pvi << " prints 13\n"; // prints 13
 
     auto pcvi = &cvi;
-    for (auto&& i : views::maybe(pcvi)) {
+    for (auto&& i : views::nullable(pcvi)) {
         // ++i; // does not compile
         std::cout << "i=" << i << " prints 13\n"; // prints 13
     }
 
     // int ar[] = {111, 112, 113, 114, 115};
-    // for (auto&& i : views::maybe(ar)) {
+    // for (auto&& i : views::nullable(ar)) {
     //     std::cout << "i=" << i << " prints 111\n"; prints 111
     // }
 
@@ -345,33 +345,33 @@ int main() {
     NoMove    noMove;
     NoDefault noDefault{678};
 
-    for (auto&& i : views::maybe(std::optional{myInt})) {
+    for (auto&& i : views::nullable(std::optional{myInt})) {
         std::cout << "i=" << int(i) << " prints 231\n"; // prints 231
     }
 
-    for (auto&& i : views::maybe(std::optional{myDouble})) {
+    for (auto&& i : views::nullable(std::optional{myDouble})) {
         std::cout << "i=" << double(i) << " prints 457.3\n"; // prints 457.3
     }
 
 
-    for (auto&& i : views::maybe(std::optional{noMove})) {
+    for (auto&& i : views::nullable(std::optional{noMove})) {
         std::cout << "No Move" << &i << "\n";
     }
 
-    for (auto&& i : views::maybe(std::optional{noDefault})) {
+    for (auto&& i : views::nullable(std::optional{noDefault})) {
         std::cout << "No Default" << &i << "\n";
     }
 
     // Does not compile
-    // auto vfunc_view = views::maybe(v_func);
-    // auto ifunc_view = views::maybe(i_func);
+    // auto vfunc_view = views::nullable(v_func);
+    // auto ifunc_view = views::nullable(i_func);
 
 
     std::vector<std::optional<int>> v{std::optional<int>{42},
                                       std::optional<int>{},
                                       std::optional<int>{6 * 9}};
 
-    auto&& x = std::ranges::views::transform(v, views::maybe);
+    auto&& x = std::ranges::views::transform(v, views::nullable);
     for (auto i : x) {
         for (auto j : i)
             std::cout << j << '\t'; // prints 42 and 54
@@ -385,13 +385,13 @@ int main() {
     }
     std::cout << '\n';
 
-    for (auto i : ranges::views::join(ranges::views::transform(v, views::maybe))) {
+    for (auto i : ranges::views::join(ranges::views::transform(v, views::nullable))) {
         std::cout << i << '\t'; // prints 42 and 54
     }
 
     std::cout << '\n';
     for (auto i : v
-             | ranges::views::transform(views::maybe)
+             | ranges::views::transform(views::nullable)
              | ranges::views::join) {
         std::cout << i << '\t'; // prints 42 and 54
     }
@@ -406,7 +406,7 @@ int main() {
                  }
                  return {};
              })
-             | ranges::views::transform(views::maybe)
+             | ranges::views::transform(views::nullable)
              | ranges::views::join) {
         std::cout << i << '\t'; // prints 1 9 49 and 81
     }
@@ -416,15 +416,15 @@ int main() {
     std::optional<fptr> f1{func1};
     std::optional<fptr> f2{func2};
 
-    for (auto f : views::maybe(f0)) {
+    for (auto f : views::nullable(f0)) {
         std::cout << f(1) << '\n';
     }
 
-    for (auto f : views::maybe(f1)) {
+    for (auto f : views::nullable(f1)) {
         std::cout << f(2) << '\n';
     }
 
-    for (auto f : views::maybe(f2)) {
+    for (auto f : views::nullable(f2)) {
         std::cout << f(3) << '\n';
     }
 
@@ -435,15 +435,15 @@ int main() {
     //     fptr f1 = &func1;
     //     fptr f2 = &func2;
 
-    //     // for (auto f : views::maybe(f0)) {
+    //     // for (auto f : views::nullable(f0)) {
     //     //     std::cout << f(1) << '\n';
     //     // }
 
-    //     for (auto f : views::maybe(f1)) {
+    //     for (auto f : views::nullable(f1)) {
     //         std::cout << f(2) << '\n';
     //     }
 
-    //     for (auto f : views::maybe(f2)) {
+    //     for (auto f : views::nullable(f2)) {
     //         std::cout << f(3) << '\n';
     //     }
     // }
@@ -454,15 +454,15 @@ int main() {
         int* p1 = &i1;
         int* p2 = &i2;
 
-        for (auto f : views::maybe(p0)) {
+        for (auto f : views::nullable(p0)) {
             std::cout << f << '\n';
         }
 
-        for (auto f : views::maybe(p1)) {
+        for (auto f : views::nullable(p1)) {
             std::cout << f << '\n';
         }
 
-        for (auto f : views::maybe(p2)) {
+        for (auto f : views::nullable(p2)) {
             std::cout << f << '\n';
         }
 
@@ -477,15 +477,15 @@ int main() {
         fptr f2 = &func2;
         fptr* pf2 = &f2;
 
-        for (auto f : views::maybe(f0)) {
+        for (auto f : views::nullable(f0)) {
             std::cout << f(1) << '\n';
         }
 
-        for (auto f : views::maybe(pf1)) {
+        for (auto f : views::nullable(pf1)) {
             std::cout << f(2) << '\n';
         }
 
-        for (auto f : views::maybe(pf2)) {
+        for (auto f : views::nullable(pf2)) {
             std::cout << f(3) << '\n';
         }
     }
@@ -507,7 +507,7 @@ int main() {
         auto&& x = ranges::views::transform(v, test);
 
         auto&& r = ranges::views::transform(
-            ranges::views::join(ranges::views::transform(x, views::maybe)),
+            ranges::views::join(ranges::views::transform(x, views::nullable)),
             [](int i) {
                 while (i--) {
                     std::cout << 'a';
@@ -523,7 +523,7 @@ int main() {
 
         auto&& r2 = v |
             ranges::views::transform(test) |
-            ranges::views::transform(views::maybe) |
+            ranges::views::transform(views::nullable) |
             ranges::views::join |
             ranges::views::transform(
                 [](int i) {
@@ -562,7 +562,7 @@ int main() {
     //     std::cout << *o << '\n';
 
     //     auto&& r =
-    //         v | ranges::views::transform(views::maybe) |
+    //         v | ranges::views::transform(views::nullable) |
     //         ranges::views::transform([](auto&& i) { i = i + 1; }) |
     //         ranges::views::transform([](int i) {
     //             std::cout << i;

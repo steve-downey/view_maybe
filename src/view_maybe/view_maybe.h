@@ -18,15 +18,15 @@ concept readable_references =
                         const std::remove_reference_t<Ref>*>;
 
 template <class T>
-concept nullable = std::is_object_v<T>&& requires(T& t, const T& ct) {
+concept nullable_object = std::is_object_v<T>&& requires(T& t, const T& ct) {
     bool(ct);
     *(t);
     *(ct);
 };
 
 template <class T>
-concept nullable_val =
-    nullable<T>&& readable_references<std::iter_reference_t<T>,
+concept nullable_object_val =
+    nullable_object<T>&& readable_references<std::iter_reference_t<T>,
                                       std::iter_reference_t<const T>>;
 
 template <typename, template <typename...> class>
@@ -35,8 +35,8 @@ template <typename... Ts, template <typename...> class C>
 inline constexpr bool is_v<C<Ts...>, C> = true;
 
 template <class T>
-concept nullable_ref =
-    is_v<T, std::reference_wrapper>&& nullable_val<typename T::type>;
+concept nullable_object_ref =
+    is_v<T, std::reference_wrapper>&& nullable_object_val<typename T::type>;
 
 template <class T>
 inline constexpr bool is_reference_wrapper_v = is_v<T, std::reference_wrapper>;
@@ -76,26 +76,26 @@ requires(copyable_object<Value>) class maybe_view
     }
 };
 
-template <typename Maybe>
-requires(copyable_object<Maybe> &&
-         (nullable_val<Maybe> || nullable_ref<Maybe>))
-class maybe_view<Maybe>
-    : public ranges::view_interface<maybe_view<Maybe>> {
+template <typename Nullable>
+requires(copyable_object<Nullable> &&
+         (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+class nullable_view
+    : public ranges::view_interface<nullable_view<Nullable>> {
   private:
     using T = std::remove_reference_t<
-        std::iter_reference_t<typename std::unwrap_reference_t<Maybe>>>;
+        std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
 
-    ranges::__detail::__box<Maybe> value_;
+    ranges::__detail::__box<Nullable> value_;
 
   public:
-    constexpr maybe_view() = default;
+    constexpr nullable_view() = default;
 
-    constexpr explicit maybe_view(Maybe const& maybe) : value_(maybe) {}
+    constexpr explicit nullable_view(Nullable const& nullable) : value_(nullable) {}
 
-    constexpr explicit maybe_view(Maybe&& maybe) : value_(std::move(maybe)) {}
+    constexpr explicit nullable_view(Nullable&& nullable) : value_(std::move(nullable)) {}
 
     template <class... Args>
-    requires std::constructible_from<Maybe, Args...> constexpr maybe_view(
+    requires std::constructible_from<Nullable, Args...> constexpr nullable_view(
         std::in_place_t, Args&&... args)
         : value_(std::in_place, std::forward<Args>(args)...) {}
 
@@ -105,7 +105,7 @@ class maybe_view<Maybe>
     constexpr const T* end() const noexcept { return data() + size(); }
 
     constexpr size_t size() const noexcept {
-        if constexpr (is_reference_wrapper_v<Maybe>) {
+        if constexpr (is_reference_wrapper_v<Nullable>) {
             return bool((*value_).get());
         } else {
             return bool(*value_);
@@ -113,8 +113,8 @@ class maybe_view<Maybe>
     }
 
     constexpr T* data() noexcept {
-        Maybe& m = *value_;
-        if constexpr (is_reference_wrapper_v<Maybe>) {
+        Nullable& m = *value_;
+        if constexpr (is_reference_wrapper_v<Nullable>) {
             return m.get() ? std::addressof(*(m.get())) : nullptr;
         } else {
             return m ? std::addressof(*m) : nullptr;
@@ -122,8 +122,8 @@ class maybe_view<Maybe>
     }
 
     constexpr const T* data() const noexcept {
-        const Maybe& m = *value_;
-        if constexpr (is_reference_wrapper_v<Maybe>) {
+        const Nullable& m = *value_;
+        if constexpr (is_reference_wrapper_v<Nullable>) {
             return m.get() ? std::addressof(*(m.get())) : nullptr;
         } else {
             return m ? std::addressof(*m) : nullptr;
@@ -133,11 +133,11 @@ class maybe_view<Maybe>
 
 namespace std::ranges {
 template <typename T>
-constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
+constexpr inline bool enable_borrowed_range<nullable_view<T*>> = true;
 
 template <typename T>
 constexpr inline bool
-    enable_borrowed_range<maybe_view<std::reference_wrapper<T>>> = true;
+    enable_borrowed_range<nullable_view<std::reference_wrapper<T>>> = true;
 } // namespace std::ranges
 
 namespace views {
@@ -149,6 +149,17 @@ struct __maybe_fn {
 };
 
 inline constexpr __maybe_fn maybe{};
+} // namespace views
+
+namespace views {
+struct __nullable_fn {
+    template <typename T>
+    constexpr auto operator()(T&& t) const noexcept {
+        return nullable_view{t};
+    }
+};
+
+inline constexpr __nullable_fn nullable{};
 } // namespace views
 
 #endif

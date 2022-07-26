@@ -1,64 +1,60 @@
 #include <view_maybe/view_maybe.h>
 
 #include <ranges>
-// #include <bits/ranges_algo.h>
-// #include <bits/ranges_base.h>
 #include <tuple>
 #include <view_maybe/view_maybe.h>
 
 #include <gtest/gtest.h>
 
-#include <ranges>
 #include <array>
 
-template <nullable_ref Maybe>
-void testMaybe(Maybe const&) {}
+template <nullable_object_ref NullableRef>
+void testNullableRef(NullableRef const&) {}
 
-TEST(ViewMaybeTest, TestGTest) { ASSERT_EQ(1, 1); }
+TEST(ViewNullableTest, TestGTest) { ASSERT_EQ(1, 1); }
 
-TEST(ViewMaybeTest, Concept) {
-    static_assert(nullable<std::optional<int>>);
-    static_assert(nullable<std::optional<const int>>);
-    static_assert(nullable<std::optional<volatile int>>);
-    static_assert(nullable<std::optional<const volatile int>>);
+TEST(ViewNullableTest, Concept) {
+    static_assert(nullable_object<std::optional<int>>);
+    static_assert(nullable_object<std::optional<const int>>);
+    static_assert(nullable_object<std::optional<volatile int>>);
+    static_assert(nullable_object<std::optional<const volatile int>>);
 
-    static_assert(!nullable<int>);
+    static_assert(!nullable_object<int>);
 
-    static_assert(nullable<int*>);
-    static_assert(!nullable<std::array<int, 1>>);
-    static_assert(!nullable<void*>);
+    static_assert(nullable_object<int*>);
+    static_assert(!nullable_object<std::array<int, 1>>);
+    static_assert(!nullable_object<void*>);
 
     std::optional<int>                         i;
     std::reference_wrapper<std::optional<int>> t = i;
-    testMaybe(t);
-    // static_assert(nullable<std::reference_wrapper<std::optional<int>>>);
+    testNullableRef(t);
 }
 
-TEST(ViewMaybeTest, Breathing) {
+TEST(ViewNullableTest, Breathing) {
 
     std::optional      s{7};
     std::optional<int> e{};
 
-    for (auto i : views::maybe(s))
+    for (auto i : views::nullable(s))
         ASSERT_EQ(i, 7);
 
-    maybe_view e2{std::optional<int>{}};
+    nullable_view e2{std::optional<int>{}};
     for (int i : e2)
         ASSERT_TRUE(i != i);
 
     auto oe = std::optional<int>{};
-    for (int i : views::maybe(oe))
+    for (int i : views::nullable(oe))
         ASSERT_TRUE(i != i);
 
     int  j  = 8;
     int* pj = &j;
 
-    for (auto i : views::maybe(pj))
+    for (auto i : views::nullable(pj))
         ASSERT_EQ(i, 8);
 
     ASSERT_EQ(j, 8);
 
-    for (auto&& i : views::maybe(pj)) {
+    for (auto&& i : views::nullable(pj)) {
         i = 27;
         ASSERT_EQ(i, 27);
     }
@@ -72,13 +68,13 @@ TEST(ViewMaybeTest, Breathing) {
     }
     ASSERT_EQ(ixx, 3);
 
-    for (auto&& i : views::maybe(s)) {
+    for (auto&& i : views::nullable(s)) {
         i = 9;
         ASSERT_EQ(i, 9);
     }
     ASSERT_EQ(*s, 7);
 
-    for (auto&& i : views::maybe(std::ref(s))) {
+    for (auto&& i : views::nullable(std::ref(s))) {
         i = 9;
         ASSERT_EQ(i, 9);
     }
@@ -91,7 +87,7 @@ TEST(ViewMaybeTest, Breathing) {
     ASSERT_EQ(j, 27);
 
     {
-        auto&& __range = views::maybe(s);
+        auto&& __range = views::nullable(s);
         auto   __begin = std::begin(__range);
         auto   __end   = std::end(__range);
         for (; __begin != __end; ++__begin) {
@@ -103,7 +99,7 @@ TEST(ViewMaybeTest, Breathing) {
 
     // Does not compile
     // std::array<int, 2> a2 = {2, 3};
-    // for (auto&& i : views::maybe(a2)) {
+    // for (auto&& i : views::nullable(a2)) {
     //     i = 9;
     //     std::cout << "i=" << i << '\n'; // prints 7
     // }
@@ -111,15 +107,15 @@ TEST(ViewMaybeTest, Breathing) {
     const std::optional      cs{3};
     const std::optional<int> ce{};
 
-    // ref_maybe_view vcs2{cs};
+    // ref_nullable_view vcs2{cs};
     // ASSERT_EQ(*begin(vcs2), 3);
 
-    for (auto&& i : views::maybe(cs)) {
+    for (auto&& i : views::nullable(cs)) {
         ASSERT_EQ(i, 3);
     }
     ASSERT_EQ(*cs, 3);
 
-    for (auto&& i : views::maybe(ce)) {
+    for (auto&& i : views::nullable(ce)) {
         ASSERT_TRUE(i != i);
     }
 
@@ -128,10 +124,10 @@ TEST(ViewMaybeTest, Breathing) {
     if (vs) {
         ASSERT_EQ(*vs, 42);
     }
-    // ref_maybe_view vvs2{vs};
+    // ref_nullable_view vvs2{vs};
     // ASSERT_EQ(*begin(vvs2), 42);
 
-    // for (auto&& i : views::maybe(vs)) {
+    // for (auto&& i : views::nullable(vs)) {
     //     i = 43;
     //     ASSERT_EQ(i, 43);
     // }
@@ -142,14 +138,14 @@ TEST(ViewMaybeTest, Breathing) {
     const volatile int cvi = 13;
 
     auto pci = &ci;
-    for (auto&& i : views::maybe(pci)) {
+    for (auto&& i : views::nullable(pci)) {
         ASSERT_EQ(i, 11);
     }
     ASSERT_EQ(*pci, 11);
 
     auto pvi = &vi;
     ASSERT_EQ(*pvi, 12);
-    for (auto&& i : views::maybe(pvi)) {
+    for (auto&& i : views::nullable(pvi)) {
         auto temp = i;
         temp++;
         i = temp;
@@ -158,12 +154,12 @@ TEST(ViewMaybeTest, Breathing) {
     ASSERT_EQ(*pvi, 13);
 
     auto pcvi = &cvi;
-    for (auto&& i : views::maybe(pcvi)) {
+    for (auto&& i : views::nullable(pcvi)) {
         ASSERT_EQ(i, 13);
     }
 
     // int ar[] = {111, 112, 113, 114, 115};
-    // for (auto&& i : views::maybe(ar)) {
+    // for (auto&& i : views::nullable(ar)) {
     //     ASSERT_EQ(i, 111);
     // }
 }
@@ -174,10 +170,10 @@ std::optional<int> tempOpt() { return {9}; }
 const std::optional<int> tempConstOpt() { return {10}; }
 
 } // namespace
-TEST(ViewMaybeTest, RValTest) {
+TEST(ViewNullableTest, RValTest) {
 
     {
-        auto&& __range = views::maybe(tempOpt());
+        auto&& __range = views::nullable(tempOpt());
         auto   __begin = std::begin(__range);
         auto   __end   = std::end(__range);
         for (; __begin != __end; ++__begin) {
@@ -186,51 +182,51 @@ TEST(ViewMaybeTest, RValTest) {
         }
     }
 
-    for (auto&& i : views::maybe(tempOpt())) {
+    for (auto&& i : views::nullable(tempOpt())) {
         ++i;
         ASSERT_EQ(i, 10);
     }
 
-    for (auto&& i : views::maybe(tempConstOpt())) {
+    for (auto&& i : views::nullable(tempConstOpt())) {
         ++i;
         ASSERT_EQ(i, 11);
     }
 }
 
-TEST(ViewMaybeTest, CVTest) {
+TEST(ViewNullableTest, CVTest) {
     std::optional<int>                o{6};
     std::optional<const int>          co{6};
     std::optional<volatile int>       vo{6};
     std::optional<const volatile int> cvo{6};
 
-    for (auto&& i : views::maybe(o)) {
+    for (auto&& i : views::nullable(o)) {
         ++i;
         ASSERT_EQ(i, 7);
     }
-    for (auto&& i : views::maybe(co)) {
+    for (auto&& i : views::nullable(co)) {
         //        ++i;
         ASSERT_EQ(i, 6);
     }
-    for (auto&& i : views::maybe(vo)) {
+    for (auto&& i : views::nullable(vo)) {
         auto temp = i;
         temp++;
         i = temp;
         ASSERT_EQ(i, 7);
     }
-    for (auto&& i : views::maybe(cvo)) {
+    for (auto&& i : views::nullable(cvo)) {
         //        ++i;
         ASSERT_EQ(i, 6);
     }
 }
 
-TEST(ViewMaybeTest, Borrowable) {
+TEST(ViewNullableTest, Borrowable) {
     const int num = 42;
     auto      ptr = &num;
     auto      opt = std::optional<int>{42};
 
-    auto found1 = std::ranges::find(views::maybe(std::ref(ptr)), num);
-    auto found2 = std::ranges::find(views::maybe(&num), num);
-    auto found3 = std::ranges::find(views::maybe(std::ref(opt)), num);
+    auto found1 = std::ranges::find(views::nullable(std::ref(ptr)), num);
+    auto found2 = std::ranges::find(views::nullable(&num), num);
+    auto found3 = std::ranges::find(views::nullable(std::ref(opt)), num);
 
     ASSERT_EQ(*found1, 42);
     ASSERT_EQ(*found2, 42);
@@ -276,7 +272,7 @@ TEST(ViewMaybeTest, ValueBase) {
 
     maybe_view<int>      v2{i};
     for (auto i : v1)
-        ASSERT_TRUE(i != i);
+        ASSERT_TRUE(false);
 
     for (auto i : v2)
         ASSERT_EQ(i, 7);
@@ -291,14 +287,15 @@ TEST(ViewMaybeTest, ValueBase) {
 }
 
 namespace {
-class NoDefault {
-    int v_;
-  public:
-    NoDefault(int v) : v_(v) {}
-};
-}
+    class NoDefault {
+        int v_;
+
+      public:
+        NoDefault(int v) : v_(v) {}
+    };
+    } // namespace
 
 TEST(ViewMaybeTest, ValueNonDefaultConstruct) {
-    NoDefault       i = 7;
+    NoDefault             i = 7;
     maybe_view<NoDefault> v1{};
 }
