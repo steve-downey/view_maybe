@@ -10,11 +10,12 @@ namespace ranges = std::ranges;
 
 template <class Ref, class ConstRef>
 concept readable_references =
-    std::is_lvalue_reference_v<Ref>&&   std::is_object_v<
-        std::remove_reference_t<Ref>>&& std::is_lvalue_reference_v<ConstRef>&&
-                                        std::is_object_v<std::remove_reference_t<ConstRef>>&&
-                                        std::convertible_to<std::add_pointer_t<ConstRef>,
-                                const std::remove_reference_t<Ref>*>;
+    std::is_lvalue_reference_v<Ref> &&
+    std::is_object_v<std::remove_reference_t<Ref>> &&
+    std::is_lvalue_reference_v<ConstRef> &&
+    std::is_object_v<std::remove_reference_t<ConstRef>> &&
+    std::convertible_to<std::add_pointer_t<ConstRef>,
+                        const std::remove_reference_t<Ref>*>;
 
 template <class T>
 concept nullable = std::is_object_v<T>&& requires(T& t, const T& ct) {
