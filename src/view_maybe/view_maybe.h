@@ -36,12 +36,18 @@ class maybe_view
     constexpr Value*       end() noexcept { return data() + size(); }
     constexpr const Value* end() const noexcept { return data() + size(); }
 
-    constexpr size_t size() const noexcept { return bool(value_); }
+    constexpr size_t size() const noexcept {
+        return bool(value_);
+    }
 
-    constexpr Value* data() noexcept { return std::addressof(*value_); }
+    constexpr Value* data() noexcept {
+        Value& m = *value_;
+        return value_ ? std::addressof(m) : nullptr;
+    }
 
     constexpr const Value* data() const noexcept {
-        return std::addressof(*value_);
+        const Value& m = *value_;
+        return value_ ? std::addressof(m) : nullptr;
     }
 };
 

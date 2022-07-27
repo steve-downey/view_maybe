@@ -61,6 +61,23 @@ TEST(ViewMaybeTest, ValueBase) {
     ASSERT_EQ(s, 4);
 }
 
+TEST(ViewMaybeTest, RefWrapper) {
+    int             i = 7;
+
+    maybe_view<int> v2{std::ref(i)};
+
+    for (auto i : v2)
+        ASSERT_EQ(i, 7);
+
+    int s = 4;
+    for (auto&& i : views::maybe(std::ref(s))) {
+        ASSERT_EQ(i, 4);
+        i.get() = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(s, 9);
+}
+
 namespace {
     class NoDefault {
         int v_;
