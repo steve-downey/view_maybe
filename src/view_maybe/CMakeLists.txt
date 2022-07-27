@@ -3,7 +3,9 @@ add_library(view_maybe STATIC "")
 target_sources(
   view_maybe
   PRIVATE
-  view_maybe.cpp)
+  concepts.cpp
+  view_maybe.cpp
+  view_nullable.cpp)
 
 include(GNUInstallDirs)
 
@@ -34,7 +36,9 @@ add_executable(view_maybe_test "")
 target_sources(
   view_maybe_test
   PRIVATE
-  view_maybe.t.cpp)
+  concepts.t.cpp
+  view_maybe.t.cpp
+  view_nullable.t.cpp)
 
 target_link_libraries(view_maybe_test view_maybe)
 target_link_libraries(view_maybe_test gtest)

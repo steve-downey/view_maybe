@@ -11,6 +11,7 @@
 #include <array>
 
 #include <view_maybe/view_maybe.h>
+#include <view_maybe/view_nullable.h>
 #include <unordered_set>
 
 // Qualify everything with "std::experimental::ranges" if you like,
