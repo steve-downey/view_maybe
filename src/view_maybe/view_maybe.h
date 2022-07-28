@@ -11,7 +11,6 @@
 namespace ranges = std::ranges;
 
 template <typename Value>
-//    requires(copyable_object<Value>)
 class maybe_view : public ranges::view_interface<maybe_view<Value>> {
   private:
     std::optional<Value> value_;
@@ -36,19 +35,26 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     constexpr size_t size() const noexcept { return bool(value_); }
 
     constexpr Value* data() noexcept {
-        Value& m = *value_;
-        return value_ ? std::addressof(m) : nullptr;
+        return value_ ? std::addressof(*value_) : nullptr;
     }
 
     constexpr const Value* data() const noexcept {
-        const Value& m = *value_;
-        return value_ ? std::addressof(m) : nullptr;
+        return value_ ? std::addressof(*value_) : nullptr;
+    }
+
+    friend constexpr auto operator<=>(const maybe_view& lhs,
+                                      const maybe_view& rhs) {
+        return lhs.value_ <=> rhs.value_;
+    }
+
+    friend constexpr bool operator==(const maybe_view& lhs,
+                                     const maybe_view& rhs) {
+        return lhs.value_ == rhs.value_;
     }
 };
 
 template <typename Value>
-//    requires(copyable_object<Value>)
-class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value>> {
+class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
   private:
     Value* value_;
 
@@ -76,13 +82,30 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value>> {
     constexpr size_t size() const noexcept { return bool(value_); }
 
     constexpr Value* data() noexcept {
+        if (!value_)
+            return nullptr;
         Value& m = *value_;
         return value_ ? std::addressof(m) : nullptr;
     }
 
     constexpr const Value* data() const noexcept {
+        if (!value_)
+            return nullptr;
         const Value& m = *value_;
         return value_ ? std::addressof(m) : nullptr;
+    }
+
+    friend constexpr auto operator<=>(const maybe_view& lhs,
+                                      const maybe_view& rhs) {
+        return (bool(lhs) && bool(rhs)) ?
+            (*lhs.value_ <=> *rhs.value_)
+            : (bool(lhs) <=> bool(rhs));
+    }
+
+    friend constexpr bool operator==(const maybe_view& lhs,
+                                     const maybe_view& rhs) {
+        return (bool(lhs) && bool(rhs)) ? (*lhs.value_ == *rhs.value_)
+                                        : (bool(lhs) == bool(rhs));
     }
 };
 

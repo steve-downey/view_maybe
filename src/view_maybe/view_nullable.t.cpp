@@ -164,6 +164,40 @@ TEST(ViewNullableTest, Breathing) {
     // }
 }
 
+TEST(ViewNullableTest, BreathingRef) {
+    nullable_view<int*&> n;
+    ASSERT_TRUE(n.size() == 0);
+    int k = 7;
+    int* p_k = &k;
+    nullable_view<int*&> v_p_k{p_k};
+    ASSERT_TRUE(v_p_k.size() == 1);
+
+    std::optional      s{7};
+    std::optional<int> e{};
+
+    for (auto i : nullable_view<std::optional<int>&> (s))
+        ASSERT_EQ(i, 7);
+
+    nullable_view<std::optional<int>&> e2{e};
+    for (int i : e2)
+        ASSERT_TRUE(false);
+
+    for (auto&& i : nullable_view<std::optional<int>&>(s)) {
+        ASSERT_EQ(i, 7);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(*s, 9);
+
+    auto wrapped_s = std::ref(s);
+    for (auto&& i : nullable_view<std::reference_wrapper<std::optional<int>>&>(
+             wrapped_s)) {
+        i = 19;
+        ASSERT_EQ(i, 19);
+    }
+    ASSERT_EQ(*s, 19);
+}
+
 namespace {
 std::optional<int> tempOpt() { return {9}; }
 

@@ -11,12 +11,20 @@
 TEST(ViewMaybeTest, BreathingTest) {
     maybe_view<int> m;
     ASSERT_TRUE(m.empty());
+    ASSERT_TRUE(m.size() == 0);
+    ASSERT_TRUE(m.data() == nullptr);
 
     maybe_view<int> m1{1};
     ASSERT_TRUE(!m1.empty());
+    ASSERT_TRUE(m1.size() == 1);
+    ASSERT_TRUE(m1.data() != nullptr);
+    ASSERT_TRUE(*(m1.data()) == 1);
 
     m = m1;
     ASSERT_EQ(*std::begin(m), 1);
+
+    m = {};
+    ASSERT_TRUE(m.size() == 0);
 
     maybe_view<double> d0{0};
     ASSERT_TRUE(!d0.empty());
@@ -26,6 +34,72 @@ TEST(ViewMaybeTest, BreathingTest) {
 
     d0 = d1;
     ASSERT_EQ(*std::begin(d0), 1.0);
+}
+
+TEST(ViewMaybeTest, BreathingTestRef) {
+    maybe_view<int&> m;
+    ASSERT_TRUE(m.empty());
+    ASSERT_TRUE(m.size() == 0);
+    ASSERT_TRUE(m.data() == nullptr);
+
+    int one = 1;
+    maybe_view<int&> m1{one};
+    ASSERT_TRUE(!m1.empty());
+    ASSERT_TRUE(m1.size() == 1);
+    ASSERT_TRUE(m1.data() != nullptr);
+    ASSERT_TRUE(*(m1.data()) == 1);
+
+    m = m1;
+    ASSERT_EQ(*std::begin(m), 1);
+
+    m = {};
+    ASSERT_TRUE(m.size() == 0);
+
+    double zero = 0.0;
+    maybe_view<double&> d0{zero};
+    ASSERT_TRUE(!d0.empty());
+
+    double one_d = 1.0;
+    maybe_view<double&> d1{one_d};
+    ASSERT_TRUE(!d1.empty());
+
+    d0 = d1;
+    ASSERT_EQ(*std::begin(d0), 1.0);
+}
+
+TEST(ViewMaybe, CompTest) {
+    maybe_view<int> m;
+    maybe_view<int> m0{0};
+    maybe_view<int> m1{1};
+    maybe_view<int> m1a{1};
+
+    ASSERT_EQ(m, m);
+    ASSERT_EQ(m0, m0);
+    ASSERT_EQ(m1, m1);
+    ASSERT_EQ(m1a, m1a);
+    ASSERT_EQ(m1, m1a);
+
+    ASSERT_NE(m, m0);
+    ASSERT_NE(m0, m1);
+}
+
+TEST(ViewMaybe, CompTestRef) {
+    maybe_view<int&> m;
+    int zero = 0;
+    int one = 1;
+    int one_a = 1;
+    maybe_view<int&> m0{zero};
+    maybe_view<int&> m1{one};
+    maybe_view<int&> m1a{one_a};
+
+    ASSERT_EQ(m, m);
+    ASSERT_EQ(m0, m0);
+    ASSERT_EQ(m1, m1);
+    ASSERT_EQ(m1a, m1a);
+    ASSERT_EQ(m1, m1a);
+
+    ASSERT_NE(m, m0);
+    ASSERT_NE(m0, m1);
 }
 
 // "and_then" creates a new view by applying a
@@ -65,6 +139,7 @@ TEST(ViewMaybeTest, ValueBase) {
     ASSERT_TRUE(v1.size() == 0);
 
     maybe_view<int> v2{i};
+    ASSERT_TRUE(v2.size() == 1);
     for (auto i : v1)
         ASSERT_TRUE(false);
 
@@ -109,6 +184,7 @@ class NoDefault {
 TEST(ViewMaybeTest, ValueNonDefaultConstruct) {
     NoDefault             i = 7;
     maybe_view<NoDefault> v1{};
+    maybe_view<NoDefault> v2{i};
 }
 
 TEST(ViewMaybeTest, RefBase) {
@@ -117,6 +193,7 @@ TEST(ViewMaybeTest, RefBase) {
     ASSERT_TRUE(v1.size() == 0);
 
     maybe_view<int&> v2{i};
+    ASSERT_TRUE(v2.size() == 1);
     for (auto i : v1)
         ASSERT_TRUE(false);
 
@@ -141,4 +218,11 @@ TEST(ViewMaybeTest, RefBase) {
         ASSERT_EQ(i, 9);
     }
     ASSERT_EQ(s, 4);
+
+    for (auto&& i : maybe_view<int&>(s)) {
+        ASSERT_EQ(i, 4);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(s, 9);
 }
