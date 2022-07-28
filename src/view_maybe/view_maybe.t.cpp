@@ -22,8 +22,7 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
 // "yield_if" takes a bool and a value and
 // returns a view of zero or one elements.
 inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? maybe_view{std::move(x)}
-             : maybe_view<decltype(x)>{};
+    return b ? maybe_view{std::move(x)} : maybe_view<decltype(x)>{};
 };
 
 TEST(ViewMaybeTest, PythTripleTest) {
@@ -41,11 +40,11 @@ TEST(ViewMaybeTest, PythTripleTest) {
 }
 
 TEST(ViewMaybeTest, ValueBase) {
-    int i = 7;
-    maybe_view<int>      v1{};
+    int             i = 7;
+    maybe_view<int> v1{};
     ASSERT_TRUE(v1.size() == 0);
 
-    maybe_view<int>      v2{i};
+    maybe_view<int> v2{i};
     for (auto i : v1)
         ASSERT_TRUE(false);
 
@@ -62,7 +61,7 @@ TEST(ViewMaybeTest, ValueBase) {
 }
 
 TEST(ViewMaybeTest, RefWrapper) {
-    int             i = 7;
+    int i = 7;
 
     maybe_view<int> v2{std::ref(i)};
 
@@ -79,15 +78,47 @@ TEST(ViewMaybeTest, RefWrapper) {
 }
 
 namespace {
-    class NoDefault {
-        int v_;
+class NoDefault {
+    int v_;
 
-      public:
-        NoDefault(int v) : v_(v) {}
-    };
-    } // namespace
+  public:
+    NoDefault(int v) : v_(v) {}
+};
+} // namespace
 
 TEST(ViewMaybeTest, ValueNonDefaultConstruct) {
     NoDefault             i = 7;
     maybe_view<NoDefault> v1{};
+}
+
+TEST(ViewMaybeTest, RefBase) {
+    int              i = 7;
+    maybe_view<int&> v1{};
+    ASSERT_TRUE(v1.size() == 0);
+
+    maybe_view<int&> v2{i};
+    for (auto i : v1)
+        ASSERT_TRUE(false);
+
+    for (auto i : v2) {
+        ASSERT_EQ(i, 7);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(i, 7);
+
+    for (auto&& i : v2) {
+        ASSERT_EQ(i, 7);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(i, 9);
+
+    int s = 4;
+    for (auto&& i : views::maybe(s)) {
+        ASSERT_EQ(i, 4);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(s, 4);
 }
