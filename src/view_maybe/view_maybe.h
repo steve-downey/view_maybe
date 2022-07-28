@@ -59,12 +59,9 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
     Value* value_;
 
   public:
-    constexpr maybe_view() = default;
+    constexpr maybe_view() : value_(nullptr) {}
 
     constexpr explicit maybe_view(Value& value)
-        : value_(std::addressof(value)) {}
-
-    constexpr explicit maybe_view(Value const& value)
         : value_(std::addressof(value)) {}
 
     constexpr explicit maybe_view(Value&& value) = delete;
@@ -97,15 +94,16 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
 
     friend constexpr auto operator<=>(const maybe_view& lhs,
                                       const maybe_view& rhs) {
-        return (bool(lhs) && bool(rhs)) ?
-            (*lhs.value_ <=> *rhs.value_)
-            : (bool(lhs) <=> bool(rhs));
+        return (bool(lhs.value_) && bool(rhs.value_))
+                   ? (*lhs.value_ <=> *rhs.value_)
+                   : (bool(lhs.value_) <=> bool(rhs.value_));
     }
 
     friend constexpr bool operator==(const maybe_view& lhs,
                                      const maybe_view& rhs) {
-        return (bool(lhs) && bool(rhs)) ? (*lhs.value_ == *rhs.value_)
-                                        : (bool(lhs) == bool(rhs));
+        return (bool(lhs.value_) && bool(rhs.value_))
+                   ? (*lhs.value_ == *rhs.value_)
+                   : (bool(lhs.value_) == bool(rhs.value_));
     }
 };
 

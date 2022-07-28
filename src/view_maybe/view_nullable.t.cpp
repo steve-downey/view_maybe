@@ -198,6 +198,28 @@ TEST(ViewNullableTest, BreathingRef) {
     ASSERT_EQ(*s, 19);
 }
 
+TEST(ViewNullable, CompTest) {
+    int zero  = 0;
+    int one   = 1;
+    int one_a = 1;
+
+    nullable_view<int*> m;
+    nullable_view<int*> mz{nullptr};
+    nullable_view<int*> m0{&zero};
+    nullable_view<int*> m1{&one};
+    nullable_view<int*> m1a{&one_a};
+
+    ASSERT_EQ(m, m);
+    ASSERT_EQ(m, mz);
+    ASSERT_EQ(m0, m0);
+    ASSERT_EQ(m1, m1);
+    ASSERT_EQ(m1a, m1a);
+    ASSERT_EQ(m1, m1a);
+
+    ASSERT_NE(m, m0);
+    ASSERT_NE(m0, m1);
+}
+
 namespace {
 std::optional<int> tempOpt() { return {9}; }
 

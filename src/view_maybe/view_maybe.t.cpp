@@ -25,6 +25,7 @@ TEST(ViewMaybeTest, BreathingTest) {
 
     m = {};
     ASSERT_TRUE(m.size() == 0);
+    ASSERT_TRUE(m1.size() == 1);
 
     maybe_view<double> d0{0};
     ASSERT_TRUE(!d0.empty());
@@ -54,6 +55,7 @@ TEST(ViewMaybeTest, BreathingTestRef) {
 
     m = {};
     ASSERT_TRUE(m.size() == 0);
+    ASSERT_TRUE(m1.size() == 1);
 
     double zero = 0.0;
     maybe_view<double&> d0{zero};
@@ -81,6 +83,10 @@ TEST(ViewMaybe, CompTest) {
 
     ASSERT_NE(m, m0);
     ASSERT_NE(m0, m1);
+
+    ASSERT_TRUE(m < m0);
+    ASSERT_TRUE(m0 < m1);
+    ASSERT_TRUE(m1 <= m1a);
 }
 
 TEST(ViewMaybe, CompTestRef) {
@@ -100,6 +106,11 @@ TEST(ViewMaybe, CompTestRef) {
 
     ASSERT_NE(m, m0);
     ASSERT_NE(m0, m1);
+
+    ASSERT_TRUE(m < m0);
+    ASSERT_TRUE(m0 > m);
+    ASSERT_TRUE(m0 < m1);
+    ASSERT_TRUE(m1a <= m1);
 }
 
 // "and_then" creates a new view by applying a

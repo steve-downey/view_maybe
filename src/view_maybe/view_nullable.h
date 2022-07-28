@@ -67,6 +67,35 @@ class nullable_view<Nullable>
             return m ? std::addressof(*m) : nullptr;
         }
     }
+
+    friend constexpr auto operator<=>(const nullable_view& l,
+                                      const nullable_view& r) {
+        const Nullable& lhs = *l.value_;
+        const Nullable& rhs = *r.value_;
+        if constexpr (is_reference_wrapper_v<Nullable>) {
+            return (bool(lhs.get()) && bool(rhs.get()))
+                       ? (*(lhs.get()) <=> *(rhs.get()))
+                       : (bool(lhs.get()) <=> bool(rhs.get()));
+        } else {
+            return (bool(lhs) && bool(rhs)) ? (*lhs <=> *rhs)
+                                            : (bool(lhs) <=> bool(rhs));
+        }
+    }
+
+    friend constexpr bool operator==(const nullable_view& l,
+                                     const nullable_view& r) {
+        const Nullable& lhs = *l.value_;
+        const Nullable& rhs = *r.value_;
+
+        if constexpr (is_reference_wrapper_v<Nullable>) {
+            return (bool(lhs.get()) && bool(rhs.get()))
+                       ? (*(lhs.get()) == *(rhs.get()))
+                       : (bool(lhs.get()) == bool(rhs.get()));
+        } else {
+            return (bool(lhs) && bool(rhs)) ? (*lhs == *rhs)
+                                            : (bool(lhs) == bool(rhs));
+        }
+    }
 };
 
 template <typename Nullable>
@@ -81,12 +110,9 @@ class nullable_view<Nullable&>
     Nullable* value_;
 
   public:
-    constexpr nullable_view() = default;
+    constexpr nullable_view() : value_(nullptr) {};
 
     constexpr explicit nullable_view(Nullable& nullable)
-        : value_(std::addressof(nullable)) {}
-
-    constexpr explicit nullable_view(Nullable const& nullable)
         : value_(std::addressof(nullable)) {}
 
     constexpr explicit nullable_view(Nullable&& nullable) = delete;
@@ -97,7 +123,8 @@ class nullable_view<Nullable&>
     constexpr const T* end() const noexcept { return data() + size(); }
 
     constexpr size_t size() const noexcept {
-        if (!value_) return 0;
+        if (!value_)
+            return 0;
         Nullable& m = *value_;
         if constexpr (is_reference_wrapper_v<Nullable>) {
             return bool(m.get());
