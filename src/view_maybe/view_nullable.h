@@ -9,7 +9,6 @@
 
 namespace ranges = std::ranges;
 
-
 template <typename Nullable>
     requires(copyable_object<Nullable> &&
              (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
@@ -74,7 +73,6 @@ template <typename T>
 constexpr inline bool
     enable_borrowed_range<nullable_view<std::reference_wrapper<T>>> = true;
 } // namespace std::ranges
-
 
 namespace views {
 struct __nullable_fn {
