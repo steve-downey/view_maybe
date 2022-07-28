@@ -8,6 +8,26 @@
 
 #include <array>
 
+TEST(ViewMaybeTest, BreathingTest) {
+    maybe_view<int> m;
+    ASSERT_TRUE(m.empty());
+
+    maybe_view<int> m1{1};
+    ASSERT_TRUE(!m1.empty());
+
+    m = m1;
+    ASSERT_EQ(*std::begin(m), 1);
+
+    maybe_view<double> d0{0};
+    ASSERT_TRUE(!d0.empty());
+
+    maybe_view<double> d1{1};
+    ASSERT_TRUE(!d1.empty());
+
+    d0 = d1;
+    ASSERT_EQ(*std::begin(d0), 1.0);
+}
+
 // "and_then" creates a new view by applying a
 // transformation to each element in an input
 // range, and flattening the resulting range of
