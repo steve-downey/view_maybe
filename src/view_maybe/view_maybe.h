@@ -81,15 +81,13 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
     constexpr Value* data() noexcept {
         if (!value_)
             return nullptr;
-        Value& m = *value_;
-        return value_ ? std::addressof(m) : nullptr;
+        return std::addressof(*value_);
     }
 
     constexpr const Value* data() const noexcept {
         if (!value_)
             return nullptr;
-        const Value& m = *value_;
-        return value_ ? std::addressof(m) : nullptr;
+        return std::addressof(*value_);
     }
 
     friend constexpr auto operator<=>(const maybe_view& lhs,
