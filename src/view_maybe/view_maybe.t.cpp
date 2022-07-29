@@ -1,12 +1,34 @@
 #include <view_maybe/view_maybe.h>
+#include <view_maybe/view_maybe.h>
 
 #include <ranges>
 #include <tuple>
-#include <view_maybe/view_maybe.h>
 
 #include <gtest/gtest.h>
 
 #include <array>
+
+TEST(ViewMaybeTest, ConceptCheck) {
+    static_assert(std::ranges::range<maybe_view<int>>);
+    static_assert(std::ranges::view<maybe_view<int>>);
+    static_assert(std::ranges::input_range<maybe_view<int>>);
+    static_assert(std::ranges::forward_range<maybe_view<int>>);
+    static_assert(std::ranges::bidirectional_range<maybe_view<int>>);
+    static_assert(std::ranges::contiguous_range<maybe_view<int>>);
+    static_assert(std::ranges::common_range<maybe_view<int>>);
+    static_assert(std::ranges::viewable_range<maybe_view<int>>);
+    static_assert(!std::ranges::borrowed_range<maybe_view<int>>);
+
+    static_assert(std::ranges::range<maybe_view<int*>>);
+    static_assert(std::ranges::view<maybe_view<int*>>);
+    static_assert(std::ranges::input_range<maybe_view<int*>>);
+    static_assert(std::ranges::forward_range<maybe_view<int*>>);
+    static_assert(std::ranges::bidirectional_range<maybe_view<int*>>);
+    static_assert(std::ranges::contiguous_range<maybe_view<int*>>);
+    static_assert(std::ranges::common_range<maybe_view<int*>>);
+    static_assert(std::ranges::viewable_range<maybe_view<int*>>);
+    static_assert(std::ranges::borrowed_range<maybe_view<int*>>);
+}
 
 TEST(ViewMaybeTest, BreathingTest) {
     maybe_view<int> m;
