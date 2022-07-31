@@ -180,7 +180,7 @@ TEST(ViewNullableTest, BreathingRef) {
 
     nullable_view<std::optional<int>&> e2{e};
     for (int i : e2)
-        ASSERT_TRUE(false);
+        ASSERT_TRUE(i != i); // tautology to avoid unused variable warning
 
     for (auto&& i : nullable_view<std::optional<int>&>(s)) {
         ASSERT_EQ(i, 7);

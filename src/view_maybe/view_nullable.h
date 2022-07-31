@@ -166,6 +166,10 @@ constexpr inline bool enable_borrowed_range<nullable_view<T*>> = true;
 template <typename T>
 constexpr inline bool
     enable_borrowed_range<nullable_view<std::reference_wrapper<T>>> = true;
+
+template <typename T>
+constexpr inline bool enable_borrowed_range<nullable_view<T&>> = true;
+
 } // namespace std::ranges
 
 namespace views {
