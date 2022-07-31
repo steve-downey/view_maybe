@@ -6,9 +6,19 @@
 #include <ranges>
 #include <iostream>
 #include <type_traits>
+#include <functional>
+
 #include <view_maybe/concepts.h>
 
 namespace ranges = std::ranges;
+
+template <typename Value>
+class maybe_view;
+
+template <typename Value>
+inline constexpr bool is_maybe_view_v = false;
+template <typename Value>
+inline constexpr bool is_maybe_view_v<maybe_view<Value>> = true;
 
 template <typename Value>
 class maybe_view : public ranges::view_interface<maybe_view<Value>> {
@@ -51,7 +61,127 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
                                      const maybe_view& rhs) {
         return lhs.value_ == rhs.value_;
     }
+
+    template <typename F>
+    constexpr auto and_then(F&& f) &;
+    template <typename F>
+    constexpr auto and_then(F&& f) &&;
+    template <typename F>
+    constexpr auto and_then(F&& f) const&;
+    template <typename F>
+    constexpr auto and_then(F&& f) const&&;
+    template <typename F>
+    constexpr auto transform(F&& f) &;
+    template <typename F>
+    constexpr auto transform(F&& f) &&;
+    template <typename F>
+    constexpr auto transform(F&& f) const&;
+    template <typename F>
+    constexpr auto transform(F&& f) const&&;
+    template <typename F>
+    constexpr auto or_else(F&& f) &&;
+
+    template <typename F>
+    constexpr auto or_else(F&& f) const&;
 };
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::and_then(F&& f) & {
+    using U = std::invoke_result_t<F, Value&>;
+    static_assert(is_maybe_view_v<std::remove_cvref_t<U>>);
+    if (value_) {
+        return std::invoke(std::forward<F>(f), *value_);
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::and_then(F&& f) && {
+    using U = std::invoke_result_t<F, Value&&>;
+    static_assert(is_maybe_view_v<std::remove_cvref_t<U>>);
+    if (value_) {
+        return std::invoke(std::forward<F>(f), std::move(*value_));
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::and_then(F&& f) const& {
+    using U = std::invoke_result_t<F, const Value&>;
+    static_assert(is_maybe_view_v<std::remove_cvref_t<U>>);
+    if (value_) {
+        return std::invoke(std::forward<F>(f), *value_);
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::and_then(F&& f) const&& {
+    using U = std::invoke_result_t<F, const Value&&>;
+    static_assert(is_maybe_view_v<std::remove_cvref_t<U>>);
+    if (value_) {
+        return std::invoke(std::forward<F>(f), std::move(*value_));
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::transform(F&& f) & {
+    using U = std::invoke_result_t<F, Value&>;
+    return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f), *value_)}
+                    : maybe_view<U>{};
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::transform(F&& f) && {
+    using U = std::invoke_result_t<F, Value&&>;
+    return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f),
+                                                std::move(*value_))}
+                    : maybe_view<U>{};
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::transform(F&& f) const& {
+    using U = std::invoke_result_t<F, const Value&>;
+    return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f), *value_)}
+                    : maybe_view<U>{};
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::transform(F&& f) const&& {
+    using U = std::invoke_result_t<F, const Value&&>;
+    return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f),
+                                                std::move(*value_))}
+                    : maybe_view<U>{};
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::or_else(F&& f) const& {
+    using U = std::invoke_result_t<F>;
+    static_assert(std::is_same_v<std::remove_cvref_t<U>, maybe_view>);
+    return value_ ? *this : std::forward<F>(f)();
+}
+
+template <typename Value>
+template <typename F>
+constexpr auto maybe_view<Value>::or_else(F&& f) && {
+    using U = std::invoke_result_t<F>;
+    static_assert(std::is_same_v<std::remove_cvref_t<U>, maybe_view>);
+    return value_ ? std::move(*this) : std::forward<F>(f)();
+}
 
 template <typename Value>
 class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
@@ -103,6 +233,27 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
                    ? (*lhs.value_ == *rhs.value_)
                    : (bool(lhs.value_) == bool(rhs.value_));
     }
+
+    template <typename F>
+    constexpr auto and_then(F&& f) &;
+    template <typename F>
+    constexpr auto and_then(F&& f) &&;
+    template <typename F>
+    constexpr auto and_then(F&& f) const&;
+    template <typename F>
+    constexpr auto and_then(F&& f) const&&;
+    template <typename F>
+    constexpr auto transform(F&& f) &;
+    template <typename F>
+    constexpr auto transform(F&& f) &&;
+    template <typename F>
+    constexpr auto transform(F&& f) const&;
+    template <typename F>
+    constexpr auto transform(F&& f) const&&;
+    template <typename F>
+    constexpr maybe_view or_else(F&& f) &&;
+    template <typename F>
+    constexpr maybe_view or_else(F&& f) const&;
 };
 
 namespace std::ranges {
