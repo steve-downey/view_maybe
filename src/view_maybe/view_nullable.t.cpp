@@ -1,8 +1,8 @@
 #include <view_maybe/view_nullable.h>
+#include <view_maybe/view_nullable.h>
 
 #include <ranges>
 #include <tuple>
-#include <view_maybe/view_nullable.h>
 
 #include <gtest/gtest.h>
 
@@ -28,6 +28,72 @@ TEST(ViewNullableTest, Concept) {
     std::optional<int>                         i;
     std::reference_wrapper<std::optional<int>> t = i;
     testNullableRef(t);
+}
+
+TEST(ViewNullableTest, ConceptCheck) {
+    static_assert(std::ranges::range<nullable_view<std::optional<int>>>);
+    static_assert(std::ranges::view<nullable_view<std::optional<int>>>);
+    static_assert(std::ranges::input_range<nullable_view<std::optional<int>>>);
+    static_assert(std::ranges::forward_range<nullable_view<std::optional<int>>>);
+    static_assert(std::ranges::bidirectional_range<nullable_view<std::optional<int>>>);
+    static_assert(std::ranges::contiguous_range<nullable_view<std::optional<int>>>);
+    static_assert(std::ranges::common_range<nullable_view<std::optional<int>>>);
+    static_assert(std::ranges::viewable_range<nullable_view<std::optional<int>>>);
+    static_assert(!std::ranges::borrowed_range<nullable_view<std::optional<int>>>);
+
+    static_assert(std::ranges::range<nullable_view<int*>>);
+    static_assert(std::ranges::view<nullable_view<int*>>);
+    static_assert(std::ranges::input_range<nullable_view<int*>>);
+    static_assert(std::ranges::forward_range<nullable_view<int*>>);
+    static_assert(std::ranges::bidirectional_range<nullable_view<int*>>);
+    static_assert(std::ranges::contiguous_range<nullable_view<int*>>);
+    static_assert(std::ranges::common_range<nullable_view<int*>>);
+    static_assert(std::ranges::viewable_range<nullable_view<int*>>);
+    static_assert(std::ranges::borrowed_range<nullable_view<int*>>);
+
+    using ref = std::reference_wrapper<std::optional<int>>;
+    static_assert(std::ranges::range<nullable_view<ref>>);
+    static_assert(std::ranges::view<nullable_view<ref>>);
+    static_assert(std::ranges::input_range<nullable_view<ref>>);
+    static_assert(std::ranges::forward_range<nullable_view<ref>>);
+    static_assert(std::ranges::bidirectional_range<nullable_view<ref>>);
+    static_assert(std::ranges::contiguous_range<nullable_view<ref>>);
+    static_assert(std::ranges::common_range<nullable_view<ref>>);
+    static_assert(std::ranges::viewable_range<nullable_view<ref>>);
+    static_assert(std::ranges::borrowed_range<nullable_view<ref>>);
+}
+
+TEST(ViewNullableTest, ConceptCheckRef) {
+    static_assert(std::ranges::range<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::view<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::input_range<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::forward_range<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::bidirectional_range<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::contiguous_range<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::common_range<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::viewable_range<nullable_view<std::optional<int>&>>);
+    static_assert(std::ranges::borrowed_range<nullable_view<std::optional<int>&>>);
+
+    static_assert(std::ranges::range<nullable_view<int*&>>);
+    static_assert(std::ranges::view<nullable_view<int*&>>);
+    static_assert(std::ranges::input_range<nullable_view<int*&>>);
+    static_assert(std::ranges::forward_range<nullable_view<int*&>>);
+    static_assert(std::ranges::bidirectional_range<nullable_view<int*&>>);
+    static_assert(std::ranges::contiguous_range<nullable_view<int*&>>);
+    static_assert(std::ranges::common_range<nullable_view<int*&>>);
+    static_assert(std::ranges::viewable_range<nullable_view<int*&>>);
+    static_assert(std::ranges::borrowed_range<nullable_view<int*&>>);
+
+    using ref = std::reference_wrapper<std::optional<int>>&;
+    static_assert(std::ranges::range<nullable_view<ref>>);
+    static_assert(std::ranges::view<nullable_view<ref>>);
+    static_assert(std::ranges::input_range<nullable_view<ref>>);
+    static_assert(std::ranges::forward_range<nullable_view<ref>>);
+    static_assert(std::ranges::bidirectional_range<nullable_view<ref>>);
+    static_assert(std::ranges::contiguous_range<nullable_view<ref>>);
+    static_assert(std::ranges::common_range<nullable_view<ref>>);
+    static_assert(std::ranges::viewable_range<nullable_view<ref>>);
+    static_assert(std::ranges::borrowed_range<nullable_view<ref>>);
 }
 
 TEST(ViewNullableTest, Breathing) {

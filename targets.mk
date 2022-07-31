@@ -29,7 +29,7 @@ define run_cmake =
 	-G "Ninja Multi-Config" \
 	-DCMAKE_CONFIGURATION_TYPES=$(_configuration_types) \
 	-DCMAKE_INSTALL_PREFIX=$(abspath $(INSTALL_PREFIX)) \
-	-DCMAKE__COMPILE_COMMANDS=1 \
+	-DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
 	$(_cmake_args) \
 	$(CURDIR)
 endef
@@ -51,7 +51,7 @@ install: $(_build_path)/CMakeCache.txt ## Install the project
 	DESTDIR=$(abspath $(DEST)) ninja -C $(_build_path) -k 0  install
 
 ctest: $(_build_path)/CMakeCache.txt ## Run CTest on current build
-	cd $(_build_path) && ctest
+	cd $(_build_path) && ctest --output-on-failure
 
 ctest_ : compile
 	cd $(_build_path) && ctest
