@@ -451,3 +451,159 @@ TEST(MaybeView, MonadicOrElse) {
     ASSERT_TRUE(*(r3.data()) == 13);
 
 }
+
+TEST(ViewMaybeTest, MonadicAndThenRef) {
+    int forty{40};
+    maybe_view<int&> mv{forty};
+    auto            r = mv.and_then([](int i) { return maybe_view{i + 2}; });
+    ASSERT_TRUE(!r.empty());
+    ASSERT_TRUE(r.size() == 1);
+    ASSERT_TRUE(r.data() != nullptr);
+    ASSERT_TRUE(*(r.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    auto r2 = mv.and_then([](int) { return maybe_view<int&>{}; });
+    ASSERT_TRUE(r2.empty());
+    ASSERT_TRUE(r2.size() == 0);
+    ASSERT_TRUE(r2.data() == nullptr);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    maybe_view<int&> empty{};
+
+    auto r3 = empty.and_then([](int i) { return maybe_view{i + 2}; });
+    ASSERT_TRUE(r3.empty());
+    ASSERT_TRUE(r3.size() == 0);
+    ASSERT_TRUE(r3.data() == nullptr);
+    ASSERT_TRUE(empty.empty());
+
+    auto r4 = mv.and_then([](double d) { return maybe_view{d + 2}; });
+    ASSERT_TRUE(!r4.empty());
+    ASSERT_TRUE(r4.size() == 1);
+    ASSERT_TRUE(*(r4.data()) == 42.0);
+    static_assert(std::is_same_v<decltype(r4), maybe_view<double>>);
+
+    auto r5 = std::move(mv).and_then([](int i) { return maybe_view{i + 2}; });
+    ASSERT_TRUE(!r5.empty());
+    ASSERT_TRUE(r5.size() == 1);
+    ASSERT_TRUE(r5.data() != nullptr);
+    ASSERT_TRUE(*(r5.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    auto r6 = std::move(mv).and_then([](int&& i) {
+        int k = i;
+        i     = 0;
+        return maybe_view{k + 2};
+    });
+    ASSERT_TRUE(!r6.empty());
+    ASSERT_TRUE(r6.size() == 1);
+    ASSERT_TRUE(r6.data() != nullptr);
+    ASSERT_TRUE(*(r6.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 0);
+    ASSERT_EQ(forty, 0);
+    forty = 40;
+
+    const maybe_view<int&> cmv{forty};
+    auto r7 = cmv.and_then([](int i) { return maybe_view{i + 2}; });
+    ASSERT_TRUE(!r7.empty());
+    ASSERT_TRUE(r7.size() == 1);
+    ASSERT_TRUE(r7.data() != nullptr);
+    ASSERT_EQ(*(r7.data()), 42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+
+    auto r8 = std::move(cmv).and_then([](int i) { return maybe_view{i + 2}; });
+    ASSERT_TRUE(!r8.empty());
+    ASSERT_TRUE(r8.size() == 1);
+    ASSERT_TRUE(r8.data() != nullptr);
+    ASSERT_EQ(*(r8.data()),42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+}
+
+TEST(MaybeView, MonadicTransformRef) {
+    int forty{40};
+    maybe_view<int&> mv{forty};
+    auto r = mv.transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r.empty());
+    ASSERT_TRUE(r.size() == 1);
+    ASSERT_TRUE(r.data() != nullptr);
+    ASSERT_TRUE(*(r.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    maybe_view<int&> empty{};
+
+    auto r3 = empty.transform([](int i) { return i + 2; });
+    ASSERT_TRUE(r3.empty());
+    ASSERT_TRUE(r3.size() == 0);
+    ASSERT_TRUE(r3.data() == nullptr);
+    ASSERT_TRUE(empty.empty());
+
+    auto r4 = mv.transform([](double d) { return d + 2; });
+    ASSERT_TRUE(!r4.empty());
+    ASSERT_TRUE(r4.size() == 1);
+    ASSERT_TRUE(*(r4.data()) == 42.0);
+    static_assert(std::is_same_v<decltype(r4), maybe_view<double>>);
+
+    auto r5 = std::move(mv).transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r5.empty());
+    ASSERT_TRUE(r5.size() == 1);
+    ASSERT_TRUE(r5.data() != nullptr);
+    ASSERT_TRUE(*(r5.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    auto r6 = std::move(mv).transform([](int&& i) {
+        int k = i;
+        i     = 0;
+        return k + 2;
+    });
+    ASSERT_TRUE(!r6.empty());
+    ASSERT_TRUE(r6.size() == 1);
+    ASSERT_TRUE(r6.data() != nullptr);
+    ASSERT_TRUE(*(r6.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 0);
+    ASSERT_EQ(forty, 0);
+    forty = 40;
+
+    const maybe_view<int&> cmv{forty};
+    ASSERT_EQ(*(cmv.data()), 40);
+    auto r7 = cmv.transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r7.empty());
+    ASSERT_TRUE(r7.size() == 1);
+    ASSERT_TRUE(r7.data() != nullptr);
+    ASSERT_TRUE(*(r7.data()) == 42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+
+    auto r8 = std::move(cmv).transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r8.empty());
+    ASSERT_TRUE(r8.size() == 1);
+    ASSERT_TRUE(r8.data() != nullptr);
+    ASSERT_TRUE(*(r8.data()) == 42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+}
+
+TEST(MaybeView, MonadicOrElseRef) {
+    int fortytwo{42};
+    int thirteen{13};
+    maybe_view<int&> o1(fortytwo);
+    auto r = o1.or_else([&thirteen] { return maybe_view<int&>(thirteen); });
+    ASSERT_TRUE(*(r.data()) == 42);
+
+    maybe_view<int&> o2;
+    ASSERT_TRUE(*(o2.or_else([&thirteen] { return maybe_view<int&>(thirteen); })).data() == 13);
+
+    auto r2 = std::move(o1).or_else([&thirteen] { return maybe_view<int&>(thirteen); });
+    ASSERT_TRUE(*(r2.data()) == 42);
+
+    auto r3 = std::move(o2).or_else([&thirteen] { return maybe_view<int&>(thirteen); });
+    ASSERT_TRUE(*(r3.data()) == 13);
+
+}
