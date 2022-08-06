@@ -5,12 +5,20 @@
 #include <ranges>
 #include <iostream>
 #include <type_traits>
+#include <functional>
+
 #include <view_maybe/concepts.h>
 
 namespace ranges = std::ranges;
 
 template <typename T>
 class nullable_view;
+
+
+template <typename Value>
+inline constexpr bool is_nullable_view_v = false;
+template <typename Value>
+inline constexpr bool is_nullable_view_v<nullable_view<Value>> = true;
 
 template <typename Nullable>
     requires(copyable_object<Nullable> &&
@@ -96,7 +104,149 @@ class nullable_view<Nullable>
                                             : (bool(lhs) == bool(rhs));
         }
     }
+    template <typename F>
+    constexpr auto and_then(F&& f) &;
+    template <typename F>
+    constexpr auto and_then(F&& f) &&;
+    template <typename F>
+    constexpr auto and_then(F&& f) const&;
+    template <typename F>
+    constexpr auto and_then(F&& f) const&&;
+
+    template <typename F>
+    constexpr auto transform(F&& f) &;
+    template <typename F>
+    constexpr auto transform(F&& f) &&;
+    template <typename F>
+    constexpr auto transform(F&& f) const&;
+    template <typename F>
+    constexpr auto transform(F&& f) const&&;
+
+    template <typename F>
+    constexpr auto or_else(F&& f) &&;
+    template <typename F>
+    constexpr auto or_else(F&& f) const&;
 };
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::and_then(F&& f) & {
+    using U = std::invoke_result_t<F, T&>;
+    static_assert(is_nullable_view_v<std::remove_cvref_t<U>>);
+    if (*value_) {
+        return std::invoke(std::forward<F>(f), **value_);
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::and_then(F&& f) && {
+    using U = std::invoke_result_t<F, T&&>;
+    static_assert(is_nullable_view_v<std::remove_cvref_t<U>>);
+    if (*value_) {
+        return std::invoke(std::forward<F>(f), std::move(**value_));
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::and_then(F&& f) const& {
+    using U = std::invoke_result_t<F, const T&>;
+    static_assert(is_nullable_view_v<std::remove_cvref_t<U>>);
+    if (*value_) {
+        return std::invoke(std::forward<F>(f), **value_);
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::and_then(F&& f) const&& {
+    using U = std::invoke_result_t<F, const T&&>;
+    static_assert(is_nullable_view_v<std::remove_cvref_t<U>>);
+    if (*value_) {
+        return std::invoke(std::forward<F>(f), std::move(**value_));
+    } else {
+        return std::remove_cvref_t<U>();
+    }
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::transform(F&& f) & {
+    using U = std::remove_cvref_t<Nullable>;
+    return (*value_) ? nullable_view<U>{std::invoke(std::forward<F>(f),
+                                                           **value_)}
+                     : nullable_view<U>{};
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::transform(F&& f) && {
+    using U = std::remove_cvref_t<Nullable>;
+    return (*value_) ? nullable_view<U>{std::invoke(std::forward<F>(f),
+                                                std::move(**value_))}
+                    : nullable_view<U>{};
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::transform(F&& f) const& {
+    using U = std::remove_cvref_t<Nullable>;
+    return (*value_)
+               ? nullable_view<U>{std::invoke(std::forward<F>(f), **value_)}
+               : nullable_view<U>{};
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::transform(F&& f) const&& {
+    using U = std::remove_cvref_t<Nullable>;
+    return (*value_) ? nullable_view<U>{std::invoke(std::forward<F>(f),
+                                                   std::move(**value_))}
+                    : nullable_view<U>{};
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::or_else(F&& f) const& {
+    using U = std::invoke_result_t<F>;
+    static_assert(std::is_same_v<std::remove_cvref_t<U>, nullable_view>);
+    return *value_ ? *this : std::forward<F>(f)();
+}
+
+template <typename Nullable>
+    requires(copyable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename F>
+constexpr auto nullable_view<Nullable>::or_else(F&& f) && {
+    using U = std::invoke_result_t<F>;
+    static_assert(std::is_same_v<std::remove_cvref_t<U>, nullable_view>);
+    return *value_ ? std::move(*this) : std::forward<F>(f)();
+}
 
 template <typename Nullable>
     requires(copyable_object<Nullable> &&

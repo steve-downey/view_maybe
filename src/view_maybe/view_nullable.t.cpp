@@ -34,12 +34,18 @@ TEST(ViewNullableTest, ConceptCheck) {
     static_assert(std::ranges::range<nullable_view<std::optional<int>>>);
     static_assert(std::ranges::view<nullable_view<std::optional<int>>>);
     static_assert(std::ranges::input_range<nullable_view<std::optional<int>>>);
-    static_assert(std::ranges::forward_range<nullable_view<std::optional<int>>>);
-    static_assert(std::ranges::bidirectional_range<nullable_view<std::optional<int>>>);
-    static_assert(std::ranges::contiguous_range<nullable_view<std::optional<int>>>);
-    static_assert(std::ranges::common_range<nullable_view<std::optional<int>>>);
-    static_assert(std::ranges::viewable_range<nullable_view<std::optional<int>>>);
-    static_assert(!std::ranges::borrowed_range<nullable_view<std::optional<int>>>);
+    static_assert(
+        std::ranges::forward_range<nullable_view<std::optional<int>>>);
+    static_assert(
+        std::ranges::bidirectional_range<nullable_view<std::optional<int>>>);
+    static_assert(
+        std::ranges::contiguous_range<nullable_view<std::optional<int>>>);
+    static_assert(
+        std::ranges::common_range<nullable_view<std::optional<int>>>);
+    static_assert(
+        std::ranges::viewable_range<nullable_view<std::optional<int>>>);
+    static_assert(
+        !std::ranges::borrowed_range<nullable_view<std::optional<int>>>);
 
     static_assert(std::ranges::range<nullable_view<int*>>);
     static_assert(std::ranges::view<nullable_view<int*>>);
@@ -66,13 +72,20 @@ TEST(ViewNullableTest, ConceptCheck) {
 TEST(ViewNullableTest, ConceptCheckRef) {
     static_assert(std::ranges::range<nullable_view<std::optional<int>&>>);
     static_assert(std::ranges::view<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::input_range<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::forward_range<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::bidirectional_range<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::contiguous_range<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::common_range<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::viewable_range<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::borrowed_range<nullable_view<std::optional<int>&>>);
+    static_assert(
+        std::ranges::input_range<nullable_view<std::optional<int>&>>);
+    static_assert(
+        std::ranges::forward_range<nullable_view<std::optional<int>&>>);
+    static_assert(
+        std::ranges::bidirectional_range<nullable_view<std::optional<int>&>>);
+    static_assert(
+        std::ranges::contiguous_range<nullable_view<std::optional<int>&>>);
+    static_assert(
+        std::ranges::common_range<nullable_view<std::optional<int>&>>);
+    static_assert(
+        std::ranges::viewable_range<nullable_view<std::optional<int>&>>);
+    static_assert(
+        std::ranges::borrowed_range<nullable_view<std::optional<int>&>>);
 
     static_assert(std::ranges::range<nullable_view<int*&>>);
     static_assert(std::ranges::view<nullable_view<int*&>>);
@@ -230,18 +243,26 @@ TEST(ViewNullableTest, Breathing) {
     // }
 }
 
+TEST(ViewNullableTest, Transform) {
+    nullable_view<std::optional<int>> v{50};
+    auto r = std::ranges::views::transform(v, [](int i){return i * 2.0;});
+    for(auto && d : r) {
+        ASSERT_EQ(d, 100.0);
+    }
+}
+
 TEST(ViewNullableTest, BreathingRef) {
     nullable_view<int*&> n;
     ASSERT_TRUE(n.size() == 0);
-    int k = 7;
-    int* p_k = &k;
+    int                  k   = 7;
+    int*                 p_k = &k;
     nullable_view<int*&> v_p_k{p_k};
     ASSERT_TRUE(v_p_k.size() == 1);
 
     std::optional      s{7};
     std::optional<int> e{};
 
-    for (auto i : nullable_view<std::optional<int>&> (s))
+    for (auto i : nullable_view<std::optional<int>&>(s))
         ASSERT_EQ(i, 7);
 
     nullable_view<std::optional<int>&> e2{e};
@@ -353,4 +374,167 @@ TEST(ViewNullableTest, Borrowable) {
     ASSERT_EQ(*found1, 42);
     ASSERT_EQ(*found2, 42);
     ASSERT_EQ(*found3, 42);
+}
+
+TEST(ViewNullableTest, MonadicAndThen) {
+    std::optional<int>                forty{40};
+    nullable_view<std::optional<int>> mv{forty};
+
+    auto r = mv.and_then(
+        [](int i) { return nullable_view<std::optional<int>>{i + 2}; });
+    ASSERT_TRUE(!r.empty());
+    ASSERT_TRUE(r.size() == 1);
+    ASSERT_TRUE(r.data() != nullptr);
+    ASSERT_TRUE(*(r.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    auto r2 =
+        mv.and_then([](int) { return nullable_view<std::optional<int>>{}; });
+    ASSERT_TRUE(r2.empty());
+    ASSERT_TRUE(r2.size() == 0);
+    ASSERT_TRUE(r2.data() == nullptr);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    std::optional<int> e;
+    nullable_view      empty{e};
+
+    auto r3 = empty.and_then(
+        [](int i) { return nullable_view<std::optional<int>>{i + 2}; });
+    ASSERT_TRUE(r3.empty());
+    ASSERT_TRUE(r3.size() == 0);
+    ASSERT_TRUE(r3.data() == nullptr);
+    ASSERT_TRUE(empty.empty());
+
+    auto r4 = mv.and_then(
+        [](double d) { return nullable_view<std::optional<double>>{d + 2}; });
+    ASSERT_TRUE(!r4.empty());
+    ASSERT_TRUE(r4.size() == 1);
+    ASSERT_TRUE(*(r4.data()) == 42.0);
+    static_assert(
+        std::is_same_v<decltype(r4), nullable_view<std::optional<double>>>);
+
+    auto r5 = std::move(mv).and_then(
+        [](int i) { return nullable_view<std::optional<int>>{i + 2}; });
+    ASSERT_TRUE(!r5.empty());
+    ASSERT_TRUE(r5.size() == 1);
+    ASSERT_TRUE(r5.data() != nullptr);
+    ASSERT_TRUE(*(r5.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    auto r6 = std::move(mv).and_then([](int&& i) {
+        int k = i;
+        i     = 0;
+        return nullable_view<std::optional<int>>{k + 2};
+    });
+    ASSERT_TRUE(!r6.empty());
+    ASSERT_TRUE(r6.size() == 1);
+    ASSERT_TRUE(r6.data() != nullptr);
+    ASSERT_TRUE(*(r6.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 0);
+
+    const nullable_view<std::optional<int>> cmv{40};
+    auto                                    r7 = cmv.and_then(
+        [](int i) { return nullable_view<std::optional<int>>{i + 2}; });
+    ASSERT_TRUE(!r7.empty());
+    ASSERT_TRUE(r7.size() == 1);
+    ASSERT_TRUE(r7.data() != nullptr);
+    ASSERT_TRUE(*(r7.data()) == 42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+
+    auto r8 = std::move(cmv).and_then(
+        [](int i) { return nullable_view<std::optional<int>>{i + 2}; });
+    ASSERT_TRUE(!r8.empty());
+    ASSERT_TRUE(r8.size() == 1);
+    ASSERT_TRUE(r8.data() != nullptr);
+    ASSERT_TRUE(*(r8.data()) == 42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+}
+
+TEST(NullableView, MonadicTransform) {
+    nullable_view<std::optional<int>> mv{40};
+    auto r = mv.transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r.empty());
+    ASSERT_TRUE(r.size() == 1);
+    ASSERT_TRUE(r.data() != nullptr);
+    ASSERT_TRUE(*(r.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    nullable_view<std::optional<int>> empty{};
+
+    auto r3 = empty.transform([](int i) { return i + 2; });
+    ASSERT_TRUE(r3.empty());
+    ASSERT_TRUE(r3.size() == 0);
+    ASSERT_TRUE(r3.data() == nullptr);
+    ASSERT_TRUE(empty.empty());
+
+    auto r4 = mv.transform([](double d) { return d + 2; });
+    ASSERT_TRUE(!r4.empty());
+    ASSERT_TRUE(r4.size() == 1);
+    ASSERT_TRUE(*(r4.data()) == 42.0);
+    int _ = r4;
+    static_assert(
+        std::is_same_v<decltype(r4), nullable_view<std::optional<double>>>);
+
+    auto r5 = std::move(mv).transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r5.empty());
+    ASSERT_TRUE(r5.size() == 1);
+    ASSERT_TRUE(r5.data() != nullptr);
+    ASSERT_TRUE(*(r5.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 40);
+
+    auto r6 = std::move(mv).transform([](int&& i) {
+        int k = i;
+        i     = 0;
+        return k + 2;
+    });
+    ASSERT_TRUE(!r6.empty());
+    ASSERT_TRUE(r6.size() == 1);
+    ASSERT_TRUE(r6.data() != nullptr);
+    ASSERT_TRUE(*(r6.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 0);
+
+    const nullable_view<std::optional<int>> cmv{40};
+    auto r7 = cmv.transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r7.empty());
+    ASSERT_TRUE(r7.size() == 1);
+    ASSERT_TRUE(r7.data() != nullptr);
+    ASSERT_TRUE(*(r7.data()) == 42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+
+    auto r8 = std::move(cmv).transform([](int i) { return i + 2; });
+    ASSERT_TRUE(!r8.empty());
+    ASSERT_TRUE(r8.size() == 1);
+    ASSERT_TRUE(r8.data() != nullptr);
+    ASSERT_TRUE(*(r8.data()) == 42);
+    ASSERT_TRUE(!cmv.empty());
+    ASSERT_TRUE(*(cmv.data()) == 40);
+}
+
+TEST(NullableView, MonadicOrElse) {
+    nullable_view<std::optional<int>> o1{42};
+    auto r = o1.or_else([] { return nullable_view<std::optional<int>>(13); });
+    ASSERT_TRUE(*(r.data()) == 42);
+
+    nullable_view<std::optional<int>> o2{};
+    ASSERT_TRUE(*(o2.or_else([] {
+                     return nullable_view<std::optional<int>>(13);
+                 })).data() == 13);
+
+    auto r2 = std::move(o1).or_else(
+        [] { return nullable_view<std::optional<int>>(13); });
+    ASSERT_TRUE(*(r2.data()) == 42);
+
+    auto r3 = std::move(o2).or_else(
+        [] { return nullable_view<std::optional<int>>(13); });
+    ASSERT_TRUE(*(r3.data()) == 13);
 }
