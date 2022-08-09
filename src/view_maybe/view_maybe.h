@@ -28,29 +28,24 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
   public:
     constexpr maybe_view() = default;
 
-    constexpr explicit maybe_view(Value const& value) : value_(value) {}
+    constexpr explicit maybe_view(Value const& value);
 
-    constexpr explicit maybe_view(Value&& value) : value_(std::move(value)) {}
+    constexpr explicit maybe_view(Value&& value);
 
     template <class... Args>
         requires std::constructible_from<Value, Args...>
-    constexpr maybe_view(std::in_place_t, Args&&... args)
-        : value_(std::in_place, std::forward<Args>(args)...) {}
+    constexpr maybe_view(std::in_place_t, Args&&... args);
 
-    constexpr Value*       begin() noexcept { return data(); }
-    constexpr const Value* begin() const noexcept { return data(); }
-    constexpr Value*       end() noexcept { return data() + size(); }
-    constexpr const Value* end() const noexcept { return data() + size(); }
+    constexpr Value*       begin() noexcept;
+    constexpr const Value* begin() const noexcept;
+    constexpr Value*       end() noexcept;
+    constexpr const Value* end() const noexcept;
 
-    constexpr size_t size() const noexcept { return bool(value_); }
+    constexpr size_t size() const noexcept;
 
-    constexpr Value* data() noexcept {
-        return value_ ? std::addressof(*value_) : nullptr;
-    }
+    constexpr Value* data() noexcept;
 
-    constexpr const Value* data() const noexcept {
-        return value_ ? std::addressof(*value_) : nullptr;
-    }
+    constexpr const Value* data() const noexcept;
 
     friend constexpr auto operator<=>(const maybe_view& lhs,
                                       const maybe_view& rhs) {
@@ -85,6 +80,51 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     template <typename F>
     constexpr auto or_else(F&& f) const&;
 };
+
+template <typename Value>
+constexpr maybe_view<Value>::maybe_view(Value const& value) : value_(value) {}
+
+template <typename Value>
+constexpr maybe_view<Value>::maybe_view(Value&& value)
+    : value_(std::move(value)) {}
+
+template <typename Value>
+template <class... Args>
+    requires std::constructible_from<Value, Args...>
+constexpr maybe_view<Value>::maybe_view(std::in_place_t, Args&&... args)
+    : value_(std::in_place, std::forward<Args>(args)...) {}
+
+template <typename Value>
+constexpr Value* maybe_view<Value>::begin() noexcept {
+    return data();
+}
+template <typename Value>
+constexpr const Value* maybe_view<Value>::begin() const noexcept {
+    return data();
+}
+template <typename Value>
+constexpr Value* maybe_view<Value>::end() noexcept {
+    return data() + size();
+}
+template <typename Value>
+constexpr const Value* maybe_view<Value>::end() const noexcept {
+    return data() + size();
+}
+
+template <typename Value>
+constexpr size_t maybe_view<Value>::size() const noexcept {
+    return bool(value_);
+}
+
+template <typename Value>
+constexpr Value* maybe_view<Value>::data() noexcept {
+    return value_ ? std::addressof(*value_) : nullptr;
+}
+
+template <typename Value>
+constexpr const Value* maybe_view<Value>::data() const noexcept {
+    return value_ ? std::addressof(*value_) : nullptr;
+}
 
 template <typename Value>
 template <typename F>
@@ -190,36 +230,22 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
     Value* value_;
 
   public:
-    constexpr maybe_view() : value_(nullptr) {}
+    constexpr maybe_view();
 
-    constexpr explicit maybe_view(Value& value)
-        : value_(std::addressof(value)) {}
+    constexpr explicit maybe_view(Value& value);
 
     constexpr explicit maybe_view(Value&& value) = delete;
 
-    template <class... Args>
-        requires std::constructible_from<Value, Args...>
-    constexpr maybe_view(std::in_place_t, Args&&... args)
-        : value_(std::in_place, std::forward<Args>(args)...) {}
+    constexpr Value*       begin() noexcept;
+    constexpr const Value* begin() const noexcept;
+    constexpr Value*       end() noexcept;
+    constexpr const Value* end() const noexcept;
 
-    constexpr Value*       begin() noexcept { return data(); }
-    constexpr const Value* begin() const noexcept { return data(); }
-    constexpr Value*       end() noexcept { return data() + size(); }
-    constexpr const Value* end() const noexcept { return data() + size(); }
+    constexpr size_t size() const noexcept;
 
-    constexpr size_t size() const noexcept { return bool(value_); }
+    constexpr Value* data() noexcept;
 
-    constexpr Value* data() noexcept {
-        if (!value_)
-            return nullptr;
-        return std::addressof(*value_);
-    }
-
-    constexpr const Value* data() const noexcept {
-        if (!value_)
-            return nullptr;
-        return std::addressof(*value_);
-    }
+    constexpr const Value* data() const noexcept;
 
     friend constexpr auto operator<=>(const maybe_view& lhs,
                                       const maybe_view& rhs) {
@@ -258,6 +284,49 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
     template <typename F>
     constexpr maybe_view or_else(F&& f) const&;
 };
+
+template <typename Value>
+constexpr maybe_view<Value&>::maybe_view() : value_(nullptr) {}
+
+template <typename Value>
+constexpr maybe_view<Value&>::maybe_view(Value& value)
+    : value_(std::addressof(value)) {}
+
+template <typename Value>
+constexpr Value* maybe_view<Value&>::begin() noexcept {
+    return data();
+}
+template <typename Value>
+constexpr const Value* maybe_view<Value&>::begin() const noexcept {
+    return data();
+}
+template <typename Value>
+constexpr Value* maybe_view<Value&>::end() noexcept {
+    return data() + size();
+}
+template <typename Value>
+constexpr const Value* maybe_view<Value&>::end() const noexcept {
+    return data() + size();
+}
+
+template <typename Value>
+constexpr size_t maybe_view<Value&>::size() const noexcept {
+    return bool(value_);
+}
+
+template <typename Value>
+constexpr Value* maybe_view<Value&>::data() noexcept {
+    if (!value_)
+        return nullptr;
+    return std::addressof(*value_);
+}
+
+template <typename Value>
+constexpr const Value* maybe_view<Value&>::data() const noexcept {
+    if (!value_)
+        return nullptr;
+    return std::addressof(*value_);
+}
 
 template <typename Value>
 template <typename F>
@@ -312,7 +381,7 @@ template <typename F>
 constexpr auto maybe_view<Value&>::transform(F&& f) & {
     using U = std::invoke_result_t<F, Value&>;
     return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f), *value_)}
-        : maybe_view<U>{};
+                    : maybe_view<U>{};
 }
 
 template <typename Value>
@@ -321,7 +390,7 @@ constexpr auto maybe_view<Value&>::transform(F&& f) && {
     using U = std::invoke_result_t<F, Value&&>;
     return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f),
                                                 std::move(*value_))}
-        : maybe_view<U>{};
+                    : maybe_view<U>{};
 }
 
 template <typename Value>
@@ -329,7 +398,7 @@ template <typename F>
 constexpr auto maybe_view<Value&>::transform(F&& f) const& {
     using U = std::invoke_result_t<F, const Value&>;
     return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f), *value_)}
-        : maybe_view<U>{};
+                    : maybe_view<U>{};
 }
 
 template <typename Value>
@@ -338,7 +407,7 @@ constexpr auto maybe_view<Value&>::transform(F&& f) const&& {
     using U = std::invoke_result_t<F, const Value&&>;
     return (value_) ? maybe_view<U>{std::invoke(std::forward<F>(f),
                                                 std::move(*value_))}
-        : maybe_view<U>{};
+                    : maybe_view<U>{};
 }
 
 template <typename Value>

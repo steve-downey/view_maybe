@@ -588,6 +588,20 @@ TEST(MaybeView, MonadicTransformRef) {
     ASSERT_TRUE(*(r8.data()) == 42);
     ASSERT_TRUE(!cmv.empty());
     ASSERT_TRUE(*(cmv.data()) == 40);
+
+    auto r9 = mv.transform([](int& i) {
+        int k = i;
+        i     = 56;
+        return k * 2;
+    });
+    ASSERT_TRUE(!r9.empty());
+    ASSERT_EQ(r9.size(), 1);
+    ASSERT_TRUE(r9.data() != nullptr);
+    ASSERT_EQ(*(r9.data()), 80);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_EQ(*(mv.data()), 56);
+    ASSERT_EQ(forty, 56);
+    forty = 40;
 }
 
 TEST(MaybeView, MonadicOrElseRef) {
