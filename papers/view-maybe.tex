@@ -188,7 +188,7 @@ In addition to range transformation pipelines, \mintinline{C++}{views::maybe} ca
 \begin{minipage}[t]{\columnwidth}
   \begin{minted} {c++}
 {
-    auto&& opt = possible_value();
+    auto opt = possible_value();
     if (opt) {
         // a few dozen lines ...
         use(*opt); // is *opt OK ?
@@ -414,6 +414,10 @@ Providing the facility is not a signficant cost, and conveys the semantics corre
 \chapter{Design}
 For \tcode{views_maybe} the design is a hybrid of view_empty and view_single, with the straight forward extention for reference type, refering to an existing object. For \tcode{views_nullable} we have the same sematics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
 
+\chapter{Freestanding}
+
+Both \tcode{views_maybe} and \tcode{views_nullable} naturally meet the requirements for freestanding. The expository use of \tcode{optional} does not interfere with the ability of \tcode{views_maybe} to meet the requirements of freestanding.
+
 
 \chapter{Implementation}
 
@@ -427,10 +431,10 @@ The implementation, for exposition purposes, uses \tcode{std::optional} to hold 
 \chapter{Wording}
 \begin{wording}
 
-\Sec1[range.synopsis]{Synopsis}
-
 
 Modify 26.2 Header <ranges> synopsis
+
+\rSec1[ranges.syn]{Header \tcode{<ranges>} synopsis}
 
 \begin{adjustwidth}{1cm}{1cm}
   \begin{addedblock}
@@ -438,36 +442,44 @@ Modify 26.2 Header <ranges> synopsis
 // \ref{range.maybe}, maybe view
 template<copy_constructible T>
 requires @\seebelow@;
-class maybe_view;
-
-template <typename T>
-constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
+class maybe_view;                                              // freestanding
 
 template <typename T>
 constexpr inline bool
-enable_borrowed_range<maybe_view<std::reference_wrapper<T>>> = true;
+enable_borrowed_range<maybe_view<T*>> = true;                  // freestanding
 
 template <typename T>
-constexpr inline bool enable_borrowed_range<maybe_view<T&>> = true;
+constexpr inline bool
+enable_borrowed_range<maybe_view<reference_wrapper<T>>> = true; // freestanding
 
-namespace views { inline constexpr @\unspec@ maybe = @\unspec@; }
+template <typename T>
+constexpr inline bool
+enable_borrowed_range<maybe_view<T&>> = true;                  // freestanding
+
+namespace views {
+  inline constexpr @\unspec@ maybe = @\unspec@;           // freestanding
+}
 
 // \ref{range.nullable}, nullable view
 template<copy_constructible T>
 requires @\seebelow@;
-class nullable_view;
-
-template <typename T>
-constexpr inline bool enable_borrowed_range<nullable_view<T*>> = true;
+class nullable_view;                                           // freestanding
 
 template <typename T>
 constexpr inline bool
-enable_borrowed_range<nullable_view<std::reference_wrapper<T>>> = true;
+enable_borrowed_range<nullable_view<T*>> = true;               // freestanding
 
 template <typename T>
-constexpr inline bool enable_borrowed_range<nullable_view<T&>> = true;
+constexpr inline bool
+enable_borrowed_range<nullable_view<reference_wrapper<T>>> = true;// freestanding
 
-namespace views { inline constexpr @\unspec@ nullable = @\unspec@; }
+template <typename T>
+constexpr inline bool
+enable_borrowed_range<nullable_view<T&>> = true;                // freestanding
+
+namespace views {
+  inline constexpr @\unspec@ nullable = @\unspec@;        // freestanding
+}
 
 
 
@@ -558,14 +570,10 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     constexpr const Value* data() const noexcept;
 
     friend constexpr auto operator<=>(const maybe_view& lhs,
-                                      const maybe_view& rhs) {
-        return lhs.value_ <=> rhs.value_;
-    } // NOTE --- specification of hidden friend?
+                                      const maybe_view& rhs);
 
     friend constexpr bool operator==(const maybe_view& lhs,
-                                     const maybe_view& rhs) {
-        return lhs.value_ == rhs.value_;
-    } // NOTE --- specification of hidden friend?
+                                     const maybe_view& rhs);
 
     template <typename F>
     constexpr auto and_then(F&& f) &;
@@ -669,6 +677,25 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
   \pnum{}
   \returns \tcode{std::addressof(*@\exposid{value_}@);}
 \end{itemdescr}
+
+\begin{itemdecl}
+  constexpr auto operator<=>(const maybe_view& lhs, const maybe_view& rhs)
+  \end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \returns \tcode{lhs.value_} <=> \tcode{rhs.value_};
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr auto operator==(const maybe_view& lhs, const maybe_view& rhs)
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \returns \tcode{lhs.value_} == \tcode{rhs.value_};
+\end{itemdescr}
+
 
 \begin{itemdecl}
   template <typename F>
@@ -1243,76 +1270,85 @@ The name \tcode{views::nullable} denotes a customization point object ([customiz
 
 \begin{codeblock}
 
-  template <typename Value>
-  class maybe_view;
 
-  template <typename Value>
-  inline constexpr bool is_maybe_view_v = false;
-  template <typename Value>
-  inline constexpr bool is_maybe_view_v<maybe_view<Value>> = true;
+  template <typename T>
+  class nullable_view;
 
-  template <typename Value>
-  class maybe_view : public ranges::view_interface<maybe_view<Value>> {
+  template <typename Nullable>
+  requires(copyable_object<Nullable> &&
+  (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+  class nullable_view<Nullable>
+  : public ranges::view_interface<nullable_view<Nullable>> {
     private:
-    std::optional}<Value> @\exposidnc{value_}@;             // \expos{}
+    using T = std::remove_reference_t<
+    std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
 
-  public:
-  constexpr maybe_view() requires @\libconcept{default_initializable}@<Value> = default;
-  constexpr explicit maybe_view(Value const& value);
-  constexpr explicit maybe_view(Value&& value);
+    ranges::__detail::__box<Nullable> value_;
 
-  template <class... Args>
-  requires @\libconcept{constructible_from}@<Value, Args...>
-  constexpr maybe_view(std::in_place_t, Args&&... args);
+    public:
+    constexpr nullable_view() = default;
 
-  constexpr Value*       begin() noexcept;
-  constexpr const Value* begin() const noexcept;
-  constexpr Value*       end() noexcept;
-  constexpr const Value* end() const noexcept;
+    constexpr explicit nullable_view(Nullable const& nullable);
 
-  constexpr size_t size() const noexcept;
+    constexpr explicit nullable_view(Nullable&& nullable);
 
-  constexpr Value* data() noexcept;
+    template <class... Args>
+    requires std::constructible_from<Nullable, Args...>
+    constexpr nullable_view(std::in_place_t, Args&&... args);
 
-  constexpr const Value* data() const noexcept;
+    constexpr auto begin() noexcept;
+    constexpr auto     begin() const noexcept;
+    constexpr auto end() noexcept; // { return data() + size(); }
+    constexpr auto      end() const noexcept ; //{ return data() + size(); }
 
-  friend constexpr auto operator<=>(const maybe_view& lhs,
-  const maybe_view& rhs) {
-    return lhs.value_ <=> rhs.value_;
-  } // NOTE --- specification of hidden friend?
+    constexpr size_t size() const noexcept ;
 
-  friend constexpr bool operator==(const maybe_view& lhs,
-  const maybe_view& rhs) {
-    return lhs.value_ == rhs.value_;
-  } // NOTE --- specification of hidden friend?
+    constexpr auto data() noexcept ;
 
-  template <typename F>
-  constexpr auto and_then(F&& f) &;
-  template <typename F>
-  constexpr auto and_then(F&& f) &&;
-  template <typename F>
-  constexpr auto and_then(F&& f) const&;
-  template <typename F>
-  constexpr auto and_then(F&& f) const&&;
+    constexpr const auto data() const noexcept ;
 
-  template <typename F>
-  constexpr auto transform(F&& f) &;
-  template <typename F>
-  constexpr auto transform(F&& f) &&;
-  template <typename F>
-  constexpr auto transform(F&& f) const&;
-  template <typename F>
-  constexpr auto transform(F&& f) const&&;
+    friend constexpr auto operator<=>(const nullable_view& l,
+    const nullable_view& r) {
+      const Nullable& lhs = *l.value_;
+      const Nullable& rhs = *r.value_;
+      if constexpr (is_reference_wrapper_v<Nullable>) {
+        return (bool(lhs.get()) && bool(rhs.get()))
+        ? (*(lhs.get()) <=> *(rhs.get()))
+        : (bool(lhs.get()) <=> bool(rhs.get()));
+      } else {
+        return (bool(lhs) && bool(rhs)) ? (*lhs <=> *rhs)
+        : (bool(lhs) <=> bool(rhs));
+      }
+    }
 
-  template <typename F>
-  constexpr auto or_else(F&& f) &&;
-  template <typename F>
-  constexpr auto or_else(F&& f) const&;
-};
+    friend constexpr bool operator==(const nullable_view& l,
+    const nullable_view& r) {
+      const Nullable& lhs = *l.value_;
+      const Nullable& rhs = *r.value_;
+
+      if constexpr (is_reference_wrapper_v<Nullable>) {
+        return (bool(lhs.get()) && bool(rhs.get()))
+        ? (*(lhs.get()) == *(rhs.get()))
+        : (bool(lhs.get()) == bool(rhs.get()));
+      } else {
+        return (bool(lhs) && bool(rhs)) ? (*lhs == *rhs)
+        : (bool(lhs) == bool(rhs));
+      }
+    }
+  };
 
 \end{codeblock}
 
-%% BEGIN value defs
+//IMPL for nullable value
+
+// WORDING for ref nullable
+
+\Sec2[version.syn]{Feature-test macro}
+Add the following macro definition to [version.syn], header <version> synopsis, with the value selected by the editor to reflect the date of adoption of this paper:
+
+\begin{codeblock}
+  #define __cpp_lib_ranges_maybe 20XXXXL // also in <ranges>, <tuple>, <utility>
+\end{codeblock}
 
 \end{wording}
 \chapter{Impact on the standard}
