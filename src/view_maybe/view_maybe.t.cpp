@@ -384,6 +384,14 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
+    auto r2 = mv.transform([](int& i) { i += 2; return i; });
+    ASSERT_TRUE(!r2.empty());
+    ASSERT_TRUE(r2.size() == 1);
+    ASSERT_TRUE(r2.data() != nullptr);
+    ASSERT_TRUE(*(r2.data()) == 42);
+    ASSERT_TRUE(!mv.empty());
+    ASSERT_TRUE(*(mv.data()) == 42);
+
     maybe_view<int> empty{};
 
     auto r3 = empty.transform([](int i) { return i + 2; });
@@ -395,16 +403,16 @@ TEST(MaybeView, MonadicTransform) {
     auto r4 = mv.transform([](double d) { return d + 2; });
     ASSERT_TRUE(!r4.empty());
     ASSERT_TRUE(r4.size() == 1);
-    ASSERT_TRUE(*(r4.data()) == 42.0);
+    ASSERT_TRUE(*(r4.data()) == 44.0);
     static_assert(std::is_same_v<decltype(r4), maybe_view<double>>);
 
     auto r5 = std::move(mv).transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r5.empty());
     ASSERT_TRUE(r5.size() == 1);
     ASSERT_TRUE(r5.data() != nullptr);
-    ASSERT_TRUE(*(r5.data()) == 42);
+    ASSERT_TRUE(*(r5.data()) == 44);
     ASSERT_TRUE(!mv.empty());
-    ASSERT_TRUE(*(mv.data()) == 40);
+    ASSERT_TRUE(*(mv.data()) == 42);
 
     auto r6 = std::move(mv).transform([](int&& i) {
         int k = i;
@@ -414,7 +422,7 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(!r6.empty());
     ASSERT_TRUE(r6.size() == 1);
     ASSERT_TRUE(r6.data() != nullptr);
-    ASSERT_TRUE(*(r6.data()) == 42);
+    ASSERT_TRUE(*(r6.data()) == 44);
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 0);
 
