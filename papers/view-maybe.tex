@@ -281,7 +281,7 @@ for (auto i : ranges::iota_view{1, 10} |
 
 \chapter{Lazy monadic pythagorean triples}
 
-Eric Niebler's pythagorean triple example, using current C++ and proposed \tcode{views::maybe}.
+Eric Niebler's Pythagorean triple example, using current C++ and proposed \tcode{views::maybe}.
 
 \begin{minipage}[t]{\columnwidth}
   \begin{minted}{c++}
@@ -392,7 +392,7 @@ Having worked with the \tcode{reference_wrapper} support for some time, the ergo
 
 For these reasons, supporting the common case of reference semantics ergonomically is important. Folding the implementation of \tcode{reference_wrapper} into a template specialization for \tcode{T\&} provides good ergonomics. Neither \tcode{maybe_view} or \tcode{nullable_view} support assignment from the underlying type, so the only question for semantics is assignment from another instance of the same type. The semantics of \tcode{std::reference_wrapper} are well established and correct, where the implementation pointer is reassigned, putting the assignee into the same state as the assigned. The same semantics are adopted for \tcode{maybe_view} or \tcode{nullable_view}.
 
-The range adaptors, \tcode{views::maybe} and \tcode{views::nullable}, only produce the non-reference specialization. As range code is strongly rooted in value sematics, providing reference semantics without ceremony seems potentially dangerous. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone.
+The range adaptors, \tcode{views::maybe} and \tcode{views::nullable}, only produce the non-reference specialization. As range code is strongly rooted in value semantics, providing reference semantics without ceremony seems potentially dangerous. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone.
 
 The owning view \tcode{maybe_view} is not a container, and does not try to support the full container interface. As a range with a fixed upper size, emplace and push back operations are problematic. Not supplying them is not problematic.
 
@@ -426,7 +426,7 @@ int k = *std::ranges::find(views::maybe(&num), num);
 Providing the facility is not a significant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. Particularly as there is no real implementation impact, other than providing template variable specializations for enable_borrowed_range.
 
 \chapter{Design}
-For \tcode{maybe_view} the design is a hybrid of view_empty and view_single, with the straight forward extension for reference type, referring to an existing object. For \tcode{nullable_view} we have the same sematics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
+For \tcode{maybe_view} the design is a hybrid of \tcode{empty_view} and \tcode{single_view}, with the straight forward extension for reference type, referring to an existing object. For \tcode{nullable_view} we have the same semantics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
 
 \chapter{Freestanding}
 
@@ -1360,8 +1360,6 @@ class nullable_view<Nullable>
 
 \end{codeblock}
 
-WORDING for nullable funcs
-
 \begin{codeblock}
 template <typename Nullable>
     requires(copyable_object<Nullable> &&
@@ -1423,7 +1421,87 @@ class nullable_view<Nullable&>
 
 \end{codeblock}
 
-WORDING for nullable ref funcs
+\begin{itemdecl}
+  constexpr explicit nullable_view();
+\end{itemdecl}
+\begin{itemdescr}
+  \pnum{}
+  \effects{}
+  Initializes \exposid{value_} with \tcode{nullptr}
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr explicit nullable_view(Nullable nullable);
+\end{itemdecl}
+\begin{itemdescr}
+  \pnum{}
+  \effects{}
+  Initializes \exposid{value_} with \tcode{addressof(nullable)}
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr T* begin() noexcept;
+  constexpr const T* begin() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum
+  \effects
+  Equivalent to: \tcode{return data();}
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr T* end() noexcept;
+  constexpr const T* end() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \returns \tcode{data() + size();}.
+\end{itemdescr}
+
+\begin{itemdecl}
+  static constexpr size_t size() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \effects{}
+  Equivalent to:
+
+  \begin{codeblock}
+    if (!value_)
+    return 0;
+    Nullable& m = *\exposid{value_};
+    if constexpr (is_reference_wrapper_v<Nullable>) {
+      return bool(m.get());
+    } else {
+      return bool(m);
+    }
+  \end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr T* data() noexcept;
+  constexpr const T* data() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \effects{}
+  Equivalent to:
+
+  \begin{codeblock}
+    if (!value_)
+    return nullptr;
+    const Nullable& m = *\exposid{value_};
+    if constexpr (is_reference_wrapper_v<Nullable>) {
+      return m.get() ? std::addressof(*(m.get())) : nullptr;
+    } else {
+      return m ? std::addressof(*m) : nullptr;
+    }
+  \end{codeblock}
+\end{itemdescr}
 
 
 \Sec2[version.syn]{Feature-test macro}
@@ -1449,7 +1527,7 @@ The proposed changes are relative to the current working draft~\cite{N4910}.
   \item Give maybe and nullable distinct template names
   \item Propose T\& specializations
   \item Propose monadic interface for maybe_view
-  \item Wording
+  \item Wording++
   \item Freestanding
   \end{itemize}
 \item \textbf{Changes since D7}, presented to SG9 on 2022.07.11
