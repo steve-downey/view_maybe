@@ -946,13 +946,12 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
 \end{itemdescr}
 
 \begin{codeblock}
+template <typename Value>
+class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
+  private:
+    Value* @\exposidnc { value_ }@; // \expos{}
 
-  template <typename Value>
-  class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
-    private:
-    Value* @\exposidnc{value_}@;             // \expos{}
-
-    public:
+  public:
     constexpr maybe_view();
 
     constexpr explicit maybe_view(Value& value);
@@ -971,18 +970,10 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     constexpr const Value* data() const noexcept;
 
     friend constexpr auto operator<=>(const maybe_view& lhs,
-    const maybe_view& rhs) {
-      return (bool(lhs.value_) && bool(rhs.value_))
-      ? (*lhs.value_ <=> *rhs.value_)
-      : (bool(lhs.value_) <=> bool(rhs.value_));
-    }
+                                      const maybe_view& rhs);
 
     friend constexpr bool operator==(const maybe_view& lhs,
-    const maybe_view& rhs) {
-      return (bool(lhs.value_) && bool(rhs.value_))
-      ? (*lhs.value_ == *rhs.value_)
-      : (bool(lhs.value_) == bool(rhs.value_));
-    }
+                                     const maybe_view& rhs);
 
     template <typename F>
     constexpr auto and_then(F&& f) &;
@@ -1006,7 +997,7 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     constexpr maybe_view or_else(F&& f) &&;
     template <typename F>
     constexpr maybe_view or_else(F&& f) const&;
-  };
+};
 
 \end{codeblock}
 
@@ -1078,6 +1069,38 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
         return nullptr;
     return std::addressof(*@\exposid{value_}@);
 
+  \end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+  friend constexpr auto operator<=>(const maybe_view& lhs,
+                                    const maybe_view& rhs);
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \returns{}
+  \begin{codeblock}
+    (bool(lhs.@\exposid{value_}@) && bool(rhs.@\exposid{value_}@))
+        ? (*lhs.@\exposid{value_}@ <=> *rhs.@\exposid{value_}@)
+        : (bool(lhs.@\exposid{value_}@) <=> bool(rhs.@\exposid{value_}@));
+
+  \end{codeblock}
+
+\end{itemdescr}
+
+\begin{itemdecl}
+  friend constexpr auto operator==(const maybe_view& lhs,
+  const maybe_view& rhs);
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \returns
+  \begin{codeblock}
+    (bool(lhs.@\exposid{value_}@) \&\& bool(@\exposid{value_}@))
+        ? (*lhs.@\exposid{value_}@ == *rhs.@\exposid{value_}@)
+        : (bool(lhs.@\exposid{value_}@) == bool(rhs.@\exposid{value_}@));
   \end{codeblock}
 \end{itemdescr}
 
