@@ -185,6 +185,8 @@ for (auto&& i : r) {
 
 \chapter{Motivation}
 
+\epigraph{In which the void waves back.}
+
 In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. For types that model \tcode{nullable_object}, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well. The adapter \tcode{views::single} fills a similar purpose for non-nullable values, lifting a single value into a view, and \tcode{views::empty} provides a range of no values of a given type. The type \tcode{views::maybe} can be used to unify \tcode{single} and \tcode{empty} into a single type for further processing. This is, in particular, useful when translating list comprehensions.
 
 \begin{minipage}[t]{0.45\columnwidth}
@@ -200,14 +202,14 @@ auto r = views::join(
 for (auto i : r) {
     std::cout << i; // prints 42 and 54
 }
+
   \end{minted}
 \end{minipage}
-
 
 In addition to range transformation pipelines, \mintinline{C++}{views::maybe} can be used in range based for loops, allowing the nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the for loop eliminates some boilerplate code, the same way that range based for loops do.
 
 \begin{minipage}[t]{\columnwidth}
-  \begin{minted} {c++}
+\begin{minted} {c++}
 {
     auto opt = possible_value();
     if (opt) {
@@ -228,7 +230,7 @@ for (auto&& opt :
 The view can be on a \mintinline{C++}{std::reference_wrapper}, allowing the underlying nullable to be modified:
 
 \begin{minipage}[t]{\columnwidth}
-  \begin{minted} {c++}
+\begin{minted} {c++}
 std::optional o{7};
 for (auto&& i : views::nullable(std::ref(o))) {
     i = 9;
@@ -239,10 +241,10 @@ std::cout << "o=" << *o << " prints 9\n";
 \end{minted}
 \end{minipage}
 
-Of course, if the nullable is empty, there is nothing in the view to modify.
+Of course, if the nullable is empty, there is nothing in the view to act on.
 
 \begin{minipage}[t]{\columnwidth}
-  \begin{minted} {c++}
+\begin{minted} {c++}
 
 auto oe = std::optional<int>{};
 for (int i : views::nullable(std::ref(oe)))
@@ -255,7 +257,7 @@ for (int i : views::nullable(std::ref(oe)))
 Converting an optional type into a view can make APIs that return optional types, such a lookup operations, easier to work with in range pipelines.
 
 \begin{minipage}[t]{\columnwidth}
-  \begin{minted} {c++}
+\begin{minted} {c++}
 
 std::unordered_set<int> set{1, 3, 7, 9};
 
@@ -280,6 +282,8 @@ for (auto i : ranges::iota_view{1, 10} |
 
 
 \chapter{Lazy monadic pythagorean triples}
+
+\epigraph{Violent ground acquisition games such as football is in fact a crypto-fascist metaphor for nuclear war. ---  Derek Lutz}
 
 Eric Niebler's Pythagorean triple example, using current C++ and proposed \tcode{views::maybe}.
 
@@ -325,12 +329,19 @@ void print_triples() {
 
 The implementation of \tcode{yield_if} is essentially the type unification of \tcode{single} and \tcode{empty} into \tcode{maybe}, returning an empty on false, and a range containing one value on true. I plan to propose this function for standardization in a following paper.
 
+This code is essentially a mechanical translation of a list, or monadic, comprehension from Python or Haskell. In Haskell there is a pure desugaring of comprehension to binds and yield_if for comprehension guard clauses. This is an open research area for C++, and again, not part of this proposal.
+
 \chapter{Wait, There's More}
-\section{The Argument for a Useful Type}
 
-Just as there are use cases for having particular containers being returned from a function, there are use cases for returning near primitive ranges as explicit types. Explicit types are much easier for compilers to generate good code, and to optimize that code. The more limited interface of \tcode{maybe_view} seems to, in practice, make intention clearer to the compiler, over \tcode{std::optional}, over adaptation or projection. Saying what you mean directly is better.
+\epigraph{In which three somewhat independent extensions are argued for.}
 
-A \tcode{std::optional} type says I will be checking if the value is engaged or disengaged, and possibly taking alternative action based on that. I might use a \tcode{std::optional<T>} in contexts that I would use a T. It might be used as a default parameter. A \tcode{maybe_view}, or a \tcode{nullable_view}, says that independent check will not be made, the value will have operations applied if present, and ignored otherwise. A concrete range type sets expectations.
+\section{The Argument for a Vocabulary Type}
+
+The discussion around \tcode{std::static_vector} \cite{P0843r4} has solidified for me that \tcode{std::optional} is not a container, and making it one would be a mistake. There are too many operations that are problematic for a component that holds at most a fixed number of elements, and existing generic code will not understand that operations like \tcode{push_back} have commonly occuring failure modes. Ranges are not containers. The operations for a fixed sized range are the same as for any range, as it is not expected that ranges mutate that way. I believe that \tcode{maybe_view} is a useful interface type in addition to \tcode{std::optional}.
+
+Just as there are use cases for having particular containers being returned from a function, there are use cases for returning near primitive ranges as explicit types. Explicit types are much easier for compilers to generate good code, and to further optimize that code. The more limited interface of \tcode{maybe_view} seems to, in practice, make intention clearer to the compiler, over \tcode{std::optional}, over adaptation or projection. Saying what you mean directly is better.
+
+A \tcode{std::optional} type says I will be checking if the value is engaged or disengaged, and possibly taking alternative action based on that, and that I might use a \tcode{std::optional<T>} in contexts that I would use a T, or that It might be used as a default parameter. The long list suggests that \tcode{std::optional<T>} is filling too many roles. A \tcode{maybe_view}, or a \tcode{nullable_view}, says that independent check will not be made, the value will have operations applied if present, and ignored otherwise. A concrete range type sets tighter expectations.
 
 Value types, which range types are, should, if they can, provide spaceship and equivalence operators. This is straight forward to specify, and to implement for both \tcode{maybe_view} or \tcode{nullable_view}.
 
@@ -408,6 +419,9 @@ assert(*(o1.data()) == 42));
 Dereferencing the result of \tcode{data()} without a check for null is of course unsafe, but in a way that should be visible to both programmers and tools.
 
 \chapter{Borrowed Range}
+
+\epigraph{For loan oft loses both itself and friend,}
+
 A \tcode{borrowed_range} is one whose iterators cannot be invalidated by ending the lifetime of the range. For \tcode{views::maybe} and \tcode{views::nullable} iterators are \tcode{T*}, where \tcode{T} is essentially the type of the underlying object. For \tcode{nullable_view} or \tcode{maybe_view} over raw pointers and \tcode{std::reference_wrapper} the iterators point directly to the underlying object, and thus matches the semantics of \libconcept{borrowed_range}.
 
 For the reference specializations, all types imply a borrowed range.
@@ -426,21 +440,32 @@ int k = *std::ranges::find(views::maybe(&num), num);
 Providing the facility is not a significant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. Particularly as there is no real implementation impact, other than providing template variable specializations for enable_borrowed_range.
 
 \chapter{Design}
+
+\epigraph{In which we ignore inspiration and orginality. }
+
 For \tcode{maybe_view} the design is a hybrid of \tcode{empty_view} and \tcode{single_view}, with the straight forward extension for reference type, referring to an existing object. For \tcode{nullable_view} we have the same semantics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
 
 \chapter{Freestanding}
+
+\epigraph{Place direct quotations that are 40 words, or longer, in a free-standing block of typewritten lines, and omit quotation marks.}
 
 Both \tcode{maybe_view} and \tcode{nullable_view} naturally meet the requirements for freestanding. The expository use of \tcode{optional} does not interfere with the ability of \tcode{maybe_view} to meet the requirements of freestanding.
 
 
 \chapter{Implementation}
 
+\epigraph{“The customer is always right in matters of taste.”}
+
 A publicly available implementation at \url{https://github.com/steve-downey/view_maybe} based on the Ranges implementation in libstdc++. There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as effects.
 
 The implementation, for exposition purposes, uses \tcode{std::optional} to hold the value for \tcode{maybe_view}. Implementations, to reduce the overhead of debugging implementations should probably hoist the storage and flag in a typical optional into \tcode{maybe_view}, in which case the flag should be checked first on reads with acquire/release atomic semantics, and last on writes, so as to provide a synchronization points. Although this note may be in the close neighborhood of teaching my grandmother to suck eggs.
 
 \chapter{Proposal}
+
+\epigraph{In which The Ask is laid out for all to see.}
+
 Add two range adaptor objects
+
 \begin{itemize}
 \item
   \tcode{views::maybe} a range adaptor that produces an owning view holding $0$ or $1$ elements of an object.
@@ -454,6 +479,9 @@ The generic types \tcode{std::maybe_view} and \tcode{std::nullable_view}, which 
 
 
 \chapter{Wording}
+
+\epigraph{In the beginning the Word already existed.}
+
 \begin{wording}
 
 
