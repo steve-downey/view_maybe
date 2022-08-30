@@ -1,0 +1,238 @@
+#+OPTIONS: ':nil *:t -:t ::t <:t H:nil \n:nil ^:nil arch:headline author:nil
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:nil e:t
+#+OPTIONS: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
+#+OPTIONS: tasks:t tex:t timestamp:nil title:t toc:nil todo:t |:t
+#+AUTHOR: Steve Downey
+#+TITLE: ~views::maybe~
+#+SUBTITLE: A view of 0 or 1 elements
+#+EMAIL: sdowney2@bloomberg.net
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE:
+#+STARTUP: showall
+#+OPTIONS: html-link-use-abs-url:nil html-postamble:nil html-preamble:t
+#+OPTIONS: html-scripts:t html-style:t html5-fancy:nil tex:t
+#+HTML_DOCTYPE: xhtml-strict
+#+HTML_CONTAINER: div
+#+DESCRIPTION:
+#+KEYWORDS:
+#+HTML_LINK_HOME:
+#+HTML_LINK_UP:
+#+HTML_MATHJAX:
+#+HTML_HEAD:
+#+HTML_HEAD_EXTRA:
+#+SUBTITLE:
+#+INFOJS_OPT:
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+REVEAL_THEME: black
+#+REVEAL_TRANS: fade
+#+REVEAL_MATHJAX_URL: https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://sdowney.org/css/smd-zenburn.css" />
+#+REVEAL_EXTRA_CSS: http://sdowney.org/css/smd-zenburn.css
+#+REVEAL_EXTRA_CSS: ./footer.css
+
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js
+#+REVEAL_VERSION: 4
+
+#+ATTR_REVEAL: :frag (appear)
+
+* A View of zero or one objects
+  Steve Downey
+
+  sdowney@gmail.com
+
+  sdowney2@bloomberg.net
+
+* Add two view types
+- ~maybe_view~ :: an owning view of one or more objects
+- ~nullable_view~ :: an owning view adapting a nullable object
+
+
+** ~nullable_object~
+*** A type that is:
+     - conditionally dereferencible
+     - contextually convertible to bool
+     - dereferencing refers to an ~object~
+
+*** Some Model Types
+  - pointer to object
+  - std::optional
+
+* Reasons to be  in the Standard Library
+#+ATTR_REVEAL: :frag (appear)
+- Exposing Magic
+- Essential Vocabulary
+- Preventing Needless Creativity
+** Proposed Types are of the 3rd Kind
+Types with this general shape show up frequently in application logic
+
+Application programmers are forced to implement them, often badly
+
+Not being part of the common vocabulary means the scope of the nonce types is limited
+
+#+REVEAL: split
+
+The scope I can use a function that returns a ~maybe_view~ is limited
+
+* Use Cases
+#+ATTR_REVEAL: :frag (appear)
+- Maybe
+  - Expressing optionality in a range context.
+  - Filtering --- especially when the condition is extrinsic to the object
+
+- Nullable
+  - Safer handling of dereferencing
+  - Adapting optionals to ranges
+*  Example: Pythagorean Triples
+
+~maybe_view~ is part of the natural expression of list comprehension
+
+#+begin_src haskell
+trips = [(x,y,z) | z <- [1..], x <- [1..z+1], y <- [x..z+1], x^2 + y^2 == z^2]
+#+end_src
+
+#+begin_example
+> take 4 trips
+[(3,4,5),(6,8,10),(5,12,13),(9,12,15)]
+#+end_example
+
+*** C++ Desugaring
+#+begin_src c++
+    auto triples = and_then(iota(1), [](int z) {
+        return and_then(iota(1, z + 1), [=](int x) {
+            return and_then(iota(x, z + 1), [=](int y) {
+                return yield_if(x * x + y * y == z * z,
+                                std::make_tuple(x, y, z));
+            });
+        });
+    });
+#+end_src
+**** and_then
+#+begin_src c++
+inline constexpr auto and_then = [](auto&& r, auto fun) {
+    return decltype(r)(r)
+        | std::ranges::views::transform(std::move(fun))
+        | std::ranges::views::join;
+};
+#+end_src
+
+**** yield_if
+#+begin_src c++
+inline constexpr auto yield_if = [](bool b, auto x) {
+    return b ? maybe_view{std::move(x)}
+             : maybe_view<decltype(x)>{};
+};
+#+end_src
+
+***** I intend to propose ~yield_if~ in a following paper.
+
+
+* Example: Adapting optional into ranges
+** A not unreasonable optional function
+#+begin_src c++
+auto test = [](int i) -> std::optional<int> {
+    switch (i) {
+    case 1:
+    case 3:
+    case 7:
+    case 9:
+        return i;
+    default:
+        return {};
+    }
+};
+#+end_src
+
+** Lifting that function into Ranges
+
+#+begin_src c++
+
+std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
+
+auto&& r =
+    v | ranges::views::transform(test)
+      | ranges::views::transform(views::nullable)
+      | ranges::views::join;
+
+#+end_src
+** Forcing the function
+#+begin_src c++
+
+for (auto&& i : r) {
+    for (auto c: std::views::repeat('\a', i)) {
+        std::cout << c;
+    }
+}
+// produces 3 rings, 5 rings, 9 rings, and 1 ring.
+
+#+end_src
+
+* A vocabulary type
+
+~maybe_view~ is a useful return type in code that works with ranges, just as ~std::optional~ is for values.
+
+~maybe_view~ is a value type.
+
+~maybe_view~ has an interface surface that is narrower than ~std::optional~
+
+** Differences
+~maybe_view~ does not:
+- assign from its underlying type
+- act like a pointer
+- convert to bool
+- throw
+
+
+** Monadic Interface for ~maybe_view~
+As a value type with optional-like semantics providing the monadic interface is cheap and straightforward.
+
+The type based monadic interface is stricter than the Ranges monad. The monad stays within the ~maybe_view~ type.
+
+~nullable_view~ can't reconstruct the correct type for ~and_then~.
+
+** Reference Specialization
+
+~maybe_view<T&>~ and ~nullable_View<T&>~ should be allowed.
+
+As there is no assignment from ~T~ there is no need to discuss its semantics.
+
+Assignment from an instance of ~maybe_view<T&>~ has the expected semantics, the same as for the ~reference_wrapper~ specialization.
+
+
+* Reference Implementation
+https://github.com/steve-downey/view_maybe
+
+TeX : 97.7%
+C++ : 1.7%
+Other : 0.6%
+
+Code uses libstdc++ in parts of the implementation, in particular for ~moveable-box~, and pipe interop.
+
+No libstdc++ code is pasted in.
+
+* Scoped Allocators
+
+Doesn't touch them.
+
+If we make progress on scoped allocators for optional, I'll follow up.
+
+
+* Macro
+Yes
+
+* Freestanding
+Yes
+
+* Wording
+
+Unreviewed, but boring.

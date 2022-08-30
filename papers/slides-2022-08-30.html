@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title><code>views::maybe</code></title>
+<meta name="author" content="Steve Downey"/>
+<meta name="description" content="
+"/>
+<meta name="keywords" content=" "/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/black.css" id="theme"/>
+
+<link rel="stylesheet" href="http://sdowney.org/css/smd-zenburn.css"/>
+
+<link rel="stylesheet" href="./footer.css"/>
+
+<link rel="stylesheet" type="text/css" href="http://sdowney.org/css/smd-zenburn.css" />
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide">
+<h1 class="title"><code>views::maybe</code></h1>
+</section>
+
+<section>
+<section id="slide-orgeadc81b">
+<h2 id="orgeadc81b">A View of zero or one objects</h2>
+<p>
+Steve Downey
+sdowney@gmail.com
+sdowney2@bloomberg.net
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org5056b8c">
+<h2 id="org5056b8c">Abstract</h2>
+<p>
+Add two view types
+</p>
+
+<dl>
+<dt><code>maybe_view</code></dt><dd>an owning view of one or more objects</dd>
+<dt><code>nullable_view</code></dt><dd>an owning view adapting a nullable object</dd>
+
+</dl>
+
+
+</section>
+<section id="slide-org3fe6b85">
+<h3 id="org3fe6b85"><code>nullable_object</code></h3>
+<div class="outline-text-3" id="text-org3fe6b85">
+</div>
+</section>
+<section id="slide-org8f14df6">
+<h4 id="org8f14df6">A type that is:</h4>
+<ul>
+<li>conditionally dereferencible</li>
+<li>contextually convertible to bool</li>
+<li>dereferencing refers to an <code>object</code></li>
+
+</ul>
+
+</section>
+<section id="slide-orgc5d8a70">
+<h4 id="orgc5d8a70">Some Model Types</h4>
+<ul>
+<li>pointer to object</li>
+<li>std::optional</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org6d0c288">
+<h2 id="org6d0c288">Reasons to be  in the Standard Library</h2>
+<ul>
+<li class="fragment appear">Exposing Magic</li>
+<li class="fragment appear">Essential Vocabulary</li>
+<li class="fragment appear">Preventing Needless Creativity</li>
+
+</ul>
+</section>
+<section id="slide-org009fd4a">
+<h3 id="org009fd4a">Proposed Types are of the 3rd Kind</h3>
+<p>
+Types with this general shape show up frequently in application logic
+</p>
+
+<p>
+Application programmers are forced to implement them, often badly.
+</p>
+
+<p>
+Not being part of the common vocabulary means the scope of the nonce types is limited.
+</p>
+
+</section>
+<section>
+
+<p>
+The scope I can use a function that returns a maybe range is limited
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org66669c9">
+<h2 id="org66669c9">Use Cases</h2>
+<ul>
+<li class="fragment appear">Maybe
+<ul>
+<li>Expressing optionality in a range context.</li>
+<li>Filtering, especially when the condition is extrinsic to the object</li>
+
+</ul></li>
+
+<li class="fragment appear">Nullable
+<ul>
+<li>Safer handling of dereferences</li>
+<li>Adapting optionals to ranges</li>
+
+</ul></li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-orgea2c68d">
+<h2 id="orgea2c68d">Example: Pythagorean Triples</h2>
+<p>
+maybe_view is part of the natural expression of list comprehension
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-haskell"><span class="org-haskell-definition">trips</span> <span class="org-haskell-operator">=</span> [(x,y,z) <span class="org-haskell-operator">|</span> z <span class="org-haskell-operator">&lt;-</span> [1<span class="org-haskell-operator">..</span>], x <span class="org-haskell-operator">&lt;-</span> [1<span class="org-haskell-operator">..</span>z<span class="org-haskell-operator">+</span>1], y <span class="org-haskell-operator">&lt;-</span> [x<span class="org-haskell-operator">..</span>z<span class="org-haskell-operator">+</span>1], x<span class="org-haskell-operator">^</span>2 <span class="org-haskell-operator">+</span> y<span class="org-haskell-operator">^</span>2 <span class="org-haskell-operator">==</span> z<span class="org-haskell-operator">^</span>2]
+</pre>
+</div>
+
+<pre class="example" id="org9ef60cb">
+&gt; take 4 trips
+[(3,4,5),(6,8,10),(5,12,13),(9,12,15)]
+</pre>
+
+</section>
+<section id="slide-orgb3ea42f">
+<h4 id="orgb3ea42f">C++ Desugaring</h4>
+<div class="org-src-container">
+
+<pre class="src src-c++">    <span class="org-keyword">auto</span> <span class="org-variable-name">triples</span> = and_then(iota(1), [](<span class="org-type">int</span> <span class="org-variable-name">z</span>) {
+        <span class="org-keyword">return</span> and_then(iota(1, z + 1), [=](<span class="org-type">int</span> <span class="org-variable-name">x</span>) {
+            <span class="org-keyword">return</span> and_then(iota(x, z + 1), [=](<span class="org-type">int</span> <span class="org-variable-name">y</span>) {
+                <span class="org-keyword">return</span> yield_if(x * x + y * y == z * z,
+                                <span class="org-constant">std</span>::make_tuple(x, y, z));
+            });
+        });
+    });
+</pre>
+</div>
+</section>
+<section id="slide-org2a5d8f8">
+<h5 id="org2a5d8f8">and_then</h5>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span class="org-keyword">inline</span> <span class="org-keyword">constexpr</span> <span class="org-keyword">auto</span> <span class="org-variable-name">and_then</span> = [](<span class="org-keyword">auto</span>&amp;&amp; <span class="org-variable-name">r</span>, <span class="org-keyword">auto</span> <span class="org-variable-name">fun</span>) {
+    <span class="org-keyword">return</span> <span class="org-keyword">decltype</span>(r)(r)
+        | <span class="org-constant">std</span>::<span class="org-constant">ranges</span>::<span class="org-constant">views</span>::transform(<span class="org-constant">std</span>::move(fun))
+        | <span class="org-constant">std</span>::<span class="org-constant">ranges</span>::<span class="org-constant">views</span>::join;
+};
+</pre>
+</div>
+
+</section>
+<section id="slide-org16d4a5a">
+<h5 id="org16d4a5a">yield_if</h5>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span class="org-keyword">inline</span> <span class="org-keyword">constexpr</span> <span class="org-keyword">auto</span> <span class="org-variable-name">yield_if</span> = [](<span class="org-type">bool</span> <span class="org-variable-name">b</span>, <span class="org-keyword">auto</span> <span class="org-variable-name">x</span>) {
+    <span class="org-keyword">return</span> b ? maybe_view{<span class="org-constant">std</span>::move(x)}
+             : <span class="org-type">maybe_view</span>&lt;<span class="org-keyword">decltype</span>(x)&gt;{};
+};
+</pre>
+</div>
+
+</section>
+<section id="slide-org403919d">
+<h6 id="org403919d">I intend to propose <code>yield_if</code> in a following paper.</h6>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgd1ed11a">
+<h2 id="orgd1ed11a">Example: Adapting optional into ranges</h2>
+<div class="outline-text-2" id="text-orgd1ed11a">
+</div>
+</section>
+<section id="slide-org114fe1d">
+<h3 id="org114fe1d">A not unreasonable optional function</h3>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span class="org-keyword">auto</span> <span class="org-variable-name">test</span> = [](<span class="org-type">int</span> <span class="org-variable-name">i</span>) -&gt; <span class="org-constant">std</span>::<span class="org-type">optional</span>&lt;<span class="org-type">int</span>&gt; {
+    <span class="org-keyword">switch</span> (i) {
+    <span class="org-keyword">case</span> 1:
+    <span class="org-keyword">case</span> 3:
+    <span class="org-keyword">case</span> 7:
+    <span class="org-keyword">case</span> 9:
+        <span class="org-keyword">return</span> i;
+    <span class="org-keyword">default</span>:
+        <span class="org-keyword">return</span> {};
+    }
+};
+</pre>
+</div>
+
+</section>
+<section id="slide-org1d777e9">
+<h3 id="org1d777e9">Lifting that function into Ranges</h3>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span class="org-keyword">auto</span>&amp;&amp; <span class="org-variable-name">r</span> =
+    v | <span class="org-constant">ranges</span>::<span class="org-constant">views</span>::transform(test)
+      | <span class="org-constant">ranges</span>::<span class="org-constant">views</span>::transform(<span class="org-constant">views</span>::nullable)
+      | <span class="org-constant">ranges</span>::<span class="org-constant">views</span>::join;
+
+</pre>
+</div>
+</section>
+<section id="slide-org45fb3b2">
+<h3 id="org45fb3b2">Forcing the function</h3>
+<div class="org-src-container">
+
+<pre class="src src-c++"><span class="org-constant">std</span>::<span class="org-type">vector</span>&lt;<span class="org-type">int</span>&gt; <span class="org-variable-name">v</span>{2, 3, 4, 5, 6, 7, 8, 9, 1};
+
+<span class="org-keyword">for</span> (<span class="org-keyword">auto</span>&amp;&amp; <span class="org-variable-name">i</span> : r) {
+    <span class="org-keyword">for</span> (<span class="org-keyword">auto</span> <span class="org-variable-name">c</span>: <span class="org-constant">std</span>::<span class="org-constant">views</span>::repeat(<span class="org-string">'\a'</span>, i)) {
+        <span class="org-constant">std</span>::cout &lt;&lt; c;
+    }
+}
+<span class="org-comment-delimiter">// </span><span class="org-comment">produces 3 rings, 5 rings, 9 rings, and 1 ring.</span>
+
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orge110d7b">
+<h2 id="orge110d7b">A vocabulary type</h2>
+<p>
+<code>maybe_view</code> is a useful return type in code that works with ranges, just as <code>std::optional</code> is for values.
+</p>
+
+<p>
+<code>maybe_view</code> is a value type.
+</p>
+
+<p>
+<code>maybe_view</code> has an interface surface that is narrower than <code>std::optional</code>
+</p>
+
+</section>
+<section id="slide-org726c231">
+<h3 id="org726c231">Differences</h3>
+<p>
+<code>maybe_view</code> does not:
+</p>
+<ul>
+<li>assign from its underlying type</li>
+<li>act like a pointer</li>
+<li>convert to bool</li>
+<li>throw</li>
+
+</ul>
+
+
+</section>
+<section id="slide-orge0ee9a4">
+<h3 id="orge0ee9a4">Monadic Interface for <code>maybe_view</code></h3>
+<p>
+As a value type with optional-like semantics providing the monadic interface is cheap and straightforward.
+</p>
+
+<p>
+The type based monadic interface is stricter than the Ranges monad. The monad stays within the <code>maybe_view</code> type.
+</p>
+
+<p>
+<code>nullable_view</code> can't reconstruct the correct type for <code>and_then</code>.
+</p>
+
+</section>
+<section id="slide-org7b45dcb">
+<h3 id="org7b45dcb">Reference Specialization</h3>
+<p>
+<code>maybe_view&lt;T&amp;&gt;</code> and <code>nullable_View&lt;T&amp;&gt;</code> should be allowed.
+</p>
+
+<p>
+As there is no assignment from <code>T</code> there is no need to discuss its semantics.
+</p>
+
+<p>
+Assignment from an instance of <code>maybe_view&lt;T&amp;&gt;</code> has the expected semantics, the same as for the <code>reference_wrapper</code> specialization.
+</p>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org8ce1534">
+<h2 id="org8ce1534">Reference Implementation</h2>
+<p>
+<a href="https://github.com/steve-downey/view_maybe">https://github.com/steve-downey/view_maybe</a>
+</p>
+
+<p>
+TeX : 97.7%
+C++ : 1.7%
+Other : 0.6%
+</p>
+
+<p>
+Code uses libstdc++ in parts of the implementation, in particular for <code>moveable-box</code>, and pipe interop.
+</p>
+
+<p>
+No libstdc++ code is pasted in.
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org310d85e">
+<h2 id="org310d85e">Allocators</h2>
+<p>
+Doesn't touch them. If we make progress on scoped allocators for optional, I'll follow up.
+</p>
+
+<p>
+Neither <code>maybe_view</code> or <code>nullable_view</code> allocate.
+</p>
+
+<p>
+I'm from Bloomberg. We can make progress on this without dealing with allocators at the moment.
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org0e2cd54">
+<h2 id="org0e2cd54">Macro</h2>
+<p>
+Yes
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orge10fc60">
+<h2 id="orge10fc60">Freestanding</h2>
+<p>
+Yes
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org237ff18">
+<h2 id="org237ff18">Wording</h2>
+<p>
+Unreviewed, but boring.
+</p>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/markdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/search/search.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/zoom/zoom.js"></script>
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: 'c',
+rollingLinks: false,
+keyboard: true,
+mouseWheel: false,
+fragmentInURL: false,
+hashOneBasedIndex: false,
+pdfSeparateFragments: true,
+overview: true,
+width: 1600,
+height: 900,
+
+transition: 'fade',
+transitionSpeed: 'default',
+
+// Plugins with reveal.js 4.x
+plugins: [ RevealMarkdown, RevealNotes, RevealSearch, RevealZoom ],
+
+// Optional libraries used to extend reveal.js
+dependencies: [
+]
+
+});
+</script>
+</body>
+</html>
