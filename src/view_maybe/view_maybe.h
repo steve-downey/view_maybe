@@ -426,6 +426,9 @@ constexpr auto maybe_view<Value&>::or_else(F&& f) && -> maybe_view {
     return value_ ? std::move(*this) : std::forward<F>(f)();
 }
 
+template <typename Value>
+maybe_view(Value) -> maybe_view<Value>;
+
 namespace std::ranges {
 template <typename T>
 constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
