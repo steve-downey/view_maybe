@@ -15,8 +15,9 @@ jobs:
         os:
           - ubuntu-22.04
         compiler:
-          - gcc-11
-          - gcc-12
+          - llvm
+          - gcc
+          # you can specify the version after `-` like `llvm-13.0.0`.
         CMAKE_GENERATOR:
           - "Ninja Multi-Config"
 
