@@ -3,10 +3,10 @@
 #define INCLUDED_VIEW_MAYBE
 
 #include <concepts>
-#include <ranges>
-#include <iostream>
-#include <type_traits>
 #include <functional>
+#include <iostream>
+#include <ranges>
+#include <type_traits>
 
 #include <view_maybe/concepts.h>
 

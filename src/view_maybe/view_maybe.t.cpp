@@ -1,5 +1,4 @@
 #include <view_maybe/view_maybe.h>
-#include <view_maybe/view_maybe.h>
 
 #include <functional>
 #include <ranges>
@@ -376,7 +375,7 @@ TEST(ViewMaybeTest, MonadicAndThen) {
 
 TEST(MaybeView, MonadicTransform) {
     maybe_view<int> mv{40};
-    auto r = mv.transform([](int i) { return i + 2; });
+    auto            r = mv.transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
     ASSERT_TRUE(r.data() != nullptr);
@@ -384,7 +383,10 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
-    auto r2 = mv.transform([](int& i) { i += 2; return i; });
+    auto r2 = mv.transform([](int& i) {
+        i += 2;
+        return i;
+    });
     ASSERT_TRUE(!r2.empty());
     ASSERT_TRUE(r2.size() == 1);
     ASSERT_TRUE(r2.data() != nullptr);
@@ -427,7 +429,7 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(*(mv.data()) == 0);
 
     const maybe_view<int> cmv{40};
-    auto r7 = cmv.transform([](int i) { return i + 2; });
+    auto                  r7 = cmv.transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r7.empty());
     ASSERT_TRUE(r7.size() == 1);
     ASSERT_TRUE(r7.data() != nullptr);
@@ -446,24 +448,24 @@ TEST(MaybeView, MonadicTransform) {
 
 TEST(MaybeView, MonadicOrElse) {
     maybe_view<int> o1(42);
-    auto r = o1.or_else([] { return maybe_view<int>(13); });
+    auto            r = o1.or_else([] { return maybe_view<int>(13); });
     ASSERT_TRUE(*(r.data()) == 42);
 
     maybe_view<int> o2;
-    ASSERT_TRUE(*(o2.or_else([] { return maybe_view<int>(13); })).data() == 13);
+    ASSERT_TRUE(*(o2.or_else([] { return maybe_view<int>(13); })).data() ==
+                13);
 
     auto r2 = std::move(o1).or_else([] { return maybe_view<int>(13); });
     ASSERT_TRUE(*(r2.data()) == 42);
 
     auto r3 = std::move(o2).or_else([] { return maybe_view<int>(13); });
     ASSERT_TRUE(*(r3.data()) == 13);
-
 }
 
 TEST(ViewMaybeTest, MonadicAndThenRef) {
-    int forty{40};
+    int              forty{40};
     maybe_view<int&> mv{forty};
-    auto            r = mv.and_then([](int i) { return maybe_view{i + 2}; });
+    auto             r = mv.and_then([](int i) { return maybe_view{i + 2}; });
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
     ASSERT_TRUE(r.data() != nullptr);
@@ -527,15 +529,15 @@ TEST(ViewMaybeTest, MonadicAndThenRef) {
     ASSERT_TRUE(!r8.empty());
     ASSERT_TRUE(r8.size() == 1);
     ASSERT_TRUE(r8.data() != nullptr);
-    ASSERT_EQ(*(r8.data()),42);
+    ASSERT_EQ(*(r8.data()), 42);
     ASSERT_TRUE(!cmv.empty());
     ASSERT_TRUE(*(cmv.data()) == 40);
 }
 
 TEST(MaybeView, MonadicTransformRef) {
-    int forty{40};
+    int              forty{40};
     maybe_view<int&> mv{forty};
-    auto r = mv.transform([](int i) { return i + 2; });
+    auto             r = mv.transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
     ASSERT_TRUE(r.data() != nullptr);
@@ -613,19 +615,22 @@ TEST(MaybeView, MonadicTransformRef) {
 }
 
 TEST(MaybeView, MonadicOrElseRef) {
-    int fortytwo{42};
-    int thirteen{13};
+    int              fortytwo{42};
+    int              thirteen{13};
     maybe_view<int&> o1(fortytwo);
     auto r = o1.or_else([&thirteen] { return maybe_view<int&>(thirteen); });
     ASSERT_TRUE(*(r.data()) == 42);
 
     maybe_view<int&> o2;
-    ASSERT_TRUE(*(o2.or_else([&thirteen] { return maybe_view<int&>(thirteen); })).data() == 13);
+    ASSERT_TRUE(*(o2.or_else([&thirteen] {
+                     return maybe_view<int&>(thirteen);
+                 })).data() == 13);
 
-    auto r2 = std::move(o1).or_else([&thirteen] { return maybe_view<int&>(thirteen); });
+    auto r2 = std::move(o1).or_else(
+        [&thirteen] { return maybe_view<int&>(thirteen); });
     ASSERT_TRUE(*(r2.data()) == 42);
 
-    auto r3 = std::move(o2).or_else([&thirteen] { return maybe_view<int&>(thirteen); });
+    auto r3 = std::move(o2).or_else(
+        [&thirteen] { return maybe_view<int&>(thirteen); });
     ASSERT_TRUE(*(r3.data()) == 13);
-
 }

@@ -3,10 +3,6 @@
 
 namespace view {
 
-namespace {
+namespace {} // namespace
 
-}  // close unnamed namespace
-
-
-
-}  // close package namespace
+} // namespace view

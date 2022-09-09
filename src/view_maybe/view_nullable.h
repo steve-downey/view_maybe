@@ -2,8 +2,8 @@
 #ifndef INCLUDED_VIEW_NULLABLE
 #define INCLUDED_VIEW_NULLABLE
 #include <concepts>
-#include <ranges>
 #include <iostream>
+#include <ranges>
 #include <type_traits>
 #include <view_maybe/concepts.h>
 
@@ -35,15 +35,15 @@ class nullable_view<Nullable>
     constexpr nullable_view(std::in_place_t, Args&&... args);
 
     constexpr auto begin() noexcept;
-    constexpr auto     begin() const noexcept;
-    constexpr auto end() noexcept; // { return data() + size(); }
-    constexpr auto      end() const noexcept ; //{ return data() + size(); }
+    constexpr auto begin() const noexcept;
+    constexpr auto end() noexcept;       // { return data() + size(); }
+    constexpr auto end() const noexcept; //{ return data() + size(); }
 
-    constexpr size_t size() const noexcept ;
+    constexpr size_t size() const noexcept;
 
-    constexpr auto data() noexcept ;
+    constexpr auto data() noexcept;
 
-    constexpr const auto data() const noexcept ;
+    constexpr const auto data() const noexcept;
 
     friend constexpr auto operator<=>(const nullable_view& l,
                                       const nullable_view& r) {
@@ -78,8 +78,7 @@ class nullable_view<Nullable>
 template <typename Nullable>
     requires(copyable_object<Nullable> &&
              (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-    constexpr nullable_view<Nullable>::nullable_view(
-    Nullable const& nullable)
+constexpr nullable_view<Nullable>::nullable_view(Nullable const& nullable)
     : value_(nullable) {}
 
 template <typename Nullable>
@@ -100,14 +99,14 @@ constexpr nullable_view<Nullable>::nullable_view(std::in_place_t,
 template <typename Nullable>
     requires(copyable_object<Nullable> &&
              (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-    constexpr auto nullable_view<Nullable>::begin() noexcept {
+constexpr auto nullable_view<Nullable>::begin() noexcept {
     return data();
 }
 
 template <typename Nullable>
     requires(copyable_object<Nullable> &&
              (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-    constexpr auto nullable_view<Nullable>::begin() const noexcept {
+constexpr auto nullable_view<Nullable>::begin() const noexcept {
     return data();
 }
 template <typename Nullable>
@@ -175,7 +174,7 @@ class nullable_view<Nullable&>
     Nullable* value_;
 
   public:
-    constexpr nullable_view() : value_(nullptr) {};
+    constexpr nullable_view() : value_(nullptr){};
 
     constexpr explicit nullable_view(Nullable& nullable)
         : value_(std::addressof(nullable)) {}

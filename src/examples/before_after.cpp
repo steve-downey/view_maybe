@@ -1,8 +1,8 @@
 #include <view_maybe/view_maybe.h>
 #include <view_maybe/view_nullable.h>
 
-#include <vector>
 #include <cassert>
+#include <vector>
 
 std::optional<int> possible_value() { return {7}; }
 

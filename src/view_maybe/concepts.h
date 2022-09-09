@@ -3,8 +3,8 @@
 #define INCLUDED_CONCEPTS
 
 #include <concepts>
-#include <type_traits>
 #include <ranges>
+#include <type_traits>
 
 //@PURPOSE:
 //

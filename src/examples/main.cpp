@@ -1,18 +1,18 @@
+#include <algorithm>
 #include <cassert>
+#include <concepts>
 #include <functional>
 #include <iostream>
+#include <iterator>
+#include <ranges>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <iterator>
-#include <concepts>
-#include <ranges>
 
 #include <array>
 
+#include <unordered_set>
 #include <view_maybe/view_maybe.h>
 #include <view_maybe/view_nullable.h>
-#include <unordered_set>
 
 // Qualify everything with "std::experimental::ranges" if you like,
 // I prefer to use a namespace alias:
@@ -21,7 +21,6 @@ namespace ranges = std::ranges;
 template <class...>
 class show_type;
 
-
 template <nullable_object Nullable>
 void testNullable(Nullable const&) {}
 
@@ -29,28 +28,28 @@ template <std::indirectly_readable Read>
 void testRead(Read) {}
 
 void v_func();
-int i_func();
+int  i_func();
 
 struct deref {
-    int i;
-    int const&  operator*() const {return i;}
-    explicit operator bool() const { return true; };
+    int        i;
+    int const& operator*() const { return i; }
+    explicit   operator bool() const { return true; };
 };
 
 struct no_ex_bool {
-    int i;
-    int const&  operator*() const {return i;}
-        //    explicit operator bool() const { return true; };
+    int        i;
+    int const& operator*() const { return i; }
+    //    explicit operator bool() const { return true; };
 };
 
 void checks() {
     nullable_object auto m{std::optional{3}};
     // testRead(&std::optional{3});
     testNullable(std::optional{3});
-    //testNullable(3);
-    // std::array ar = {1};
-    // testNullable(ar);
-    int *p;
+    // testNullable(3);
+    //  std::array ar = {1};
+    //  testNullable(ar);
+    int* p;
     testNullable(p);
     // void *v;
     //     testNullable(v);
@@ -67,12 +66,10 @@ void checks() {
     // testNullable(neb);
 }
 
-
 template <typename CHECK>
 void check(CHECK k) {
     show_type<CHECK> _;
 }
-
 
 class Int {
     int i_;
@@ -147,8 +144,8 @@ NoCopy makeNoCopy() {
     return noCopy;
 }
 
-int func1(int i) {return i;}
-int func2(int i) {return 2*i;}
+int func1(int i) { return i; }
+int func2(int i) { return 2 * i; }
 
 typedef int (*fptr)(int i);
 
@@ -189,7 +186,7 @@ void print_triples() {
 
 int main() {
 
-    std::unordered_set<int> set{1,3,7,9};
+    std::unordered_set<int> set{1, 3, 7, 9};
 
     auto flt = [=](int i) -> std::optional<int> {
         if (set.find(i) != set.end())
@@ -203,9 +200,8 @@ int main() {
             for (auto k : ranges::iota_view(0, j))
                 std::cout << '\a';
             std::cout << '\n';
-         }
+        }
     }
-
 
     std::optional      s{7};
     std::optional<int> e{};
@@ -230,8 +226,8 @@ int main() {
     for (int i : views::nullable(oe))
         std::cout << "i=" << i << '\n'; // does not print
 
-    int        j  = 8;
-    int*       pj = &j;
+    int  j  = 8;
+    int* pj = &j;
 
     for (auto i : views::nullable(pj))
         std::cout << "i=" << i << " prints 8\n"; // prints 8
@@ -288,7 +284,6 @@ int main() {
         std::cout << "i=" << i << " prints 9\n"; // prints 3
     }
     std::cout << "cs=" << *cs << " prints 3\n"; // prints 3
-
 
     for (auto&& i : views::nullable(ce)) {
         i = 9;
@@ -353,7 +348,6 @@ int main() {
         std::cout << "i=" << double(i) << " prints 457.3\n"; // prints 457.3
     }
 
-
     for (auto&& i : views::nullable(std::optional{noMove})) {
         std::cout << "No Move" << &i << "\n";
     }
@@ -365,7 +359,6 @@ int main() {
     // Does not compile
     // auto vfunc_view = views::nullable(v_func);
     // auto ifunc_view = views::nullable(i_func);
-
 
     std::vector<std::optional<int>> v{std::optional<int>{42},
                                       std::optional<int>{},
@@ -385,29 +378,27 @@ int main() {
     }
     std::cout << '\n';
 
-    for (auto i : ranges::views::join(ranges::views::transform(v, views::nullable))) {
-        std::cout << i << '\t'; // prints 42 and 54
-    }
-
-    std::cout << '\n';
-    for (auto i : v
-             | ranges::views::transform(views::nullable)
-             | ranges::views::join) {
+    for (auto i :
+         ranges::views::join(ranges::views::transform(v, views::nullable))) {
         std::cout << i << '\t'; // prints 42 and 54
     }
 
     std::cout << '\n';
     for (auto i :
-         ranges::iota_view{1, 10}
-             | ranges::views::transform(flt)
-             | ranges::views::transform([](auto&& o) -> std::optional<int> {
+         v | ranges::views::transform(views::nullable) | ranges::views::join) {
+        std::cout << i << '\t'; // prints 42 and 54
+    }
+
+    std::cout << '\n';
+    for (auto i :
+         ranges::iota_view{1, 10} | ranges::views::transform(flt) |
+             ranges::views::transform([](auto&& o) -> std::optional<int> {
                  if (o) {
                      return *o * *o;
                  }
                  return {};
-             })
-             | ranges::views::transform(views::nullable)
-             | ranges::views::join) {
+             }) |
+             ranges::views::transform(views::nullable) | ranges::views::join) {
         std::cout << i << '\t'; // prints 1 9 49 and 81
     }
     std::cout << '\n';
@@ -448,8 +439,8 @@ int main() {
     //     }
     // }
     {
-        int i1 = 1;
-        int i2 = 2;
+        int  i1 = 1;
+        int  i2 = 2;
         int* p0 = nullptr;
         int* p1 = &i1;
         int* p2 = &i2;
@@ -465,16 +456,15 @@ int main() {
         for (auto f : views::nullable(p2)) {
             std::cout << f << '\n';
         }
-
     }
 
     std::cout << "pointers to function pointers\n";
 
     {
-        fptr* f0 = nullptr;
-        fptr f1 = &func1;
+        fptr* f0  = nullptr;
+        fptr  f1  = &func1;
         fptr* pf1 = &f1;
-        fptr f2 = &func2;
+        fptr  f2  = &func2;
         fptr* pf2 = &f2;
 
         for (auto f : views::nullable(f0)) {
@@ -492,15 +482,15 @@ int main() {
 
     {
         std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
-        auto test = [](int i) -> std::optional<int> {
+        auto             test = [](int i) -> std::optional<int> {
             switch (i) {
-              case 1:
-              case 3:
-              case 7:
-              case 9:
-            return i;
-              default:
-            return {};
+            case 1:
+            case 3:
+            case 7:
+            case 9:
+                return i;
+            default:
+                return {};
             }
         };
 
@@ -521,15 +511,12 @@ int main() {
 
         std::cout << '\n';
 
-        auto&& r2 = v |
-            ranges::views::transform(test) |
-            ranges::views::transform(views::nullable) |
-            ranges::views::join |
-            ranges::views::transform(
-                [](int i) {
-                    std::cout << i;
-                    return i;
-                });
+        auto&& r2 = v | ranges::views::transform(test) |
+                    ranges::views::transform(views::nullable) |
+                    ranges::views::join | ranges::views::transform([](int i) {
+                        std::cout << i;
+                        return i;
+                    });
 
         for (auto&& i : r2) {
         };
