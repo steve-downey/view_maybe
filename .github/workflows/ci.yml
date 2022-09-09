@@ -17,16 +17,9 @@ jobs:
         compiler:
           - gcc-11
           - gcc-12
+          # you can specify the version after `-` like `llvm-13.0.0`.
         CMAKE_GENERATOR:
           - "Ninja Multi-Config"
-
-        include:
-          # Inject GCOV variable for gcc
-          - compiler: gcc
-            GCOV: gcov
-          # Inject GCOV variable for llvm
-          - compiler: llvm
-            GCOV: "llvm-cov gcov"
 
     steps:
       - uses: actions/checkout@v3
