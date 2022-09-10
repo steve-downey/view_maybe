@@ -8,7 +8,7 @@
 #include <array>
 
 template <nullable_object_ref NullableRef>
-void testNullableRef(NullableRef const&) {}
+void testNullableRef(const NullableRef&) {}
 
 TEST(ViewNullableTest, TestGTest) { ASSERT_EQ(1, 1); }
 

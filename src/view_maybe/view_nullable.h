@@ -26,7 +26,7 @@ class nullable_view<Nullable>
   public:
     constexpr nullable_view() = default;
 
-    constexpr explicit nullable_view(Nullable const& nullable);
+    constexpr explicit nullable_view(const Nullable& nullable);
 
     constexpr explicit nullable_view(Nullable&& nullable);
 
@@ -78,7 +78,7 @@ class nullable_view<Nullable>
 template <typename Nullable>
     requires(copyable_object<Nullable> &&
              (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr nullable_view<Nullable>::nullable_view(Nullable const& nullable)
+constexpr nullable_view<Nullable>::nullable_view(const Nullable& nullable)
     : value_(nullable) {}
 
 template <typename Nullable>
@@ -225,14 +225,14 @@ nullable_view(T) -> nullable_view<std::decay_t<T>>;
 
 namespace std::ranges {
 template <typename T>
-constexpr inline bool enable_borrowed_range<nullable_view<T*>> = true;
+inline constexpr bool enable_borrowed_range<nullable_view<T*>> = true;
 
 template <typename T>
-constexpr inline bool
+inline constexpr bool
     enable_borrowed_range<nullable_view<std::reference_wrapper<T>>> = true;
 
 template <typename T>
-constexpr inline bool enable_borrowed_range<nullable_view<T&>> = true;
+inline constexpr bool enable_borrowed_range<nullable_view<T&>> = true;
 
 } // namespace std::ranges
 

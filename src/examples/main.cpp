@@ -22,7 +22,7 @@ template <class...>
 class show_type;
 
 template <nullable_object Nullable>
-void testNullable(Nullable const&) {}
+void testNullable(const Nullable&) {}
 
 template <std::indirectly_readable Read>
 void testRead(Read) {}
@@ -32,13 +32,13 @@ int  i_func();
 
 struct deref {
     int        i;
-    int const& operator*() const { return i; }
+    const int& operator*() const { return i; }
     explicit   operator bool() const { return true; };
 };
 
 struct no_ex_bool {
     int        i;
-    int const& operator*() const { return i; }
+    const int& operator*() const { return i; }
     //    explicit operator bool() const { return true; };
 };
 
@@ -114,7 +114,7 @@ class NoDefault {
 };
 
 class NoCopy {
-    NoCopy(NoCopy const&) = delete;
+    NoCopy(const NoCopy&) = delete;
 
   public:
     NoCopy()         = default;
@@ -126,7 +126,7 @@ class NoMove {
 
   public:
     NoMove()              = default;
-    NoMove(NoMove const&) = default;
+    NoMove(const NoMove&) = default;
 };
 
 NoDefault makeNoDefault() {

@@ -28,7 +28,7 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
   public:
     constexpr maybe_view() = default;
 
-    constexpr explicit maybe_view(Value const& value);
+    constexpr explicit maybe_view(const Value& value);
 
     constexpr explicit maybe_view(Value&& value);
 
@@ -82,7 +82,7 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
 };
 
 template <typename Value>
-constexpr maybe_view<Value>::maybe_view(Value const& value) : value_(value) {}
+constexpr maybe_view<Value>::maybe_view(const Value& value) : value_(value) {}
 
 template <typename Value>
 constexpr maybe_view<Value>::maybe_view(Value&& value)
@@ -431,14 +431,14 @@ maybe_view(Value) -> maybe_view<Value>;
 
 namespace std::ranges {
 template <typename T>
-constexpr inline bool enable_borrowed_range<maybe_view<T*>> = true;
+inline constexpr bool enable_borrowed_range<maybe_view<T*>> = true;
 
 template <typename T>
-constexpr inline bool
+inline constexpr bool
     enable_borrowed_range<maybe_view<std::reference_wrapper<T>>> = true;
 
 template <typename T>
-constexpr inline bool enable_borrowed_range<maybe_view<T&>> = true;
+inline constexpr bool enable_borrowed_range<maybe_view<T&>> = true;
 
 } // namespace std::ranges
 
