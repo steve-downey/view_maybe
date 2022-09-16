@@ -603,12 +603,14 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     std::optional}<Value> @\exposidnc{value_}@;             // \expos{}
 
   public:
-    constexpr maybe_view() requires @\libconcept{default_initializable}@<Value> = default;
-    constexpr explicit maybe_view(Value const& value);
-    constexpr explicit maybe_view(Value&& value);
+    constexpr maybe_view() = default;
+
+    constexpr explicit maybe_view(const Value& value);
+
+    constexpr explicit maybe_view(Value&& value) requires @\libconcept{copy_constructible}@<T>;
 
     template <class... Args>
-      requires @\libconcept{constructible_from}@<Value, Args...>
+      requires @\libconcept{constructible_from}@<T, Args...>
     constexpr maybe_view(std::in_place_t, Args&&... args);
 
     constexpr Value*       begin() noexcept;
@@ -623,33 +625,37 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     constexpr const Value* data() const noexcept;
 
     friend constexpr auto operator<=>(const maybe_view& lhs,
-                                      const maybe_view& rhs);
+    const maybe_view& rhs) {
+      return lhs.value_ <=> rhs.value_;
+    }
 
     friend constexpr bool operator==(const maybe_view& lhs,
-                                     const maybe_view& rhs);
+    const maybe_view& rhs) {
+      return lhs.value_ == rhs.value_;
+    }
 
-    template <typename F>
-    constexpr auto and_then(F&& f) &;
-    template <typename F>
-    constexpr auto and_then(F&& f) &&;
-    template <typename F>
-    constexpr auto and_then(F&& f) const&;
-    template <typename F>
-    constexpr auto and_then(F&& f) const&&;
+  template <typename F>
+  constexpr auto and_then(F&& f) &;
+  template <typename F>
+  constexpr auto and_then(F&& f) &&;
+  template <typename F>
+  constexpr auto and_then(F&& f) const&;
+  template <typename F>
+  constexpr auto and_then(F&& f) const&&;
 
-    template <typename F>
-    constexpr auto transform(F&& f) &;
-    template <typename F>
-    constexpr auto transform(F&& f) &&;
-    template <typename F>
-    constexpr auto transform(F&& f) const&;
-    template <typename F>
-    constexpr auto transform(F&& f) const&&;
+  template <typename F>
+  constexpr auto transform(F&& f) &;
+  template <typename F>
+  constexpr auto transform(F&& f) &&;
+  template <typename F>
+  constexpr auto transform(F&& f) const&;
+  template <typename F>
+  constexpr auto transform(F&& f) const&&;
 
-    template <typename F>
-    constexpr auto or_else(F&& f) &&;
-    template <typename F>
-    constexpr auto or_else(F&& f) const&;
+  template <typename F>
+  constexpr auto or_else(F&& f) &&;
+  template <typename F>
+  constexpr auto or_else(F&& f) const&;
 };
 
 \end{codeblock}
@@ -1355,7 +1361,7 @@ class nullable_view<Nullable>
     using T = std::remove_reference_t<
         std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
 
-    ranges::__detail::__box<Nullable> value_;
+    @\exposidnc{movable-box}@<Nullable> @\exposidnc{value_}@; // \expos{} (see \ref{range.move.wrap})
 
   public:
     constexpr nullable_view() = default;
