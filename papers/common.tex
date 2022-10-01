@@ -70,11 +70,11 @@
 
 \renewcommand\RSsmallest{5.5pt}  % smallest font size for relsize
 
-\input{layout}
-\input{styles}
-\input{macros}
-\input{tables}
-\input{paper_macros}
+\input{stdtex/layout}
+\input{stdtex/styles}
+\input{stdtex/macros}
+\input{stdtex/tables}
+\input{stdtex/paper_macros}
 
 % %% --------------------------------------------------
 % %% fix interaction between hyperref and other
@@ -93,3 +93,7 @@
 %%--------------------------------------------------
 %% turn off all ligatures inside \texttt
 \DisableLigatures{encoding = T1, family = tt*}
+
+%% --------------------------------------------------
+%% configuration
+\input{stdtex/config}
