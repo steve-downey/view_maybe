@@ -39,6 +39,15 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \tableofcontents*
 
+\chapter*{Changes Since Last Version}
+
+\begin{itemize}
+\item \textbf{Changes since R9},
+  \begin{itemize}
+  \item Fix Borrowed Ranges post naming split
+  \end{itemize}
+\end{itemize}
+
 \chapter{Before / After Table}
 \begin{tabular}{ lr }
 \begin{minipage}[t]{0.45\columnwidth}
@@ -422,18 +431,22 @@ Dereferencing the result of \tcode{data()} without a check for null is of course
 
 \epigraph{For loan oft loses both itself and friend,}
 
-A \tcode{borrowed_range} is one whose iterators cannot be invalidated by ending the lifetime of the range. For \tcode{views::maybe} and \tcode{views::nullable} iterators are \tcode{T*}, where \tcode{T} is essentially the type of the underlying object. For \tcode{nullable_view} or \tcode{maybe_view} over raw pointers and \tcode{std::reference_wrapper} the iterators point directly to the underlying object, and thus matches the semantics of \libconcept{borrowed_range}.
+A \tcode{borrowed_range} is one whose iterators cannot be invalidated by ending the lifetime of the range.
 
-For the reference specializations, all types imply a borrowed range.
+The reference specializations of both \tcode{nullable_view} and \tcode{maybe_view} are borrowed. Iterators refer to the underlying object directly.
 
-A \tcode{maybe_view<shared_ptr>}, however, is not a borrowed range, as it participates in ownership of the \tcode{shared_ptr} and might invalidate the iterators if upon the end of its lifetime it is the last owner.
+No other \tcode{maybe_view} is necessarily a borrowed range, and is not tagged as such.
+
+All instantiations of \tcode{nullable_view} over a pointer to object are borrowed ranges. The iterator refers to the address of the object pointed to without involving any addresss in the view.
+
+A \tcode{nullable_view<shared_ptr>}, however, is not a borrowed range, as it participates in ownership of the \tcode{shared_ptr} and might invalidate the iterators if upon the end of its lifetime it is the last owner.
 
 An example of code that is enabled by borrowed ranges, if unlikely code:
 
 \begin{minipage}[t]{\columnwidth}
 \begin{minted} {c++}
 num = 42;
-int k = *std::ranges::find(views::maybe(&num), num);
+int k = *std::ranges::find(views::nullable(&num), num);
 \end{minted}
 \end{minipage}
 

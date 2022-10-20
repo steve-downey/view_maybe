@@ -1,0 +1,72 @@
+\documentclass[a4paper,10pt,oneside,openany,final,article]{memoir}
+\input{common}
+\input{config}
+\settocdepth{chapter}
+\usepackage{minted}
+\usepackage{fontspec}
+\setromanfont{Source Serif Pro}
+\setsansfont{Source Sans Pro}
+\setmonofont{Source Code Pro}
+\usepackage{draftwatermark}
+\SetWatermarkText{\textsc{DRAFT}}
+\SetWatermarkColor[gray]{0.9}
+
+\begin{document}
+\title{Update Annex E based on Unicode 15.0 UAX 31}
+\author{
+Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
+}
+\date{} %unused. Type date explicitly below.
+\maketitle
+
+\begin{flushright}
+\begin{tabular}{ll}
+Document \#: & P2653R0 \\
+Date: & \today \\
+Project: & Programming Language C++ \\
+Audience: & SG9, LEWG
+\end{tabular}
+\end{flushright}
+
+\begin{abstract}
+Update Annex E, Conformance with UAX \#31, based on the updated guidance from Unicode 15. In particular update the pattern whitespace and syntax section.
+\end{abstract}
+
+\tableofcontents*
+
+
+\chapter{Wording}
+
+The proposed changes are relative to the current working draft \cite{N4910}.
+
+\begin{wording}
+
+
+\setcounter{section}{3}
+\rSec1[uaxid.pattern]{R3 Pattern_White_Space and Pattern_Syntax characters}
+
+\pnum
+UAX \#31 describes how languages that use or interpret patterns of characters
+such as \changed{regular expressions or number formats}{computer languages},
+may describe that syntax with Unicode properties.
+
+\pnum
+\begin{removedblock}
+\Cpp{} does not do this as part of the language,
+deferring to library components for such usage of patterns.
+This requirement does not apply to \Cpp{}.
+\end{removedblock}
+\begin{addedblock}
+\Cpp{} does not use the methods or properties in UAX \#31 to do this. It instead uses the whitespace and syntax characters defined in [lex] to describe the white space characters and the basic source characters used to define syntactic elements other than identifiers.
+\end{addedblock}
+
+
+\end{wording}
+
+\renewcommand{\bibname}{References}
+\bibliographystyle{abstract}
+\bibliography{wg21}
+
+\nocite{viewmayb27:online}
+
+\end{document}
