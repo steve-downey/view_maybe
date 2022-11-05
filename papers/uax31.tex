@@ -21,10 +21,10 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \begin{flushright}
 \begin{tabular}{ll}
-Document \#: & P2653R0 \\
+Document \#: & P2653R1 \\
 Date: & \today \\
 Project: & Programming Language C++ \\
-Audience: & SG9, LEWG
+Audience: & SG16, CWG
 \end{tabular}
 \end{flushright}
 
@@ -34,10 +34,24 @@ Update Annex E, Conformance with UAX \#31, based on the updated guidance from Un
 
 \tableofcontents*
 
+\chapter{What is being proposed}
+The Unicode Consortium in the recent release of the Unicode Standard, version 15, clarified that the Pattern White Space and Pattern Syntax requirements are intended to apply to programming languages. We had interpreted the requirements to apply to facilities like regexp pattern matching. See the Modifications section of \cite{UAX31-15:online} where it says:
+\begin{quotation}
+  Section 4, Pattern Syntax
+
+  Clarified that this section is applicable to programming languages.
+\end{quotation}
+
+The diff from the prior version of the Pattern Syntax section \cite{UAX31-DIFF:online}:
+
+\added{Most programming languages have a concept of whitespace as part of their lexical structure, as well as some set of characters that are disallowed in identifiers but have syntactic use, such as arithmetic operators.}
+\removed{There are}\added{ Beyond general programming languages, there are also }many circumstances [...]
+
+While it appears possible to achieve conformance with this requirement by defining an appropriate profile showing how C++ classifies white space and the characters it uses for syntax, it is much simpler at this time to continue to disclaim conformance, while updating our reasoning for the disclamation.
 
 \chapter{Wording}
 
-The proposed changes are relative to the current working draft \cite{N4910}.
+The proposed changes are relative to the current working draft \cite{N4917}.
 
 \begin{wording}
 
@@ -46,27 +60,37 @@ The proposed changes are relative to the current working draft \cite{N4910}.
 \rSec1[uaxid.pattern]{R3 Pattern_White_Space and Pattern_Syntax characters}
 
 \pnum
-UAX \#31 describes how languages that use or interpret patterns of characters
-such as \changed{regular expressions or number formats}{computer languages},
+
+\begin{removedblock}
+UAX \#31 describes how languages that use or interpret patterns of characters,
+such as regular expressions or number formats,
 may describe that syntax with Unicode properties.
+\end{removedblock}
+
+\begin{addedblock}
+UAX \#31 describes how formal languages such as computer languages should describe and implement their use of whitespace and syntactically significant characters during the processes of lexing and parsing.
+\end{addedblock}
 
 \pnum
+
 \begin{removedblock}
 \Cpp{} does not do this as part of the language,
 deferring to library components for such usage of patterns.
 This requirement does not apply to \Cpp{}.
 \end{removedblock}
-\begin{addedblock}
-\Cpp{} does not use the methods or properties in UAX \#31 to do this. It instead uses the whitespace and syntax characters defined in [lex] to describe the white space characters and the basic source characters used to define syntactic elements other than identifiers.
-\end{addedblock}
 
+\begin{addedblock}
+\Cpp{} does not claim conformance with this requirement.
+\end{addedblock}
 
 \end{wording}
 
 \renewcommand{\bibname}{References}
 \bibliographystyle{abstract}
-\bibliography{wg21}
+\bibliography{wg21, mybiblio}
 
-\nocite{viewmayb27:online}
+\nocite{UAX31-14:online}
+\nocite{UAX31-15:online}
+\nocite{UAX31-DIFF:online}
 
 \end{document}
