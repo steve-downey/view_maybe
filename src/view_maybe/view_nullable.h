@@ -18,7 +18,7 @@ template <typename Nullable>
 class nullable_view<Nullable>
     : public ranges::view_interface<nullable_view<Nullable>> {
   private:
-    using T = std::remove_reference_t<
+    using U = std::remove_reference_t<
         std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
 
     ranges::__detail::__box<Nullable> value_;
@@ -34,16 +34,37 @@ class nullable_view<Nullable>
         requires std::constructible_from<Nullable, Args...>
     constexpr nullable_view(std::in_place_t, Args&&... args);
 
-    constexpr auto begin() noexcept;
-    constexpr auto begin() const noexcept;
-    constexpr auto end() noexcept;       // { return data() + size(); }
-    constexpr auto end() const noexcept; //{ return data() + size(); }
+    constexpr auto begin() noexcept { return data(); }
+    constexpr auto begin() const noexcept { return data(); }
+    constexpr auto end() noexcept        { return data() + size(); }
+    constexpr auto end() const noexcept { return data() + size(); }
 
-    constexpr size_t size() const noexcept;
+    constexpr size_t size() const noexcept {
+        const Nullable& m = *value_;
+        if constexpr (is_reference_wrapper_v<Nullable>) {
+            return bool(m.get());
+        } else {
+            return bool(m);
+        }
+    }
 
-    constexpr auto data() noexcept;
+    constexpr U* data() noexcept {
+        Nullable& m = *value_;
+        if constexpr (is_reference_wrapper_v<Nullable>) {
+            return m.get() ? std::addressof(*(m.get())) : nullptr;
+        } else {
+            return m ? std::addressof(*m) : nullptr;
+        }
+    }
 
-    constexpr const auto data() const noexcept;
+    constexpr const U* data() const noexcept {
+        const Nullable& m = *value_;
+        if constexpr (is_reference_wrapper_v<Nullable>) {
+            return m.get() ? std::addressof(*(m.get())) : nullptr;
+        } else {
+            return m ? std::addressof(*m) : nullptr;
+        }
+    }
 
     friend constexpr auto operator<=>(const nullable_view& l,
                                       const nullable_view& r) {
@@ -81,141 +102,141 @@ template <typename Nullable>
 constexpr nullable_view<Nullable>::nullable_view(const Nullable& nullable)
     : value_(nullable) {}
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr nullable_view<Nullable>::nullable_view(Nullable&& nullable)
+template <typename T>
+    requires(copyable_object<T> &&
+             (nullable_object_val<T> || nullable_object_ref<T>))
+constexpr nullable_view<T>::nullable_view(T&& nullable)
     : value_(std::move(nullable)) {}
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+template <typename T>
+    requires(copyable_object<T> &&
+             (nullable_object_val<T> || nullable_object_ref<T>))
 template <class... Args>
-    requires std::constructible_from<Nullable, Args...>
-constexpr nullable_view<Nullable>::nullable_view(std::in_place_t,
-                                                 Args&&... args)
+    requires std::constructible_from<T, Args...>
+constexpr nullable_view<T>::nullable_view(std::in_place_t, Args&&... args)
     : value_(std::in_place, std::forward<Args>(args)...) {}
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr auto nullable_view<Nullable>::begin() noexcept {
-    return data();
-}
+// template <typename T>
+//     requires(copyable_object<T> &&
+//              (nullable_object_val<T> || nullable_object_ref<T>))
+// constexpr auto nullable_view<T>::begin() noexcept {
+//     return data();
+// }
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr auto nullable_view<Nullable>::begin() const noexcept {
-    return data();
-}
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr auto nullable_view<Nullable>::end() noexcept {
-    return data() + size();
-}
+// template <typename T>
+//     requires(copyable_object<T> &&
+//              (nullable_object_val<T> || nullable_object_ref<T>))
+// constexpr auto nullable_view<T>::begin() const noexcept {
+//     return data();
+// }
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr auto nullable_view<Nullable>::end() const noexcept {
-    return data() + size();
-}
+// template <typename T>
+//     requires(copyable_object<T> &&
+//              (nullable_object_val<T> || nullable_object_ref<T>))
+// constexpr auto nullable_view<T>::end() noexcept {
+//     return data() + size();
+// }
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr size_t nullable_view<Nullable>::size() const noexcept {
-    if constexpr (is_reference_wrapper_v<Nullable>) {
-        return bool((*value_).get());
-    } else {
-        return bool(*value_);
-    }
-}
+// template <typename T>
+//     requires(copyable_object<T> &&
+//              (nullable_object_val<T> || nullable_object_ref<T>))
+// constexpr auto nullable_view<T>::end() const noexcept {
+//     return data() + size();
+// }
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr auto nullable_view<Nullable>::data() noexcept {
-    Nullable& m = *value_;
-    if constexpr (is_reference_wrapper_v<Nullable>) {
-        return m.get() ? std::addressof(*(m.get())) : nullptr;
-    } else {
-        return m ? std::addressof(*m) : nullptr;
-    }
-}
+// template <typename T>
+//     requires(copyable_object<T> &&
+//              (nullable_object_val<T> || nullable_object_ref<T>))
+// constexpr size_t nullable_view<T>::size() const noexcept {
+//     if constexpr (is_reference_wrapper_v<T>) {
+//         return bool((*value_).get());
+//     } else {
+//         return bool(*value_);
+//     }
+// }
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-constexpr const auto nullable_view<Nullable>::data() const noexcept {
-    const Nullable& m = *value_;
-    if constexpr (is_reference_wrapper_v<Nullable>) {
-        return m.get() ? std::addressof(*(m.get())) : nullptr;
-    } else {
-        return m ? std::addressof(*m) : nullptr;
-    }
-}
+// template <typename T>
+//     requires(copyable_object<T> &&
+//              (nullable_object_val<T> || nullable_object_ref<T>))
+// constexpr auto nullable_view<T>::data() noexcept {
+//     const T& m = *value_;
+//     if constexpr (is_reference_wrapper_v<T>) {
+//         return m.get() ? std::addressof(*(m.get())) : nullptr;
+//     } else {
+//         return m ? std::addressof(*m) : nullptr;
+//     }
+// }
+
+// template <typename T>
+//     requires(copyable_object<T> &&
+//              (nullable_object_val<T> || nullable_object_ref<T>))
+// constexpr const auto nullable_view<T>::data() const noexcept {
+//     const T& m = *value_;
+//     if constexpr (is_reference_wrapper_v<T>) {
+//         return m.get() ? std::addressof(*(m.get())) : nullptr;
+//     } else {
+//         return m ? std::addressof(*m) : nullptr;
+//     }
+// }
 
 ///
 ///
 ///
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-class nullable_view<Nullable&>
-    : public ranges::view_interface<nullable_view<Nullable>> {
+template <typename NullableRef>
+    requires(copyable_object<NullableRef> &&
+             (nullable_object_val<NullableRef> ||
+              nullable_object_ref<NullableRef>))
+class nullable_view<NullableRef&>
+    : public ranges::view_interface<nullable_view<NullableRef>> {
   private:
-    using T = std::remove_reference_t<
-        std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
+    using U = std::remove_reference_t<
+        std::iter_reference_t<typename std::unwrap_reference_t<NullableRef>>>;
 
-    Nullable* value_;
+    NullableRef* value_;
 
   public:
     constexpr nullable_view() : value_(nullptr){};
 
-    constexpr explicit nullable_view(Nullable& nullable)
+    constexpr explicit nullable_view(NullableRef& nullable)
         : value_(std::addressof(nullable)) {}
 
-    constexpr explicit nullable_view(Nullable&& nullable) = delete;
+    constexpr explicit nullable_view(NullableRef&& nullable) = delete;
 
-    constexpr T*       begin() noexcept { return data(); }
-    constexpr const T* begin() const noexcept { return data(); }
-    constexpr T*       end() noexcept { return data() + size(); }
-    constexpr const T* end() const noexcept { return data() + size(); }
+    constexpr U* begin() noexcept { return data(); }
+    constexpr const U* begin() const noexcept { return data(); }
+    constexpr U*       end() noexcept { return data() + size(); }
+    constexpr const U* end() const noexcept {
+        return data() + size();
+    }
 
     constexpr size_t size() const noexcept {
         if (!value_)
             return 0;
-        Nullable& m = *value_;
-        if constexpr (is_reference_wrapper_v<Nullable>) {
-            return bool(m.get());
+        if constexpr (is_reference_wrapper_v<NullableRef>) {
+            return bool(value_->get());
         } else {
-            return bool(m);
+            return bool(*value_);
         }
     }
 
-    constexpr T* data() noexcept {
+    constexpr U* data() noexcept {
         if (!value_)
             return nullptr;
-        Nullable& m = *value_;
-        if constexpr (is_reference_wrapper_v<Nullable>) {
-            return m.get() ? std::addressof(*(m.get())) : nullptr;
+        if constexpr (is_reference_wrapper_v<NullableRef>) {
+            return value_->get() ? std::addressof(*(value_->get())) : nullptr;
         } else {
-            return m ? std::addressof(*m) : nullptr;
+            return *value_ ? std::addressof(**value_) : nullptr;
         }
     }
 
-    constexpr const T* data() const noexcept {
+    constexpr const U* data() const noexcept {
         if (!value_)
             return nullptr;
-        const Nullable& m = *value_;
-        if constexpr (is_reference_wrapper_v<Nullable>) {
-            return m.get() ? std::addressof(*(m.get())) : nullptr;
+        if constexpr (is_reference_wrapper_v<NullableRef>) {
+            return value_->get() ? std::addressof(*(value_->get())) : nullptr;
         } else {
-            return m ? std::addressof(*m) : nullptr;
+            return *value_ ? std::addressof(**value_) : nullptr;
         }
     }
 };

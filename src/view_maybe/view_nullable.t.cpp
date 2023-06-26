@@ -147,6 +147,7 @@ TEST(ViewNullableTest, Breathing) {
     ASSERT_EQ(ixx, 3);
 
     for (auto&& i : views::nullable(s)) {
+        //        using X = decltype(i)::foo;
         i = 9;
         ASSERT_EQ(i, 9);
     }
@@ -257,6 +258,9 @@ TEST(ViewNullableTest, BreathingRef) {
         ASSERT_EQ(i, 7);
 
     nullable_view<std::optional<int>&> e2{e};
+    ASSERT_TRUE(ranges::begin(e2) == nullptr);
+    ASSERT_TRUE(e2.size() == 0);
+    ASSERT_TRUE(ranges::begin(e2) == ranges::end(e2));
     for (int i : e2)
         ASSERT_TRUE(i != i); // tautology to avoid unused variable warning
 
