@@ -109,15 +109,22 @@ class movable_box<T> {
     }
 
     constexpr bool has_value() const noexcept { return true; };
-
-    constexpr T& operator*() noexcept { return value_; }
-
+    constexpr explicit operator bool() const noexcept { return true; };
+    constexpr T&       operator*() noexcept { return value_; }
     constexpr const T& operator*() const noexcept { return value_; }
-
-    constexpr T* operator->() noexcept { return std::addressof(value_); }
-
+    constexpr T*       operator->() noexcept { return std::addressof(value_); }
     constexpr const T* operator->() const noexcept {
         return std::addressof(value_);
+    }
+
+    friend constexpr auto operator<=>(const movable_box& lhs,
+                                      const movable_box& rhs) {
+        return lhs.value_ <=> rhs.value_;
+    }
+
+    friend constexpr auto operator==(const movable_box& lhs,
+                                     const movable_box& rhs) {
+        return lhs.value_ == rhs.value_;
     }
 };
 } // namespace detail
