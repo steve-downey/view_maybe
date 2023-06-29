@@ -51,6 +51,6 @@ template <class T>
 inline constexpr bool is_reference_wrapper_v = is_v<T, std::reference_wrapper>;
 
 template <class T>
-concept copyable_object = (std::copy_constructible<T> && std::is_object_v<T>);
+concept movable_object = (std::move_constructible<T> && std::is_object_v<T>);
 } // namespace smd::view_maybe
 #endif

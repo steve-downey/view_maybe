@@ -6,6 +6,7 @@
 #include <ranges>
 #include <type_traits>
 #include <view_maybe/concepts.h>
+#include <view_maybe/movable_box.h>
 
 namespace smd::view_maybe {
 
@@ -15,7 +16,7 @@ template <typename T>
 class nullable_view;
 
 template <typename Nullable>
-    requires(copyable_object<Nullable> &&
+    requires(movable_object<Nullable> &&
              (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
 class nullable_view<Nullable>
     : public ranges::view_interface<nullable_view<Nullable>> {
@@ -23,7 +24,7 @@ class nullable_view<Nullable>
     using U = std::remove_reference_t<
         std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
 
-    ranges::__detail::__box<Nullable> value_;
+    detail::movable_box<Nullable> value_;
 
   public:
     constexpr nullable_view() = default;
@@ -101,25 +102,24 @@ class nullable_view<Nullable>
     }
 };
 
-template <typename NullableRef>
-    requires(
-        copyable_object<NullableRef> &&
-        (nullable_object_val<NullableRef> || nullable_object_ref<NullableRef>))
-class nullable_view<NullableRef&>
-    : public ranges::view_interface<nullable_view<NullableRef>> {
+template <typename Nullable>
+    requires(movable_object<Nullable> &&
+             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
+class nullable_view<Nullable&>
+    : public ranges::view_interface<nullable_view<Nullable>> {
   private:
     using U = std::remove_reference_t<
-        std::iter_reference_t<typename std::unwrap_reference_t<NullableRef>>>;
+        std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
 
-    NullableRef* value_;
+    Nullable* value_;
 
   public:
     constexpr nullable_view() : value_(nullptr){};
 
-    constexpr explicit nullable_view(NullableRef& nullable)
+    constexpr explicit nullable_view(Nullable& nullable)
         : value_(std::addressof(nullable)) {}
 
-    constexpr explicit nullable_view(NullableRef&& nullable) = delete;
+    constexpr explicit nullable_view(Nullable&& nullable) = delete;
 
     constexpr U*       begin() noexcept { return data(); }
     constexpr const U* begin() const noexcept { return data(); }
@@ -129,7 +129,7 @@ class nullable_view<NullableRef&>
     constexpr size_t size() const noexcept {
         if (!value_)
             return 0;
-        if constexpr (is_reference_wrapper_v<NullableRef>) {
+        if constexpr (is_reference_wrapper_v<Nullable>) {
             return bool(value_->get());
         } else {
             return bool(*value_);
@@ -139,7 +139,7 @@ class nullable_view<NullableRef&>
     constexpr U* data() noexcept {
         if (!value_)
             return nullptr;
-        if constexpr (is_reference_wrapper_v<NullableRef>) {
+        if constexpr (is_reference_wrapper_v<Nullable>) {
             return value_->get() ? std::addressof(*(value_->get())) : nullptr;
         } else {
             return *value_ ? std::addressof(**value_) : nullptr;
@@ -149,7 +149,7 @@ class nullable_view<NullableRef&>
     constexpr const U* data() const noexcept {
         if (!value_)
             return nullptr;
-        if constexpr (is_reference_wrapper_v<NullableRef>) {
+        if constexpr (is_reference_wrapper_v<Nullable>) {
             return value_->get() ? std::addressof(*(value_->get())) : nullptr;
         } else {
             return *value_ ? std::addressof(**value_) : nullptr;
@@ -163,8 +163,8 @@ nullable_view(T) -> nullable_view<std::decay_t<T>>;
 
 namespace std::ranges {
 template <typename T>
-inline constexpr bool enable_borrowed_range<smd::view_maybe::nullable_view<T*>> =
-    true;
+inline constexpr bool
+    enable_borrowed_range<smd::view_maybe::nullable_view<T*>> = true;
 
 template <typename T>
 inline constexpr bool enable_borrowed_range<

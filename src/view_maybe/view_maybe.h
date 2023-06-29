@@ -39,10 +39,14 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     constexpr Value* data() noexcept;
 
     constexpr const Value* data() const noexcept;
-
     friend constexpr auto operator<=>(const maybe_view& lhs,
                                       const maybe_view& rhs) {
-        return lhs.value_ <=> rhs.value_;
+        {
+            return (lhs.value_ && rhs.value_)
+                        ? (*lhs.value_ <=> *rhs.value_)
+                        : (bool(lhs.value_) <=> bool(rhs.value_));
+        }
+        //        return lhs.value_ <=> rhs.value_;
     }
 
     friend constexpr bool operator==(const maybe_view& lhs,
