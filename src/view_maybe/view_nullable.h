@@ -13,7 +13,7 @@ namespace smd::view_maybe {
 namespace ranges = std::ranges;
 
 template <typename T>
-class nullable_view;
+class nullable_view : std::false_type {};
 
 template <typename Nullable>
     requires(movable_object<Nullable> &&
@@ -40,10 +40,10 @@ class nullable_view<Nullable>
     constexpr nullable_view(std::in_place_t, Args&&... args)
         : value_(std::in_place, std::forward<Args>(args)...) {}
 
-    constexpr auto begin() noexcept { return data(); }
-    constexpr auto begin() const noexcept { return data(); }
-    constexpr auto end() noexcept { return data() + size(); }
-    constexpr auto end() const noexcept { return data() + size(); }
+    constexpr U*       begin() noexcept { return data(); }
+    constexpr const U* begin() const noexcept { return data(); }
+    constexpr U*       end() noexcept { return data() + size(); }
+    constexpr const U* end() const noexcept { return data() + size(); }
 
     constexpr size_t size() const noexcept {
         const Nullable& m = *value_;
