@@ -7,6 +7,8 @@
 #include <type_traits>
 #include <view_maybe/concepts.h>
 
+namespace smd::view_maybe {
+
 namespace ranges = std::ranges;
 
 template <typename T>
@@ -39,7 +41,7 @@ class nullable_view<Nullable>
 
     constexpr auto begin() noexcept { return data(); }
     constexpr auto begin() const noexcept { return data(); }
-    constexpr auto end() noexcept        { return data() + size(); }
+    constexpr auto end() noexcept { return data() + size(); }
     constexpr auto end() const noexcept { return data() + size(); }
 
     constexpr size_t size() const noexcept {
@@ -99,12 +101,10 @@ class nullable_view<Nullable>
     }
 };
 
-
-
 template <typename NullableRef>
-    requires(copyable_object<NullableRef> &&
-             (nullable_object_val<NullableRef> ||
-              nullable_object_ref<NullableRef>))
+    requires(
+        copyable_object<NullableRef> &&
+        (nullable_object_val<NullableRef> || nullable_object_ref<NullableRef>))
 class nullable_view<NullableRef&>
     : public ranges::view_interface<nullable_view<NullableRef>> {
   private:
@@ -121,12 +121,10 @@ class nullable_view<NullableRef&>
 
     constexpr explicit nullable_view(NullableRef&& nullable) = delete;
 
-    constexpr U* begin() noexcept { return data(); }
+    constexpr U*       begin() noexcept { return data(); }
     constexpr const U* begin() const noexcept { return data(); }
     constexpr U*       end() noexcept { return data() + size(); }
-    constexpr const U* end() const noexcept {
-        return data() + size();
-    }
+    constexpr const U* end() const noexcept { return data() + size(); }
 
     constexpr size_t size() const noexcept {
         if (!value_)
@@ -161,25 +159,28 @@ class nullable_view<NullableRef&>
 
 template <typename T>
 nullable_view(T) -> nullable_view<std::decay_t<T>>;
+} // namespace smd::view_maybe
 
 namespace std::ranges {
 template <typename T>
-inline constexpr bool enable_borrowed_range<nullable_view<T*>> = true;
+inline constexpr bool enable_borrowed_range<smd::view_maybe::nullable_view<T*>> =
+    true;
+
+template <typename T>
+inline constexpr bool enable_borrowed_range<
+    smd::view_maybe::nullable_view<std::reference_wrapper<T>>> = true;
 
 template <typename T>
 inline constexpr bool
-    enable_borrowed_range<nullable_view<std::reference_wrapper<T>>> = true;
-
-template <typename T>
-inline constexpr bool enable_borrowed_range<nullable_view<T&>> = true;
-
+    enable_borrowed_range<smd::view_maybe::nullable_view<T&>> = true;
 } // namespace std::ranges
 
 namespace views {
 struct __nullable_fn {
     template <typename T>
     constexpr auto operator()(T&& t) const noexcept {
-        return nullable_view<std::decay_t<T>>(std::forward<T>(t));
+        return smd::view_maybe::nullable_view<std::decay_t<T>>(
+            std::forward<T>(t));
     }
 };
 

@@ -7,6 +7,8 @@
 
 #include <array>
 
+using namespace smd::view_maybe;
+
 template <nullable_object_ref NullableRef>
 void testNullableRef(const NullableRef&) {}
 

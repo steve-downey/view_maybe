@@ -106,15 +106,15 @@ void after2() {
 
 void after3() {
     std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
-    auto             test = [](int i) -> smd::maybe_view::maybe_view<int> {
+    auto             test = [](int i) -> smd::view_maybe::maybe_view<int> {
         switch (i) {
         case 1:
         case 3:
         case 7:
         case 9:
-            return smd::maybe_view::maybe_view{i};
+            return smd::view_maybe::maybe_view{i};
         default:
-            return smd::maybe_view::maybe_view<int>{};
+            return smd::view_maybe::maybe_view<int>{};
         }
     };
 

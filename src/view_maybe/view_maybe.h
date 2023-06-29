@@ -10,7 +10,7 @@
 
 #include <view_maybe/concepts.h>
 
-namespace smd::maybe_view {
+namespace smd::view_maybe {
 namespace ranges = std::ranges;
 
 template <typename Value>
@@ -427,19 +427,19 @@ constexpr auto maybe_view<Value&>::or_else(F&& f) && -> maybe_view {
 template <typename Value>
 maybe_view(Value) -> maybe_view<Value>;
 
-} // namespace smd::maybe_view
+} // namespace smd::view_maybe
 
 namespace std::ranges {
 template <typename T>
-inline constexpr bool enable_borrowed_range<smd::maybe_view::maybe_view<T*>> =
+inline constexpr bool enable_borrowed_range<smd::view_maybe::maybe_view<T*>> =
     true;
 
 template <typename T>
 inline constexpr bool enable_borrowed_range<
-    smd::maybe_view::maybe_view<std::reference_wrapper<T>>> = true;
+    smd::view_maybe::maybe_view<std::reference_wrapper<T>>> = true;
 
 template <typename T>
-inline constexpr bool enable_borrowed_range<smd::maybe_view::maybe_view<T&>> =
+inline constexpr bool enable_borrowed_range<smd::view_maybe::maybe_view<T&>> =
     true;
 
 } // namespace std::ranges
@@ -448,7 +448,7 @@ namespace views {
 struct __maybe_fn {
     template <typename T>
     constexpr auto operator()(T&& t) const noexcept {
-        return smd::maybe_view::maybe_view{t};
+        return smd::view_maybe::maybe_view{t};
     }
 };
 

@@ -15,6 +15,8 @@
 #include <view_maybe/view_maybe.h>
 #include <view_maybe/view_nullable.h>
 
+using namespace smd::view_maybe;
+
 namespace ranges = std::ranges;
 
 template <class...>
@@ -162,8 +164,8 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
 // "yield_if" takes a bool and a value and
 // returns a view of zero or one elements.
 inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? smd::maybe_view::maybe_view{std::move(x)}
-             : smd::maybe_view::maybe_view<decltype(x)>{};
+    return b ? smd::view_maybe::maybe_view{std::move(x)}
+             : smd::view_maybe::maybe_view<decltype(x)>{};
 };
 
 void print_triples() {

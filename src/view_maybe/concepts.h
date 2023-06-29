@@ -14,6 +14,8 @@
 //
 //@DESCRIPTION:
 
+namespace smd::view_maybe {
+
 template <class Ref, class ConstRef>
 concept readable_references =
     std::is_lvalue_reference_v<Ref> &&
@@ -25,11 +27,11 @@ concept readable_references =
 
 template <class T>
 concept nullable_object = std::is_object_v<T> && requires(T& t, const T& ct) {
-                                                     bool(t);
-                                                     bool(ct);
-                                                     *(t);
-                                                     *(ct);
-                                                 };
+    bool(t);
+    bool(ct);
+    *(t);
+    *(ct);
+};
 
 template <class T>
 concept nullable_object_val =
@@ -50,5 +52,5 @@ inline constexpr bool is_reference_wrapper_v = is_v<T, std::reference_wrapper>;
 
 template <class T>
 concept copyable_object = (std::copy_constructible<T> && std::is_object_v<T>);
-
+} // namespace smd::view_maybe
 #endif

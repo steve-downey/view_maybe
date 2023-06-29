@@ -8,7 +8,7 @@
 
 #include <array>
 
-using namespace smd::maybe_view;
+using namespace smd::view_maybe;
 
 TEST(ViewMaybeTest, Constructors) {
     std::ranges::single_view<std::optional<int>> s;
