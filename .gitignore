@@ -4,3 +4,14 @@ compile_commands.json
 .update-submodules
 .use-docker
 /papers/.venv/
+/papers/_minted-view-maybe/
+/papers/view-maybe.aux
+/papers/view-maybe.bbl
+/papers/view-maybe.blg
+/papers/view-maybe.dvi
+/papers/view-maybe.fdb_latexmk
+/papers/view-maybe.fls
+/papers/view-maybe.log
+/papers/view-maybe.out
+/papers/view-maybe.pdf
+/papers/view-maybe.toc
