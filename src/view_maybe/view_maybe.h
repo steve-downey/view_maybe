@@ -10,15 +10,8 @@
 
 #include <view_maybe/concepts.h>
 
+namespace smd::view_maybe {
 namespace ranges = std::ranges;
-
-template <typename Value>
-class maybe_view;
-
-template <typename Value>
-inline constexpr bool is_maybe_view_v = false;
-template <typename Value>
-inline constexpr bool is_maybe_view_v<maybe_view<Value>> = true;
 
 template <typename Value>
 class maybe_view : public ranges::view_interface<maybe_view<Value>> {
@@ -46,10 +39,14 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     constexpr Value* data() noexcept;
 
     constexpr const Value* data() const noexcept;
-
     friend constexpr auto operator<=>(const maybe_view& lhs,
                                       const maybe_view& rhs) {
-        return lhs.value_ <=> rhs.value_;
+        {
+            return (lhs.value_ && rhs.value_)
+                        ? (*lhs.value_ <=> *rhs.value_)
+                        : (bool(lhs.value_) <=> bool(rhs.value_));
+        }
+        //        return lhs.value_ <=> rhs.value_;
     }
 
     friend constexpr bool operator==(const maybe_view& lhs,
@@ -80,6 +77,11 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
     template <typename F>
     constexpr auto or_else(F&& f) const&;
 };
+
+template <typename Value>
+inline constexpr bool is_maybe_view_v = false;
+template <typename Value>
+inline constexpr bool is_maybe_view_v<maybe_view<Value>> = true;
 
 template <typename Value>
 constexpr maybe_view<Value>::maybe_view(const Value& value) : value_(value) {}
@@ -429,16 +431,20 @@ constexpr auto maybe_view<Value&>::or_else(F&& f) && -> maybe_view {
 template <typename Value>
 maybe_view(Value) -> maybe_view<Value>;
 
+} // namespace smd::view_maybe
+
 namespace std::ranges {
 template <typename T>
-inline constexpr bool enable_borrowed_range<maybe_view<T*>> = true;
+inline constexpr bool enable_borrowed_range<smd::view_maybe::maybe_view<T*>> =
+    true;
 
 template <typename T>
-inline constexpr bool
-    enable_borrowed_range<maybe_view<std::reference_wrapper<T>>> = true;
+inline constexpr bool enable_borrowed_range<
+    smd::view_maybe::maybe_view<std::reference_wrapper<T>>> = true;
 
 template <typename T>
-inline constexpr bool enable_borrowed_range<maybe_view<T&>> = true;
+inline constexpr bool enable_borrowed_range<smd::view_maybe::maybe_view<T&>> =
+    true;
 
 } // namespace std::ranges
 
@@ -446,11 +452,10 @@ namespace views {
 struct __maybe_fn {
     template <typename T>
     constexpr auto operator()(T&& t) const noexcept {
-        return maybe_view{t};
+        return smd::view_maybe::maybe_view{t};
     }
 };
 
 inline constexpr __maybe_fn maybe{};
 } // namespace views
-
 #endif

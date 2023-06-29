@@ -8,6 +8,18 @@
 
 #include <array>
 
+using namespace smd::view_maybe;
+
+TEST(ViewMaybeTest, Constructors) {
+    std::ranges::single_view<std::optional<int>> s;
+    std::ranges::single_view<std::optional<int>> s2{s};
+    std::ranges::single_view<std::optional<int>> s3{std::optional<int>{}};
+
+    maybe_view<std::optional<int>> n;
+    maybe_view<std::optional<int>> n2{n};
+    maybe_view<std::optional<int>> n3{std::optional<int>{}};
+}
+
 TEST(ViewMaybeTest, ConceptCheck) {
     static_assert(std::ranges::range<maybe_view<int>>);
     static_assert(std::ranges::view<maybe_view<int>>);
