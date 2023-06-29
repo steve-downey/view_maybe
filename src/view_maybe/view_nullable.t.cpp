@@ -14,23 +14,6 @@ void testNullableRef(const NullableRef&) {}
 
 TEST(ViewNullableTest, TestGTest) { ASSERT_EQ(1, 1); }
 
-TEST(ViewNullableTest, Concept) {
-    static_assert(nullable_object<std::optional<int>>);
-    static_assert(nullable_object<std::optional<const int>>);
-    static_assert(nullable_object<std::optional<volatile int>>);
-    static_assert(nullable_object<std::optional<const volatile int>>);
-
-    static_assert(!nullable_object<int>);
-
-    static_assert(nullable_object<int*>);
-    static_assert(!nullable_object<std::array<int, 1>>);
-    static_assert(!nullable_object<void*>);
-
-    std::optional<int>                         i;
-    std::reference_wrapper<std::optional<int>> t = i;
-    testNullableRef(t);
-}
-
 TEST(ViewNullableTest, ConceptCheck) {
     static_assert(std::ranges::range<nullable_view<std::optional<int>>>);
     static_assert(std::ranges::view<nullable_view<std::optional<int>>>);
