@@ -4,6 +4,7 @@ target_sources(
   view_maybe
   PRIVATE
   concepts.cpp
+  movable_box.cpp
   view_maybe.cpp
   view_nullable.cpp)
 
@@ -37,6 +38,7 @@ target_sources(
   view_maybe_test
   PRIVATE
   concepts.t.cpp
+  movable_box.t.cpp
   view_maybe.t.cpp
   view_nullable.t.cpp)
 
