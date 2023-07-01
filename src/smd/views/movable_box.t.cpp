@@ -1,6 +1,6 @@
-#include <view_maybe/movable_box.h>
+#include <smd/views/movable_box.h>
 
-#include <view_maybe/movable_box.h>
+#include <smd/views/movable_box.h>
 
 #include <gtest/gtest.h>
 

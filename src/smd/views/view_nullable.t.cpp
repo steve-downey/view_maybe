@@ -1,4 +1,4 @@
-#include <view_maybe/view_nullable.h>
+#include <smd/views/view_nullable.h>
 
 #include <ranges>
 #include <tuple>
@@ -7,7 +7,7 @@
 
 #include <array>
 
-using namespace smd::view_maybe;
+using namespace smd::views;
 
 template <nullable_object_ref NullableRef>
 void testNullableRef(const NullableRef&) {}
@@ -92,6 +92,8 @@ TEST(ViewNullableTest, ConceptCheckRef) {
     static_assert(std::ranges::viewable_range<nullable_view<ref>>);
     static_assert(std::ranges::borrowed_range<nullable_view<ref>>);
 }
+
+using namespace smd;
 
 TEST(ViewNullableTest, Breathing) {
 

@@ -1,13 +1,13 @@
-#include <view_maybe/concepts.h>
+#include <smd/views/concepts.h>
 
-#include <view_maybe/concepts.h>
+#include <smd/views/concepts.h>
 
 #include <gtest/gtest.h>
 
 #include <ranges>
 #include <optional>
 
-using namespace smd::view_maybe;
+using namespace smd::views;
 
 void func();
 

@@ -11,7 +11,7 @@ target_sources(
 include(GNUInstallDirs)
 
 target_include_directories(view_maybe PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_LOWER_PROJECT_NAME}>  # <prefix>/include/scratch
   )
 

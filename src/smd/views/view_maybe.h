@@ -8,9 +8,9 @@
 #include <ranges>
 #include <type_traits>
 
-#include <view_maybe/concepts.h>
+#include <smd/views/concepts.h>
 
-namespace smd::view_maybe {
+namespace smd::views {
 namespace ranges = std::ranges;
 
 template <typename Value>
@@ -431,31 +431,31 @@ constexpr auto maybe_view<Value&>::or_else(F&& f) && -> maybe_view {
 template <typename Value>
 maybe_view(Value) -> maybe_view<Value>;
 
-} // namespace smd::view_maybe
+} // namespace smd::views
 
 namespace std::ranges {
 template <typename T>
-inline constexpr bool enable_borrowed_range<smd::view_maybe::maybe_view<T*>> =
+inline constexpr bool enable_borrowed_range<smd::views::maybe_view<T*>> =
     true;
 
 template <typename T>
 inline constexpr bool enable_borrowed_range<
-    smd::view_maybe::maybe_view<std::reference_wrapper<T>>> = true;
+    smd::views::maybe_view<std::reference_wrapper<T>>> = true;
 
 template <typename T>
-inline constexpr bool enable_borrowed_range<smd::view_maybe::maybe_view<T&>> =
+inline constexpr bool enable_borrowed_range<smd::views::maybe_view<T&>> =
     true;
 
 } // namespace std::ranges
 
-namespace views {
+namespace smd::views {
 struct __maybe_fn {
     template <typename T>
     constexpr auto operator()(T&& t) const noexcept {
-        return smd::view_maybe::maybe_view{t};
+        return maybe_view{t};
     }
 };
 
 inline constexpr __maybe_fn maybe{};
-} // namespace views
+} // namespace smd::views
 #endif

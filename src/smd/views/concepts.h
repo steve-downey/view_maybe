@@ -14,7 +14,7 @@
 //
 //@DESCRIPTION:
 
-namespace smd::view_maybe {
+namespace smd::views {
 
 template <class Ref, class ConstRef>
 concept readable_references =
@@ -52,5 +52,5 @@ inline constexpr bool is_reference_wrapper_v = is_v<T, std::reference_wrapper>;
 
 template <class T>
 concept movable_object = (std::move_constructible<T> && std::is_object_v<T>);
-} // namespace smd::view_maybe
+} // namespace smd::views
 #endif

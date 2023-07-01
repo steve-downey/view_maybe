@@ -1,11 +1,12 @@
-#include <view_maybe/view_maybe.h>
-#include <view_maybe/view_nullable.h>
+#include <smd/views/view_maybe.h>
+#include <smd/views/view_nullable.h>
 
 #include <cassert>
 #include <vector>
 #include <algorithm>
 
 namespace ranges = std::ranges;
+using namespace smd;
 
 std::optional<int> possible_value() { return {7}; }
 
@@ -106,15 +107,15 @@ void after2() {
 
 void after3() {
     std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
-    auto             test = [](int i) -> smd::view_maybe::maybe_view<int> {
+    auto             test = [](int i) -> smd::views::maybe_view<int> {
         switch (i) {
         case 1:
         case 3:
         case 7:
         case 9:
-            return smd::view_maybe::maybe_view{i};
+            return smd::views::maybe_view{i};
         default:
-            return smd::view_maybe::maybe_view<int>{};
+            return smd::views::maybe_view<int>{};
         }
     };
 

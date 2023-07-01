@@ -6,7 +6,7 @@
 #include <optional>
 #include <memory>
 
-namespace smd::view_maybe {
+namespace smd::views {
 namespace detail {
 template <typename T>
 concept boxable = std::move_constructible<T> && std::is_object_v<T>;
@@ -128,5 +128,5 @@ class movable_box<T> {
     }
 };
 } // namespace detail
-} // namespace smd::view_maybe
+} // namespace smd::views
 #endif

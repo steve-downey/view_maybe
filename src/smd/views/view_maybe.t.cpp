@@ -1,4 +1,4 @@
-#include <view_maybe/view_maybe.h>
+#include <smd/views/view_maybe.h>
 
 #include <functional>
 #include <ranges>
@@ -8,7 +8,7 @@
 
 #include <array>
 
-using namespace smd::view_maybe;
+using namespace smd::views;
 
 TEST(ViewMaybeTest, Constructors) {
     std::ranges::single_view<std::optional<int>> s;
@@ -221,6 +221,8 @@ TEST(ViewMaybeTest, PythTripleTest) {
 
     ASSERT_EQ(*std::ranges::begin(triples), std::make_tuple(3, 4, 5));
 }
+
+using namespace smd;
 
 TEST(ViewMaybeTest, ValueBase) {
     int             i = 7;
