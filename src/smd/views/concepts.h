@@ -1,6 +1,6 @@
-// concepts.h                                                         -*-C++-*-
-#ifndef INCLUDED_CONCEPTS
-#define INCLUDED_CONCEPTS
+// smd/views/concepts.h                                               -*-C++-*-
+#ifndef INCLUDED_SMD_VIEWS_CONCEPTS
+#define INCLUDED_SMD_VIEWS_CONCEPTS
 
 #include <concepts>
 #include <ranges>

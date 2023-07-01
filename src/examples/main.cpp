@@ -12,8 +12,8 @@
 #include <array>
 
 #include <unordered_set>
-#include <smd/views/view_maybe.h>
-#include <smd/views/view_nullable.h>
+#include <smd/views/maybe.h>
+#include <smd/views/nullable.h>
 
 using namespace smd::views;
 using namespace smd;

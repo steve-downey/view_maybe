@@ -1,6 +1,6 @@
-// movable_box.h -*-C++-*-
-#ifndef INCLUDED_MOVABLE_BOX
-#define INCLUDED_MOVABLE_BOX
+// smd/views/movable_box.h                                            -*-C++-*-
+#ifndef INCLUDED_SMD_VIEWS_MOVABLE_BOX
+#define INCLUDED_SMD_VIEWS_MOVABLE_BOX
 
 #include <concepts>
 #include <optional>

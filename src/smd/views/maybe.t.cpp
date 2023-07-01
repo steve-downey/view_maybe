@@ -1,4 +1,4 @@
-#include <smd/views/view_maybe.h>
+#include <smd/views/maybe.h>
 
 #include <functional>
 #include <ranges>

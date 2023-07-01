@@ -1,6 +1,6 @@
-// view_maybe.h                                                       -*-C++-*-
-#ifndef INCLUDED_VIEW_MAYBE
-#define INCLUDED_VIEW_MAYBE
+// smd/views/maybe.h                                                  -*-C++-*-
+#ifndef INCLUDED_SMD_VIEWS_MAYBE
+#define INCLUDED_SMD_VIEWS_MAYBE
 
 #include <concepts>
 #include <functional>

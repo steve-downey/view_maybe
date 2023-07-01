@@ -1,6 +1,6 @@
-// view_nullable.h                                                    -*-C++-*-
-#ifndef INCLUDED_VIEW_NULLABLE
-#define INCLUDED_VIEW_NULLABLE
+// smd/views/nullable.h                                               -*-C++-*-
+#ifndef INCLUDED_SMD_VIEWS_NULLABLE
+#define INCLUDED_SMD_VIEWS_NULLABLE
 #include <concepts>
 #include <iostream>
 #include <ranges>

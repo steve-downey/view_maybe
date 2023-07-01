@@ -1,5 +1,5 @@
-#include <smd/views/view_maybe.h>
-#include <smd/views/view_nullable.h>
+#include <smd/views/maybe.h>
+#include <smd/views/nullable.h>
 
 #include <cassert>
 #include <vector>
