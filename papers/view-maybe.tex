@@ -350,14 +350,14 @@ The discussion around \tcode{std::static_vector} \cite{P0843r4} has solidified f
 
 Just as there are use cases for having particular containers being returned from a function, there are use cases for returning near primitive ranges as explicit types. Explicit types are much easier for compilers to generate good code, and to further optimize that code. The more limited interface of \tcode{maybe_view} seems to, in practice, make intention clearer to the compiler, over \tcode{std::optional}, over adaptation or projection. Saying what you mean directly is better.
 
-A \tcode{std::optional} type says I will be checking if the value is engaged or disengaged, and possibly taking alternative action based on that, and that I might use a \tcode{std::optional<T>} in contexts that I would use a T, or that It might be used as a default parameter. The long list suggests that \tcode{std::optional<T>} is filling too many roles. A \tcode{maybe_view}, or a \tcode{nullable_view}, says that independent check will not be made, the value will have operations applied if present, and ignored otherwise. A concrete range type sets tighter expectations.
+A \tcode{std::optional} type says I will be checking if the value is engaged or disengaged, and possibly taking alternative action based on that, and that I might use a \tcode{std::optional<T>} in contexts that I would use a T, or that it might be used as a default parameter. The long list suggests that \tcode{std::optional<T>} is filling too many roles. A \tcode{maybe_view}, or a \tcode{nullable_view}, says that independent check will not be made, the value will have operations applied if present, and ignored otherwise. A concrete range type sets tighter expectations.
 
 Value types, which range types are, should, if they can, provide spaceship and equivalence operators. This is straight forward to specify, and to implement for both \tcode{maybe_view} or \tcode{nullable_view}.
 
 \section{The Argument for Monadic Operations}
 The generic templated type \tcode{maybe_view} is a monad in the category of C++ types in exactly the same way that \tcode{std::optional} and \tcode{std::expected} are. \cite{P0798R8} The operations stay strictly within the generic template type. Since it is a type that can be reasonably used on its own, it should, on its own, support all reasonable uses of the type. This should include the function application patterns of functor and monad, in exactly the same way they have been applied to \tcode{std::optional}. The member functions are much more strongly typed than the monad in the range category, staying within the template type.
 
-However, it is not feasible to give \tcode{nullable_view} the same monadic interface as it would require, for example,  construction of an type that dereferences to U to support transform over T -> U, but that is not in general possible in the C++ type system. The additional level of indirection built in to \tcode{nullable_view} makes this infeasible. The inconsistency of implementablity supports the direction from SG9 to separate the templates by name, rather than just by concept.
+However, it is not feasible to give \tcode{nullable_view} the same monadic interface as it would require, for example,  construction of a type that dereferences to U to support transform over T -> U, but that is not in general possible in the C++ type system. The additional level of indirection built in to \tcode{nullable_view} makes this infeasible. The inconsistency of implementablity supports the direction from SG9 to separate the templates by name, rather than just by concept.
 
 Most range types should be treated much like lambda expressions, with unnameable types. Even where it is possible to work out the type, that type may not be stable in the face of concept specialization based on the rest of the types involved. However, \tcode{maybe_view} and \tcode{nullable_view} are primitive ranges, built out of non-range types. It is natural to write functions, including lambdas, that return them, and staying within the type system can improve correctness and diagnostics when the code strays. Providing the monadic interface for the base and for the reference specialization of \tcode{nullable_view} is entirely straight-forward.
 
@@ -456,7 +456,7 @@ Providing the facility is not a significant cost, and conveys the semantics corr
 
 \epigraph{In which we ignore inspiration and orginality. }
 
-For \tcode{maybe_view} the design is a hybrid of \tcode{empty_view} and \tcode{single_view}, with the straight forward extension for reference type, referring to an existing object. For \tcode{nullable_view} we have the same semantics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
+For \tcode{maybe_view}, the design is a hybrid of \tcode{empty_view} and \tcode{single_view}, with the straightforward extension for reference type, referring to an existing object. For \tcode{nullable_view} we have the same semantics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
 
 \chapter{Freestanding}
 
