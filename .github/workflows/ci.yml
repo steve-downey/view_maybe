@@ -40,16 +40,16 @@ jobs:
 
       - name: Build
         run: |
-          source ~/.cpprc && ./bld compile TOOLCHAIN=${{ matrix.compiler }}
+          ./bld compile 
 
       - name: Test
         run: |
-          source ~/.cpprc && ./bld test TOOLCHAIN=${{ matrix.compiler }}
+          ./bld test 
 
       - name: Test-ASAN
         run: |
-          source ~/.cpprc && ./bld test TOOLCHAIN=${{ matrix.compiler }} CONFIG=Asan
+          ./bld test CONFIG=Asan
 
       - name: Test-TSAN
         run: |
-          source ~/.cpprc && ./bld test TOOLCHAIN=${{ matrix.compiler }} CONFIG=Tsan
+          ./bld test CONFIG=Tsan
