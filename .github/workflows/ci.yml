@@ -64,10 +64,15 @@ jobs:
           echo 'APT::Acquire::Retries "5";' | sudo tee -a /etc/apt/apt.conf.d/80-retries > /dev/null
           sudo add-apt-repository --no-update --yes ppa:ubuntu-toolchain-r/ppa
           sudo add-apt-repository --no-update --yes ppa:ubuntu-toolchain-r/test
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg
+          echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ jammy main' | sudo tee /etc/apt/sources.list.d/kitware.list
           sudo apt-get update
 
       - name: Install CMake
         run: sudo apt-get install --yes cmake
+
+      - name: Install Ninja
+        run: sudo apt-get install --yes ninja-build
 
       - name: Install compiler/tool ${{ matrix.pkg }}
         run: sudo apt-get install --yes ${{ matrix.pkg }}
