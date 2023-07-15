@@ -1,7 +1,7 @@
 include_guard(GLOBAL)
 
-set(CMAKE_C_COMPILER /home/runner/llvm/bin/clang-16)
-set(CMAKE_CXX_COMPILER /home/runner/llvm/bin/clang++-16)
+set(CMAKE_C_COMPILER cc)
+set(CMAKE_CXX_COMPILER cxx)
 
 set(CMAKE_CXX_FLAGS
   "-std=c++20 \

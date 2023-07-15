@@ -18,7 +18,7 @@ jobs:
           - gcc-11
           - gcc-12
           - gcc-13
-          - llvm-16
+          - llvm-16.0.6
           # you can specify the version after `-` like `llvm-13.0.0`.
         CMAKE_GENERATOR:
           - "Ninja Multi-Config"
@@ -29,7 +29,7 @@ jobs:
             toolchain: gcc-12
           - compiler: gcc-13
             toolchain: gcc-13
-          - compiler: llvm-16
+          - compiler: llvm-16.0.6
             toolchain: ci-clang
 
     steps:
