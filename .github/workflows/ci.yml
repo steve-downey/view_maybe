@@ -7,14 +7,12 @@ on:
       - master
 
 jobs:
-  Test:
+  build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-22.04
         include:
           - name: "clang16"
             pkg: "clang-16 clang-tidy-16 g++-13"
