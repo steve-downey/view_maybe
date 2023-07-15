@@ -22,6 +22,15 @@ jobs:
           # you can specify the version after `-` like `llvm-13.0.0`.
         CMAKE_GENERATOR:
           - "Ninja Multi-Config"
+        include:
+          - compiler: gcc-11
+            toolchain: gcc-11
+          - compiler: gcc-12
+            toolchain: gcc-12
+          - compiler: gcc-13
+            toolchain: gcc-13
+          - compiler: llvm-16
+            toolchain: clang-16
 
     steps:
       - uses: actions/checkout@v3
@@ -40,16 +49,16 @@ jobs:
 
       - name: Build
         run: |
-          ./bld compile 
+          ./bld compile TOOLCHAIN=${{ matrix.toolchain }}
 
       - name: Test
         run: |
-          ./bld test 
+          ./bld test TOOLCHAIN=${{ matrix.toolchain }}
 
       - name: Test-ASAN
         run: |
-          ./bld test CONFIG=Asan
+          ./bld test TOOLCHAIN=${{ matrix.toolchain }} CONFIG=Asan
 
       - name: Test-TSAN
         run: |
-          ./bld test CONFIG=Tsan
+          ./bld test TOOLCHAIN=${{ matrix.toolchain }} CONFIG=Tsan
