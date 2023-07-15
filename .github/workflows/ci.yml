@@ -18,34 +18,59 @@ jobs:
           - gcc-11
           - gcc-12
           - gcc-13
-          - clang++-16.0.4
+          - clang-16
           # you can specify the version after `-` like `llvm-13.0.0`.
         CMAKE_GENERATOR:
           - "Ninja Multi-Config"
         include:
-          - compiler: gcc-11
+          - name: "clang-16"
+            pkg: "clang-16 clang-tidy-16 g++-13"
+            toolchain: clang-16
+
+          - name: "gcc11"
+            pkg: "gcc-11 g++-11"
             toolchain: gcc-11
-          - compiler: gcc-12
+
+          - name: "gcc12"
+            pkg: "gcc-12 g++-12"
             toolchain: gcc-12
-          - compiler: gcc-13
+
+          - name: "gcc13"
+            pkg: "gcc-13 g++-13"
             toolchain: gcc-13
-          - compiler: clang++-16.0.4
-            toolchain: ci-clang
+
+          - name: "Clang Format"
+            pkg: "clang-format-16"
+            build: clang_format
+            build_type: Debug
+
+
 
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Setup Cpp
-        uses: aminya/setup-cpp@v1
-        with:
-          compiler: ${{ matrix.compiler }}
-          vcvarsall: ${{ contains(matrix.os, 'windows') }}
-          cmake: true
-          ninja: true
-          task: true
-          cppcheck: true
-          clangtidy: true # instead of `true`, which chooses the default version, you can pass a specific version.
+
+      - name: Configure APT (llvm)
+        continue-on-error: true
+        if: contains(matrix.pkg, 'clang')
+        run: |
+          sudo apt-add-repository --no-update --yes "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main"
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+
+      - name: Configure APT
+        continue-on-error: true
+        run: |
+          echo 'APT::Acquire::Retries "5";' | sudo tee -a /etc/apt/apt.conf.d/80-retries > /dev/null
+          sudo add-apt-repository --no-update --yes ppa:ubuntu-toolchain-r/ppa
+          sudo add-apt-repository --no-update --yes ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+
+      - name: Install CMake
+        run: sudo apt-get install --yes cmake
+
+      - name: Install compiler/tool ${{ matrix.pkg }}
+        run: sudo apt-get install --yes ${{ matrix.pkg }}
 
       - name: Build
         run: |
