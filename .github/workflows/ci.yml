@@ -14,16 +14,8 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
-        compiler:
-          - gcc-11
-          - gcc-12
-          - gcc-13
-          - clang-16
-          # you can specify the version after `-` like `llvm-13.0.0`.
-        CMAKE_GENERATOR:
-          - "Ninja Multi-Config"
         include:
-          - name: "clang-16"
+          - name: "clang16"
             pkg: "clang-16 clang-tidy-16 g++-13"
             toolchain: clang-16
 
@@ -39,10 +31,6 @@ jobs:
             pkg: "gcc-13 g++-13"
             toolchain: gcc-13
 
-          - name: "Clang Format"
-            pkg: "clang-format-16"
-            build: clang_format
-            build_type: Debug
 
 
 
