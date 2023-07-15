@@ -30,7 +30,7 @@ jobs:
           - compiler: gcc-13
             toolchain: gcc-13
           - compiler: llvm-16
-            toolchain: clang-16
+            toolchain: ci-clang
 
     steps:
       - uses: actions/checkout@v3
