@@ -307,6 +307,11 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
     return decltype(r)(r) | std::ranges::views::transform(std::move(fun)) |
            std::ranges::views::join;
 };
+\end{minted}
+\end{minipage}
+
+\begin{minipage}[t]{\columnwidth}
+  \begin{minted}{c++}
 
 // "yield_if" takes a bool and a value and returns a view of zero or one
 // elements.
@@ -314,6 +319,11 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
 inline constexpr auto yield_if = [](bool b, auto x) {
     return b ? maybe_view{std::move(x)} : maybe_view<decltype(x)>{};
 };
+\end{minted}
+\end{minipage}
+
+\begin{minipage}[t]{\columnwidth}
+  \begin{minted}{c++}
 
 void print_triples() {
     using std::ranges::views::iota;
