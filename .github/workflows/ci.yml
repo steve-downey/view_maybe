@@ -15,7 +15,7 @@ jobs:
       matrix:
         include:
           - name: "clang16"
-            pkg: "clang-16 clang-tidy-16 g++-13 libc++-16-dev"
+            pkg: "clang-16 clang-tidy-16 g++-13 libc++-dev libc++1 libc++abi-dev libc++abi1"
             toolchain: clang-16
             os: ubuntu-22.04
 
