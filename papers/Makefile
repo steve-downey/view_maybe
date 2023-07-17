@@ -12,7 +12,7 @@ override DEPS := $(VENV) wg21.bib
 
 
 $(VENV):
-	$(PYTHON) -m venv $(VENV)
+	$(PYTHON) -m venv --system-site-packages $(VENV)
 	$(PIP) install setuptools pip pip-tools wheel
 	$(PIP_SYNC) requirements.txt
 
