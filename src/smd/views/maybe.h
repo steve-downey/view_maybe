@@ -16,7 +16,7 @@ namespace ranges = std::ranges;
 template <typename Value>
 class maybe_view : public ranges::view_interface<maybe_view<Value>> {
   private:
-    std::optional<Value> value_;
+    [[no_unique_address]] std::optional<Value> value_;
 
   public:
     constexpr maybe_view() = default;
@@ -46,7 +46,6 @@ class maybe_view : public ranges::view_interface<maybe_view<Value>> {
                         ? (*lhs.value_ <=> *rhs.value_)
                         : (bool(lhs.value_) <=> bool(rhs.value_));
         }
-        //        return lhs.value_ <=> rhs.value_;
     }
 
     friend constexpr bool operator==(const maybe_view& lhs,
