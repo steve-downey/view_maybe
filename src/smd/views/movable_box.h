@@ -1,12 +1,12 @@
-// movable_box.h -*-C++-*-
-#ifndef INCLUDED_MOVABLE_BOX
-#define INCLUDED_MOVABLE_BOX
+// smd/views/movable_box.h                                            -*-C++-*-
+#ifndef INCLUDED_SMD_VIEWS_MOVABLE_BOX
+#define INCLUDED_SMD_VIEWS_MOVABLE_BOX
 
 #include <concepts>
 #include <optional>
 #include <memory>
 
-namespace smd::view_maybe {
+namespace smd::views {
 namespace detail {
 template <typename T>
 concept boxable = std::move_constructible<T> && std::is_object_v<T>;
@@ -128,5 +128,5 @@ class movable_box<T> {
     }
 };
 } // namespace detail
-} // namespace smd::view_maybe
+} // namespace smd::views
 #endif

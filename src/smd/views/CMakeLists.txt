@@ -5,13 +5,13 @@ target_sources(
   PRIVATE
   concepts.cpp
   movable_box.cpp
-  view_maybe.cpp
-  view_nullable.cpp)
+  maybe.cpp
+  nullable.cpp)
 
 include(GNUInstallDirs)
 
 target_include_directories(view_maybe PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_LOWER_PROJECT_NAME}>  # <prefix>/include/scratch
   )
 
@@ -39,8 +39,8 @@ target_sources(
   PRIVATE
   concepts.t.cpp
   movable_box.t.cpp
-  view_maybe.t.cpp
-  view_nullable.t.cpp)
+  maybe.t.cpp
+  nullable.t.cpp)
 
 target_link_libraries(view_maybe_test view_maybe)
 target_link_libraries(view_maybe_test gtest)
