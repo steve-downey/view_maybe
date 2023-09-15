@@ -205,6 +205,7 @@
 
 \newcommand{\libglobal}[1]{\indexlibraryglobal{#1}#1}
 \newcommand{\libmember}[2]{\indexlibrarymember{#1}{#2}#1}
+\newcommand{\libspec}[2]{\indexlibrarymemberx{#1}{#2}#1}
 
 % index for library headers
 \newcommand{\libheader}[1]{\indexhdr{#1}\tcode{<#1>}}
@@ -274,6 +275,8 @@
 \newcommand{\CppXIV}{\Cpp{} 2014}
 \newcommand{\CppXVII}{\Cpp{} 2017}
 \newcommand{\CppXX}{\Cpp{} 2020}
+\newcommand{\CppXXIII}{\Cpp{} 2023}
+\newcommand{\CppXXVI}{\Cpp{} 2026}
 \newcommand{\opt}[1]{#1\ensuremath{_\mathit{\color{black}opt}}}
 \newcommand{\bigoh}[1]{\ensuremath{\mathscr{O}(#1)}}
 
@@ -713,18 +716,23 @@
 %%--------------------------------------------------
 %% Environment for imported graphics
 %%--------------------------------------------------
-% usage: \begin{importgraphic}{CAPTION}{TAG}{FILE}
+% usage: \begin{importgraphic}{CAPTION}{TAG}{FILE}\end{importgraphic}
+%        \importexample[VERTICAL OFFESET]{FILE}
+%
+% The filename is relative to the source/assets directory.
 
 \newenvironment{importgraphic}[3]
 {%
 \newcommand{\cptn}{#1}
 \newcommand{\lbl}{#2}
 \begin{figure}[htp]\centering%
-\includegraphics[scale=.35]{#3}
+\includegraphics[scale=.35]{assets/#3}
 }
 {
 \caption{\cptn \quad [fig:\lbl]}\label{fig:\lbl}%
 \end{figure}}
+
+\newcommand{\importexample}[2][-0.9pt]{\raisebox{#1}{\includegraphics{assets/#2}}}
 
 %%--------------------------------------------------
 %% Definitions section for "Terms and definitions"

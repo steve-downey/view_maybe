@@ -619,9 +619,13 @@ TEST(MaybeView, MonadicTransformRef) {
     ASSERT_TRUE(!r9.empty());
     ASSERT_EQ(r9.size(), 1);
     ASSERT_TRUE(r9.data() != nullptr);
-    ASSERT_EQ(*(r9.data()), 80);
+    for (auto r: r9) {
+      ASSERT_EQ(r, 80);
+    }
     ASSERT_TRUE(!mv.empty());
-    ASSERT_EQ(*(mv.data()), 56);
+    for (auto v: mv) {
+      ASSERT_EQ(v, 56);
+    }
     ASSERT_EQ(forty, 56);
     forty = 40;
 }
