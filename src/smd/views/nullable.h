@@ -1,14 +1,14 @@
-// view_nullable.h                                                    -*-C++-*-
-#ifndef INCLUDED_VIEW_NULLABLE
-#define INCLUDED_VIEW_NULLABLE
+// smd/views/nullable.h                                               -*-C++-*-
+#ifndef INCLUDED_SMD_VIEWS_NULLABLE
+#define INCLUDED_SMD_VIEWS_NULLABLE
 #include <concepts>
 #include <iostream>
 #include <ranges>
 #include <type_traits>
-#include <view_maybe/concepts.h>
-#include <view_maybe/movable_box.h>
+#include <smd/views/concepts.h>
+#include <smd/views/movable_box.h>
 
-namespace smd::view_maybe {
+namespace smd::views {
 
 namespace ranges = std::ranges;
 
@@ -159,32 +159,32 @@ class nullable_view<Nullable&>
 
 template <typename T>
 nullable_view(T) -> nullable_view<std::decay_t<T>>;
-} // namespace smd::view_maybe
+} // namespace smd::views
 
 namespace std::ranges {
 template <typename T>
 inline constexpr bool
-    enable_borrowed_range<smd::view_maybe::nullable_view<T*>> = true;
+    enable_borrowed_range<smd::views::nullable_view<T*>> = true;
 
 template <typename T>
 inline constexpr bool enable_borrowed_range<
-    smd::view_maybe::nullable_view<std::reference_wrapper<T>>> = true;
+    smd::views::nullable_view<std::reference_wrapper<T>>> = true;
 
 template <typename T>
 inline constexpr bool
-    enable_borrowed_range<smd::view_maybe::nullable_view<T&>> = true;
+    enable_borrowed_range<smd::views::nullable_view<T&>> = true;
 } // namespace std::ranges
 
-namespace views {
+namespace smd::views {
 struct __nullable_fn {
     template <typename T>
     constexpr auto operator()(T&& t) const noexcept {
-        return smd::view_maybe::nullable_view<std::decay_t<T>>(
+        return nullable_view<std::decay_t<T>>(
             std::forward<T>(t));
     }
 };
 
 inline constexpr __nullable_fn nullable{};
-} // namespace views
+} // namespace smd::views
 
 #endif

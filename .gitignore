@@ -15,3 +15,5 @@ compile_commands.json
 /papers/*.out
 /papers/*.pdf
 /papers/*.toc
+/papers/*.idx
+/papers/*.xtr
