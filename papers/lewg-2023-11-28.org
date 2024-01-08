@@ -168,6 +168,69 @@ Is a range
 Does not support assignment from underlying
 
 
+** Support for T&
+Because there is no assignment from T there is no question about rebind/assign-through.
+
+Assignment from views::maybe<T&> rebinds, preserving equality behavior.
+
+** Support for std::reference_wrapper
+
+There is specialized support for eliding the ~get~ operation to make a maybe<std::reference_wrapper<T>> work directly.
+
+If T& specialization is in place, it should be dropped and the disjucntion in the concept removed.
+
+* Examples From Test Cases
+** Basic maybe<int>
+#+begin_src c++
+    int             i = 7;
+    maybe_view<int> v1{};
+    ASSERT_TRUE(v1.size() == 0);
+
+    maybe_view<int> v2{i};
+    ASSERT_TRUE(v2.size() == 1);
+    for (auto i : v1)
+        ASSERT_TRUE(i != i); // tautology so i is used and not warned
+
+    for (auto i : v2)
+        ASSERT_EQ(i, 7);
+
+    int s = 4;
+    for (auto&& i : views::maybe(s)) {
+        ASSERT_EQ(i, 4);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(s, 4);
+#+end_src
+** Basic maybe<reference_wrapper<int>>
+    #+begin_src c++
+    int i = 7;
+
+    maybe_view<int> v2{std::ref(i)};
+
+    for (auto i : v2)
+        ASSERT_EQ(i, 7);
+
+    int s = 4;
+    for (auto&& i : views::maybe(std::ref(s))) {
+        ASSERT_EQ(i, 4);
+        i.get() = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(s, 9);
+    #+end_src
+** Basic Nullable
+#+begin_src c++
+    std::optional      s{7};
+
+    for (auto i : views::nullable(s))
+        ASSERT_EQ(i, 7);
+
+    nullable_view e{std::optional<int>{}};
+    for (int i : e)
+        ASSERT_TRUE(i != i);
+
+#+end_src
 * Thank You
 
 
