@@ -1,0 +1,176 @@
+#+OPTIONS: ':nil *:t -:t ::t <:t H:nil \n:nil ^:nil arch:headline author:nil
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:nil e:t
+#+OPTIONS: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
+#+OPTIONS: tasks:t tex:t timestamp:nil title:t toc:nil todo:t |:t
+#+TITLE:
+#+AUTHOR:
+#+EMAIL:
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE:
+#+STARTUP: showall
+#+OPTIONS: html-link-use-abs-url:nil html-postamble:nil html-preamble:tbla
+#+OPTIONS: html-scripts:t html-style:t html5-fancy:nil tex:t
+#+HTML_DOCTYPE: xhtml-strict
+#+HTML_CONTAINER: div
+#+DESCRIPTION:
+#+KEYWORDS:
+#+HTML_LINK_HOME:
+#+HTML_LINK_UP:
+#+HTML_MATHJAX:
+#+HTML_HEAD:
+#+HTML_HEAD_EXTRA:
+#+SUBTITLE:
+#+INFOJS_OPT:
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+REVEAL_TRANS: fade
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="./etc/operandi-tinted.css" />
+
+#+REVEAL_MATHJAX_URL: https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+#+REVEAL_EXTRA_CSS: ./etc/operandi-tinted.css
+#+REVEAL_THEME: ./etc/my_theme.css
+#+REVEAL_EXTRA_CSS: ./etc/footer.css
+#+REVEAL_TITLE_SLIDE:
+
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js
+#+REVEAL_VERSION: 4
+
+#+REVEAL_HLEVEL: 2
+#+REVEAL_EXPORT_NOTES_TO_PDF: separate-page
+
+* views::maybe and views::nullable
+
+Steve Downey
+
+
+
+
+* Abstract
+
+
+Two new views of zero or one element
+
+- ~views::nullable~ :: an adaptor over a ~nullable~
+- ~views::maybe~ :: an owning view of zero or one elements
+
+
+#+begin_notes
+
+#+end_notes
+
+* ~nullable~
+1. Contextually convertable to ~bool~
+2. Dereferenceable
+
+   Things like pointers, std::optional, std::expected
+
+** Unsafe at any speed
+Only safely dereferenceable if *truthy*
+
+* ~views::nullable~
+Adapt a nullable by lifting from the nullable monad to the ranges monad.
+
+(you can safely ignore the M-word)
+
+** Example
+- Before
+#+begin_src c++
+auto opt = possible_value();
+if (opt) {
+    // a few dozen lines ...
+    use(*opt); // is *opt Safe ?
+}
+#+end_src
+- After
+#+begin_src c++
+for (auto&& opt : views::nullable(possible_value())) {
+    // a few dozen lines ...
+    use(opt); // opt is Safe
+}
+ #+end_src
+
+#+begin_notes
+You get used to iterating over zero or one
+#+end_notes
+
+
+* ~views::maybe~
+A ~range~ of zero or one elements
+
+A view the same way ~views::single~ is
+
+--
+
+O(1) with large C
+
+** Example
+Shows up in range comprehensions for guard clauses
+#+begin_src haskell
+[ (x, y, z) | z <- [1..], y <- [1..z], x <- [1..y], x^2 + y^2 == z^2]
+#+end_src
+**** ~yield_if~
+#+begin_src c++
+inline constexpr auto yield_if = [](bool b, auto x) {
+    return b ? maybe_view{std::move(x)} : maybe_view<decltype(x)>{};
+};
+#+end_src
+**** ~and_then~
+#+begin_src c++
+inline constexpr auto and_then = [](auto&& r, auto fun) {
+  return decltype(r)(r)
+         | std::ranges::views::transform(std::move(fun))
+         | std::ranges::views::join;
+};
+#+end_src
+**** Desugared Comprehension
+#+begin_src c++
+    using std::ranges::views::iota;
+    auto triples = and_then(iota(1), [](int z) {
+        return and_then(iota(1, z + 1), [=](int x) {
+            return and_then(iota(x, z + 1), [=](int y) {
+                return yield_if(x * x + y * y == z * z,
+                                std::make_tuple(x, y, z));
+            });
+        });
+    });
+#+end_src
+** Similar to ~filter~
+Flattening a range of ranges excluding the empty range operates much like filter.
+
+Different trade-offs.
+
+Easier if the condition is not a simple property of the element.
+
+The standard library should not be overly opinionated.
+
+** Vocabulary
+
+Useful as a return type for range code.
+
+Provide fit and a polish
+- Monadic Ops
+- T&
+    + No assignment from T
+    + views::maybe never deduces a ref
+
+** Differences from Optional
+Is a range
+
+Does not support assignment from underlying
+
+
+* Thank You
+
+
+#+begin_notes
+
+#+end_notes
