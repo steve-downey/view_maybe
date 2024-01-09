@@ -20,7 +20,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \begin{flushright}
 \begin{tabular}{ll}
-  Document \#: & P1255R10 \\
+  Document \#: & D1255R11 \\
   Date: & \today \\
   Project: & Programming Language C++ \\
   Audience: & SG9, LEWG
@@ -42,12 +42,12 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \chapter*{Changes Since Last Version}
 
 \begin{itemize}
-\item \textbf{Changes since R9},
+\item \textbf{Changes since R10},
   \begin{itemize}
-  \item Fix Borrowed Ranges post naming split
+  \item Complete History in history section
   \end{itemize}
   \begin{itemize}
-  \item Clarify safety concerns
+  \item exposid formatting and ampersand escaping TeX formatting nits
   \end{itemize}
 \end{itemize}
 
@@ -1114,7 +1114,7 @@ class maybe_view<Value&> : public ranges::view_interface<maybe_view<Value&>> {
   \pnum{}
   \returns
   \begin{codeblock}
-    (bool(lhs.@\exposid{value_}@) \&\& bool(@\exposid{value_}@))
+    (bool(lhs.@\exposid{value_}@) && bool(@\exposid{value_}@))
         ? (*lhs.@\exposid{value_}@ == *rhs.@\exposid{value_}@)
         : (bool(lhs.@\exposid{value_}@) == bool(rhs.@\exposid{value_}@));
   \end{codeblock}
@@ -1466,7 +1466,7 @@ class nullable_view<Nullable&>
   \begin{codeblock}
     if (!value_)
     return 0;
-    Nullable& m = *\exposid{value_};
+    Nullable& m = *@\exposid{value_}@;
     if constexpr (is_reference_wrapper_v<Nullable>) {
       return bool(m.get());
     } else {
@@ -1488,7 +1488,7 @@ class nullable_view<Nullable&>
   \begin{codeblock}
     if (!value_)
     return nullptr;
-    const Nullable& m = *\exposid{value_};
+    const Nullable& m = *@\exposid{value_}@;
     if constexpr (is_reference_wrapper_v<Nullable>) {
       return m.get() ? std::addressof(*(m.get())) : nullptr;
     } else {
@@ -1516,6 +1516,20 @@ The proposed changes are relative to the current working draft~\cite{N4910}.
 \chapter*{Document history}
 
 \begin{itemize}
+\item \textbf{Changes since R10},
+  \begin{itemize}
+  \item Complete History in history section
+  \end{itemize}
+  \begin{itemize}
+  \item exposid formatting and ampersand escaping TeX formatting nits
+  \end{itemize}
+\item \textbf{Changes since R9},
+  \begin{itemize}
+  \item Fix Borrowed Ranges post naming split
+  \end{itemize}
+  \begin{itemize}
+  \item Clarify safety concerns
+  \end{itemize}
 \item \textbf{Changes since R8},
   \begin{itemize}
   \item Give maybe and nullable distinct template names
