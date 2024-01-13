@@ -38,17 +38,18 @@ concept nullable_object_val =
     nullable_object<T> && readable_references<std::iter_reference_t<T>,
                                               std::iter_reference_t<const T>>;
 
-template <typename, template <typename...> class>
-inline constexpr bool is_v = false;
-template <typename... Ts, template <typename...> class C>
-inline constexpr bool is_v<C<Ts...>, C> = true;
+template <typename T>
+struct is_reference_wrapper : std::false_type {};
+template <typename T>
+struct is_reference_wrapper<std::reference_wrapper<T>> : std::true_type {};
+template <typename T>
+inline constexpr bool is_reference_wrapper_v = is_reference_wrapper<T>::value;
+template <typename T>
+concept reference_wrapper = is_reference_wrapper_v<T>;
 
 template <class T>
 concept nullable_object_ref =
-    is_v<T, std::reference_wrapper> && nullable_object_val<typename T::type>;
-
-template <class T>
-inline constexpr bool is_reference_wrapper_v = is_v<T, std::reference_wrapper>;
+    reference_wrapper<T> && nullable_object_val<typename T::type>;
 
 template <class T>
 concept movable_object = (std::move_constructible<T> && std::is_object_v<T>);
