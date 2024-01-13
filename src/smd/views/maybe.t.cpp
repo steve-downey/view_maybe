@@ -555,7 +555,7 @@ TEST(MaybeView, MonadicTransformRef) {
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
     ASSERT_TRUE(r.data() != nullptr);
-    ASSERT_TRUE(*(r.data()) == 42);
+    ASSERT_EQ(*(r.data()), 42);
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
