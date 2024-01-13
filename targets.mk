@@ -70,4 +70,7 @@ realclean: ## Delete the build directory
 env:
 	$(foreach v, $(.VARIABLES), $(info $(v) = $($(v))))
 
+view-maybe.pdf:
+	make -C papers view-maybe.pdf
+
 .PHONY : compile install ctest ctest_ test cmake clean realclean env
