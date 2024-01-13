@@ -14,25 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "clang16"
-            pkg: "clang-16 clang-tidy-16 g++-13 libc++-16-dev  libc++1-16 libc++abi-16-dev libc++abi1-16 libunwind-16-dev"
-            toolchain: clang-16
+          - name: "clang18"
+            pkg: "clang-18 clang-tidy-18 g++-13 libc++-18-dev  libc++1-18 libc++abi-18-dev libc++abi1-18 libunwind-18-dev"
+            toolchain: clang-18
             os: ubuntu-22.04
 
-          - name: "gcc11"
-            pkg: "gcc-11 g++-11"
-            toolchain: gcc-11
-            os: ubuntu-22.04
-
-          - name: "gcc12"
-            pkg: "gcc-12 g++-12"
-            toolchain: gcc-12
-            os: ubuntu-22.04
-
-          - name: "gcc13"
-            pkg: "gcc-13 g++-13"
-            toolchain: gcc-13
-            os: ubuntu-22.04
 
 
 
