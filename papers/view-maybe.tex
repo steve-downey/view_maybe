@@ -20,7 +20,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \begin{flushright}
 \begin{tabular}{ll}
-  Document \#: & P1255R11 \\
+  Document \#: & D1255R12 \\
   Date: & \today \\
   Project: & Programming Language C++ \\
   Audience: & SG9, LEWG
@@ -42,12 +42,9 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \chapter*{Changes Since Last Version}
 
 \begin{itemize}
-\item \textbf{Changes since R10},
+\item \textbf{Changes since R11},
   \begin{itemize}
-  \item Complete History in history section
-  \end{itemize}
-  \begin{itemize}
-  \item exposid formatting and ampersand escaping TeX formatting nits
+    Expand on design and implementation details
   \end{itemize}
 \end{itemize}
 
@@ -485,6 +482,10 @@ Dereferencing the result of \tcode{data()} without a check for null is of course
 
 For \tcode{maybe_view}, the design is a hybrid of \tcode{empty_view} and \tcode{single_view}, with the straightforward extension for reference type, holding a pointer to an existing object. For \tcode{nullable_view} we have the same semantics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
 
+Using \tcode{maybe_view} as a named type to be returned from functions is an intended mode. This is in order to facilitate writing query functions that can avoid constructing large objects in order to check a property of the object, instead returing an disengaged object early. Although they could return a \tcode{std::optional}, that can still produce unnecessary copies, and introduces some potential safety issues. Support for \tcode{maybe_view<T\&>} allievates copies, however the reference type is never deduced by the customization point because that can lead to hard to reason about lifetime issues, so \tcode{maybe_view<T\&>} and \tcode{nullable_view<T\&>} must be spelled out.
+
+Adding the monadic functions followed, as withholding them seemed needlessly pedantic to my users.
+
 \chapter{Freestanding}
 
 
@@ -496,7 +497,12 @@ Both \tcode{maybe_view} and \tcode{nullable_view} naturally meet the requirement
 
 A publicly available implementation at \url{https://github.com/steve-downey/view_maybe}. There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as effects.
 
-The implementation, for exposition purposes, uses \tcode{std::optional} to hold the value for \tcode{maybe_view}. Implementations, to reduce the overhead of debugging implementations should probably hoist the storage and flag in a typical optional into \tcode{maybe_view}, in which case the flag should be checked first on reads with acquire/release atomic semantics, and last on writes, so as to provide a synchronization points. Although this note may be in the close neighborhood of teaching my grandmother to suck eggs.
+The implementation, for exposition purposes, uses \tcode{std::optional} to hold the value for \tcode{maybe_view}. Implementations, to reduce the overhead of debugging implementations should probably hoist the storage and flag in a typical optional into \tcode{maybe_view}, in which case the flag should be checked first on reads with acquire/release atomic semantics, and last on writes, so as to provide a synchronization points. Although this note may be in the close neighborhood of teaching my grandmother to suck eggs. A \tcode{movable-box} does not work as it demands that the type be default constructable.
+
+Support to use \tcode{std::reference_wrapper} as a transparent implementation of a \tcode{views::maybe} has been part of the implementation for a long time. It does bifurcate most of the implementations in order to hide the necessary calls to \tcode{.get()} to pull the value out of the wrapper. This is one of the impediments to using \tcode{std::reference_wrapper} to achieve reference semantics.
+
+Implentation of the monadic functions on maybe_view is not simply forwarding to the \tcode{std::optional} monadic functions because the constraints on, for example, \tcode{and_then} require that the callable return an \tcode{optional}, where \tcode{and_then} on \tcode{maybe_view} requires that the function return a \tcode{maybe_view}. While it might be possible to do the type gymnastics to do the conversion, it does not seem it would provide much clarity.
+
 
 \chapter{Proposal}
 
@@ -1339,11 +1345,23 @@ Given a subexpression \tcode{E}, the expression
 \Sec3[range.nullable.view]{Class template \tcode{nullable_view}}
 
 \begin{codeblock}
+namespace std::ranges {
+  template<class I>
+  concept @\exposconceptnc{readable_references}@ = @\seebelownc@;  // \expos
 
-template <typename Nullable>
-    requires(copyable_object<Nullable> &&
-             (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
-class nullable_view<Nullable>
+  template<class I>
+    concept @\exposconceptnc{nullable_object}@ = @\seebelownc@;  // \expos
+
+  template<class I>
+    concept @\exposconceptnc{nullable_object_val}@ = @\seebelownc@;  // \expos
+
+  template<class I>
+    concept @\exposconceptnc{nullable_object_ref}@ = @\seebelownc@;    // \expos
+
+  template <typename Nullable>
+    requires(@\libconcept{copyable_object}@<Nullable> &&
+      (@\libconcept{nullable_object_val}@<Nullable> || @\libconcept{nullable_object_ref}@<Nullable>))
+  class nullable_view<Nullable>
     : public ranges::view_interface<nullable_view<Nullable>> {
   private:
     using T = std::remove_reference_t<
@@ -1382,15 +1400,163 @@ class nullable_view<Nullable>
 
 \end{codeblock}
 
+\pnum
+The exposition-only \defexposconcept{readable_references} concept is equivalent to:
+\begin{itemdecl}
+  template<class I>
+  concept @\defexposconcept{readable_references}@ =               // \expos
+  is_lvalue_reference_v<Ref> &&
+  is_object_v<remove_reference_t<Ref>> &&
+  is_lvalue_reference_v<ConstRef> &&
+  is_object_v<remove_reference_t<ConstRef>> &&
+  convertible_to<add_pointer_t<ConstRef>,
+  const remove_reference_t<Ref>*>;
+
+\end{itemdecl}
+
+
+\pnum
+The exposition-only \defexposconcept{nullable_object} concept is equivalent to:
+\begin{itemdecl}
+  template<class I>
+  concept @\defexposconcept{nullable_object}@ =               // \expos
+  is_object_v<I> && requires(I& t, const I& ct) {
+    bool(t);
+    bool(ct);
+    *(t);
+    *(ct);
+  };
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+When an object is contextually convertible to \tcode{bool} and dereferencable via \tcode{operator \ast()}, the object is said to be \term{nullable}.
+
+\end{itemdescr}
+
+\pnum
+The exposition-only \defexposconcept{nullable_object_val} concept is equivalent to:
+\begin{itemdecl}
+  template<class I>
+  concept @\defexposconcept{nullable_object_val}@ =               // \expos
+  @\libconcept{nullable_object}@<T>
+    && @\libconcept{readable_references}@<iter_reference_t<T>, iter_reference_t<const T>>;
+
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+When an object is contextually convertible to \tcode{bool} and dereferencable via \tcode{operator \ast()}, the object is said to be a \term{nullable object}.
+
+\end{itemdescr}
+
+\pnum
+The exposition-only \defexposconcept{nullable_object_ref} concept is equivalent to:
+\begin{itemdecl}
+  template<class I>
+  concept @\defexposconcept{nullable_object_ref}@ =               // \expos
+  @\libconcept{is-ref-wrapper}@<I>
+     && @\libconcept{nullable_object_val}@<typename I::type>;
+
+\end{itemdecl}
+
+\indexlibraryctor{nullable_view}%
+
+\pnum
+\begin{itemdecl}
+constexpr explicit nullable_view();
+\end{itemdecl}
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value_} with \tcode{nullptr}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr explicit nullable_view(Nullable nullable);
+\end{itemdecl}
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value_} with \tcode{addressof(nullable)}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* begin() noexcept;
+constexpr const T* begin() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\effects
+Equivalent to: \tcode{return data();}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* end() noexcept;
+constexpr const T* end() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns \tcode{data() + size();}.
+\end{itemdescr}
+
+\begin{itemdecl}
+static constexpr size_t size() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Equivalent to:
+
+\begin{codeblock}
+if (!value_)
+  return 0;
+Nullable& m = *@\exposid{value_}@;
+if constexpr (is_reference_wrapper_v<Nullable>) {
+  return bool(m.get());
+} else {
+  return bool(m);
+}
+\end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* data() noexcept;
+constexpr const T* data() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Equivalent to:
+\begin{codeblock}
+if (!value_)
+  return nullptr;
+const Nullable& m = *@\exposid{value_}@;
+if constexpr (is_reference_wrapper_v<Nullable>) {
+  return m.get() ? addressof(*(m.get())) : nullptr;
+} else {
+  return m ? addressof(*m) : nullptr;
+}
+\end{codeblock}
+\end{itemdescr}
+
+
+
+\Sec3[range.nullable.view.ref]{Class template specialization\tcode{nullable_view<T\&>}}
+
 \begin{codeblock}
 template <typename Nullable>
-    requires(copyable_object<Nullable> &&
+  requires(movable_object<Nullable> &&
              (nullable_object_val<Nullable> || nullable_object_ref<Nullable>))
 class nullable_view<Nullable&>
     : public ranges::view_interface<nullable_view<Nullable>> {
   private:
-    using T = std::remove_reference_t<
-        std::iter_reference_t<typename std::unwrap_reference_t<Nullable>>>;
+    using T = remove_reference_t<
+        iter_reference_t<typename unwrap_reference_t<Nullable>>>;
 
     Nullable* value_;
 
@@ -1415,6 +1581,11 @@ class nullable_view<Nullable&>
 
 \end{codeblock}
 
+
+
+\indexlibraryctor{nullable_view}%
+
+\pnum
 \begin{itemdecl}
   constexpr explicit nullable_view();
 \end{itemdecl}
@@ -1431,6 +1602,15 @@ class nullable_view<Nullable&>
   \pnum{}
   \effects{}
   Initializes \exposid{value_} with \tcode{addressof(nullable)}
+\end{itemdescr}
+
+
+\begin{itemdecl}
+constexpr explicit nullable_view(Nullable&& nullable) = delete;
+\end{itemdecl}
+\begin{itemdescr}
+  \pnum{}
+  Deleted
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -1464,13 +1644,12 @@ class nullable_view<Nullable&>
   Equivalent to:
 
   \begin{codeblock}
-    if (!value_)
+    if (!@\exposid{value_}@)
     return 0;
-    Nullable& m = *@\exposid{value_}@;
     if constexpr (is_reference_wrapper_v<Nullable>) {
-      return bool(m.get());
+      return bool(@\exposid{value_}@->get());
     } else {
-      return bool(m);
+      return bool(*@\exposid{value_}@);
     }
   \end{codeblock}
 \end{itemdescr}
@@ -1481,22 +1660,19 @@ class nullable_view<Nullable&>
 \end{itemdecl}
 
 \begin{itemdescr}
-  \pnum{}
-  \effects{}
-  Equivalent to:
-
-  \begin{codeblock}
-    if (!value_)
+\pnum{}
+\effects{}
+Equivalent to:
+\begin{codeblock}
+  if (!@\exposid{value_}@)
     return nullptr;
-    const Nullable& m = *@\exposid{value_}@;
-    if constexpr (is_reference_wrapper_v<Nullable>) {
-      return m.get() ? std::addressof(*(m.get())) : nullptr;
-    } else {
-      return m ? std::addressof(*m) : nullptr;
-    }
-  \end{codeblock}
+  if constexpr (is_reference_wrapper_v<Nullable>) {
+    return @\exposid{value_}@->get() ? std::addressof(*(@\exposid{value_}@->get())) : nullptr;
+  } else {
+    return *@\exposid{value_}@ ? std::addressof(**@\exposid{value_}@) : nullptr;
+  }
+\end{codeblock}
 \end{itemdescr}
-
 
 \Sec2[version.syn]{Feature-test macro}
 Add the following macro definition to [version.syn], header <version> synopsis, with the value selected by the editor to reflect the date of adoption of this paper:
