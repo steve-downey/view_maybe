@@ -17,7 +17,7 @@ jobs:
           - name: "clang18"
             pkg: "clang-18 clang-tidy-18 g++-13 libc++-18-dev  libc++1-18 libc++abi-18-dev libc++abi1-18 libunwind-18-dev"
             toolchain: clang-18
-            os: ubuntu-22.04
+            os: ubuntu-23.10
 
 
 
@@ -32,7 +32,7 @@ jobs:
         continue-on-error: true
         if: contains(matrix.pkg, 'clang')
         run: |
-          sudo apt-add-repository --no-update --yes "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
+          sudo apt-add-repository --no-update --yes "deb http://apt.llvm.org/mantic/ llvm-toolchain-mantic-18 main"
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
 
       - name: Configure APT
