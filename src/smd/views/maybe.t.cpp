@@ -30,6 +30,8 @@ TEST(ViewMaybeTest, ConceptCheck) {
     static_assert(std::ranges::common_range<maybe_view<int>>);
     static_assert(std::ranges::viewable_range<maybe_view<int>>);
     static_assert(!std::ranges::borrowed_range<maybe_view<int>>);
+    static_assert(std::ranges::random_access_range<maybe_view<int>>);
+    static_assert(std::ranges::sized_range<maybe_view<int>>);
 
     static_assert(std::ranges::range<maybe_view<int*>>);
     static_assert(std::ranges::view<maybe_view<int*>>);
@@ -40,6 +42,7 @@ TEST(ViewMaybeTest, ConceptCheck) {
     static_assert(std::ranges::common_range<maybe_view<int*>>);
     static_assert(std::ranges::viewable_range<maybe_view<int*>>);
     static_assert(std::ranges::borrowed_range<maybe_view<int*>>);
+    static_assert(std::ranges::random_access_range<maybe_view<int*>>);
 
     using ref = std::reference_wrapper<int>;
     static_assert(std::ranges::range<maybe_view<ref>>);
@@ -51,6 +54,7 @@ TEST(ViewMaybeTest, ConceptCheck) {
     static_assert(std::ranges::common_range<maybe_view<ref>>);
     static_assert(std::ranges::viewable_range<maybe_view<ref>>);
     static_assert(std::ranges::borrowed_range<maybe_view<ref>>);
+    static_assert(std::ranges::random_access_range<maybe_view<ref>>);
 }
 
 TEST(ViewMaybeTest, ConceptCheckRef) {
@@ -63,6 +67,7 @@ TEST(ViewMaybeTest, ConceptCheckRef) {
     static_assert(std::ranges::common_range<maybe_view<int&>>);
     static_assert(std::ranges::viewable_range<maybe_view<int&>>);
     static_assert(std::ranges::borrowed_range<maybe_view<int&>>);
+    static_assert(std::ranges::random_access_range<maybe_view<int&>>);
 
     static_assert(std::ranges::range<maybe_view<int*&>>);
     static_assert(std::ranges::view<maybe_view<int*&>>);
@@ -73,6 +78,7 @@ TEST(ViewMaybeTest, ConceptCheckRef) {
     static_assert(std::ranges::common_range<maybe_view<int*&>>);
     static_assert(std::ranges::viewable_range<maybe_view<int*&>>);
     static_assert(std::ranges::borrowed_range<maybe_view<int*&>>);
+    static_assert(std::ranges::random_access_range<maybe_view<int*&>>);
 
     using ref = std::reference_wrapper<int>&;
     static_assert(std::ranges::range<maybe_view<ref>>);
@@ -84,6 +90,7 @@ TEST(ViewMaybeTest, ConceptCheckRef) {
     static_assert(std::ranges::common_range<maybe_view<ref>>);
     static_assert(std::ranges::viewable_range<maybe_view<ref>>);
     static_assert(std::ranges::borrowed_range<maybe_view<ref>>);
+    static_assert(std::ranges::random_access_range<maybe_view<ref>>);
 }
 
 TEST(ViewMaybeTest, BreathingTest) {
@@ -234,8 +241,12 @@ TEST(ViewMaybeTest, ValueBase) {
     for (auto i : v1)
         ASSERT_TRUE(i != i); // tautology so i is used and not warned
 
+
     for (auto i : v2)
         ASSERT_EQ(i, 7);
+
+    ASSERT_EQ(v2[0], 7);
+//    auto x = v2[1000];
 
     int s = 4;
     for (auto&& i : views::maybe(s)) {

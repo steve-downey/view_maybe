@@ -4,7 +4,7 @@
 INSTALL_PREFIX?=/home/sdowney/install
 PROJECT?=$(shell basename $(CURDIR))
 BUILD_DIR?=../cmake.bld/${PROJECT}
-CONFIGURATION_TYPES?=RelWithDebInfo;Debug;Tsan;Asan
+CONFIGURATION_TYPES?=RelWithDebInfo;Debug;Tsan;Asan;Msan
 DEST?=../install
 CMAKE_FLAGS?=
 #CONFIG?=RelWithDebInfo

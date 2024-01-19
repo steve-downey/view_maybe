@@ -20,7 +20,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \begin{flushright}
 \begin{tabular}{ll}
-  Document \#: & D1255R12 \\
+  Document \#: & P1255R12 \\
   Date: & \today \\
   Project: & Programming Language C++ \\
   Audience: & SG9, LEWG
@@ -537,9 +537,8 @@ Modify 26.2 Header <ranges> synopsis
   \begin{addedblock}
     \begin{codeblock}
 // \ref{range.maybe}, maybe view
-template<@\libconcept{move_constructible}@ T>
-requires @\seebelow@;
-class maybe_view;                                          // freestanding
+template<class T>
+class maybe_view;                                           // freestanding
 
 template<class T>
 constexpr bool
@@ -558,7 +557,7 @@ namespace views {
 }
 
 // \ref{range.nullable}, nullable view
-template<@\libconcept{move_constructible}@ T>
+template<typename T>
 requires @\seebelow@;
 class nullable_view;                                       // freestanding
 

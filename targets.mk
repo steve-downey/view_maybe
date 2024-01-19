@@ -1,7 +1,7 @@
 INSTALL_PREFIX?=/home/sdowney/install
 PROJECT?=$(shell basename $(CURDIR))
 BUILD_DIR?=../cmake.bld/${PROJECT}
-CONFIGURATION_TYPES?=RelWithDebInfo;Debug;Tsan;Asan
+CONFIGURATION_TYPES?=RelWithDebInfo;Debug;Tsan;Asan;Msan
 DEST?=../install
 CMAKE_FLAGS?=
 CONFIG?=RelWithDebInfo
@@ -12,12 +12,12 @@ export
 ifeq ($(strip $(TOOLCHAIN)),)
 	_build_name?=build
 	_build_dir?=../cmake.bld/${PROJECT}
-	_configuration_types?="RelWithDebInfo;Debug;Tsan;Asan"
+	_configuration_types?="RelWithDebInfo;Debug;Tsan;Asan;Msan"
 	_cmake_args=-DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/etc/toolchain.cmake
 else
 	_build_name?=build-$(TOOLCHAIN)
 	_build_dir?=../cmake.bld/${PROJECT}
-	_configuration_types?="RelWithDebInfo;Debug;Tsan;Asan"
+	_configuration_types?="RelWithDebInfo;Debug;Tsan;Asan;Msan"
 	_cmake_args=-DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/etc/$(TOOLCHAIN)-toolchain.cmake
 endif
 
