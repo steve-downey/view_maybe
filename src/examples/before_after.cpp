@@ -1,4 +1,3 @@
-#include <smd/views/maybe.h>
 #include <smd/views/nullable.h>
 
 #include <cassert>
@@ -105,29 +104,6 @@ void after2() {
     std::cout << std::endl;
 }
 
-void after3() {
-    std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
-    auto             test = [](int i) -> smd::views::maybe_view<int> {
-        switch (i) {
-        case 1:
-        case 3:
-        case 7:
-        case 9:
-            return smd::views::maybe_view{i};
-        default:
-            return smd::views::maybe_view<int>{};
-        }
-    };
-
-    auto&& r = v | ranges::views::transform(test) | ranges::views::join |
-               ranges::views::transform([](int i) {
-                   std::cout << i;
-                   return i;
-               });
-    for (auto&& i : r) {
-    };
-    std::cout << std::endl;
-}
 
 int main() {
     before0();
@@ -138,5 +114,4 @@ int main() {
 
     before2();
     after2();
-    after3();
 }

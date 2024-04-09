@@ -12,7 +12,6 @@
 #include <array>
 
 #include <unordered_set>
-#include <smd/views/maybe.h>
 #include <smd/views/nullable.h>
 
 using namespace smd::views;
@@ -162,30 +161,6 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
            std::ranges::views::join;
 };
 
-// "yield_if" takes a bool and a value and
-// returns a view of zero or one elements.
-inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? smd::views::maybe_view{std::move(x)}
-             : smd::views::maybe_view<decltype(x)>{};
-};
-
-void print_triples() {
-    using std::ranges::views::iota;
-    auto triples = and_then(iota(1), [](int z) {
-        return and_then(iota(1, z + 1), [=](int x) {
-            return and_then(iota(x, z + 1), [=](int y) {
-                return yield_if(x * x + y * y == z * z,
-                                std::make_tuple(x, y, z));
-            });
-        });
-    });
-
-    // Display the first 10 triples
-    for (auto triple : triples | std::ranges::views::take(10)) {
-        std::cout << '(' << std::get<0>(triple) << ',' << std::get<1>(triple)
-                  << ',' << std::get<2>(triple) << ')' << '\n';
-    }
-}
 
 int main() {
 
@@ -539,28 +514,4 @@ int main() {
 
         std::cout << '\n';
     }
-    // {
-    //     std::cout << '\n';
-    //     std::optional<int>   o   = 99;
-    //     auto&&               o_r = std::reference_wrapper(o);
-    //     std::vector <std::reference_wrapper<std::optional<int>>> v;
-    //     v.emplace_back(o);
-    //     for (auto&& i : v) {
-    //         std::cout << *(i.get()) << ',';
-    //     };
-    //     std::cout << '\n';
-    //     std::cout << *o << '\n';
-
-    //     auto&& r =
-    //         v | ranges::views::transform(views::nullable) |
-    //         ranges::views::transform([](auto&& i) { i = i + 1; }) |
-    //         ranges::views::transform([](int i) {
-    //             std::cout << i;
-    //             return i;
-    //         });
-
-    //     for (auto&& i : r) {
-    //     };
-    // }
-    print_triples();
 }
