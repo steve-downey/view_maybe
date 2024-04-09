@@ -14,7 +14,7 @@
 namespace smd::views {
 namespace ranges = std::ranges;
 
-#if __cpp_lib_forward_like >= 202207L
+#if __cpp_lib_forward_like < 202207L
 template <class T, class U>
 [[nodiscard]] constexpr auto&& forward_like(U&& x) noexcept {
     constexpr bool is_adding_const =
