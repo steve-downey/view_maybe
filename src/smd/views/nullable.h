@@ -2,7 +2,6 @@
 #ifndef INCLUDED_SMD_VIEWS_NULLABLE
 #define INCLUDED_SMD_VIEWS_NULLABLE
 #include <concepts>
-#include <iostream>
 #include <ranges>
 #include <type_traits>
 #include <smd/views/concepts.h>
@@ -13,7 +12,7 @@ namespace smd::views {
 namespace ranges = std::ranges;
 
 template <typename T>
-class nullable_view : std::false_type {};
+class nullable_view;
 
 template <typename Nullable>
     requires(movable_object<Nullable> &&

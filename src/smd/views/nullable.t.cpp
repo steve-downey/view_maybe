@@ -344,6 +344,64 @@ TEST(ViewNullableTest, CVTest) {
     }
 }
 
+
+TEST(ViewNullableTest, Optionals) {
+    int i = 7;
+    std::optional p{i};
+    for (auto&& k : views::nullable(p)) {
+        k++;
+        ASSERT_EQ(k, 8);
+    }
+    ASSERT_EQ(*p, 7);
+    ASSERT_EQ(i, 7);
+
+    for (auto&& k : nullable_view<std::optional<int>&>(p)) {
+        k++;
+        ASSERT_EQ(k, 8);
+    }
+    ASSERT_EQ(*p, 8);
+    ASSERT_EQ(i, 7);
+
+}
+
+TEST(ViewNullableTest, Pointers) {
+    int i = 7;
+    auto p = &i;
+    for (auto&& k : views::nullable(p)) {
+        k++;
+        ASSERT_EQ(k, 8);
+    }
+    ASSERT_EQ(i, 8);
+
+    for (auto&& k : nullable_view<int*&>(p)) {
+        k++;
+        ASSERT_EQ(k, 9);
+    }
+    ASSERT_EQ(i, 9);
+
+}
+
+namespace {
+int func(int) {
+    return 13;
+}
+}
+
+TEST(ViewNullableTest, NonObjects) {
+    auto o = std::make_optional(func);
+    for (auto&& i : views::nullable(o)) {
+        ASSERT_EQ(i, func);
+    }
+    /* functions aren't objects - even if we relax the object requirement we
+       can't form a one past the end element.*/
+
+    // auto p = func;
+    // for (auto&& k : views::nullable(p)) {
+    //     ASSERT_EQ(k, func);
+    // }
+
+}
+
 // TEST(ViewNullableTest, Borrowable) {
 //     const int num = 42;
 //     auto      ptr = &num;

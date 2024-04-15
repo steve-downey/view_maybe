@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <vector>
+#include <iostream>
+
 
 namespace ranges = std::ranges;
 using namespace smd;
