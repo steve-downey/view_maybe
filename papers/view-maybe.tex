@@ -11,7 +11,7 @@
 \SetWatermarkColor[gray]{0.9}
 
 \begin{document}
-\title{A view of $0$ or $1$ elements: \tcode{views::maybe}}
+\title{A view of $0$ or $1$ elements: \tcode{views::nullable}}
 \author{
 Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 }
@@ -28,13 +28,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \end{flushright}
 
 \begin{abstract}
-  This paper proposes two range adaptors which produce a view with cardinality $0$ or $1$
-  \begin{itemize}
-  \item
-    \tcode{views::maybe} a range adaptor that produces an owning view holding $0$ or $1$ elements of an object
-  \item
-    \tcode{views::nullable} which adapts nullable types---such as \tcode{std::optional} or pointer to object types---into a range of the underlying type.
-  \end{itemize}
+  This paper proposes a range adaptor \tcode{views::nullable} which adapts nullable types---such as \tcode{std::optional} or pointer to object types---into a range of the underlying type.
 \end{abstract}
 
 \tableofcontents*
@@ -42,11 +36,9 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \chapter*{Changes Since Last Version}
 
 \begin{itemize}
-\item \textbf{Changes since R11},
+\item \textbf{Changes since R12},
   \begin{itemize}
-  \item Expand on design and implementation details
-  \item Monadic functions use deducing \tcode{this}
-  \item Constraints, Mandates, Returns, Effects clean up
+  \item Remove views::maybe
   \end{itemize}
 \end{itemize}
 
@@ -160,63 +152,14 @@ for (auto&& i : r) {
 
 \end{minted}
 \end{minipage}
-  \\ \midrule
-\begin{minipage}[t]{0.45\columnwidth}
-\end{minipage}
-&
-\begin{minipage}[t]{0.45\columnwidth}
-\begin{minted}[fontsize=\scriptsize]{c++}
-std::vector<int> v{2, 3, 4, 5, 6, 7, 8, 9, 1};
-
-auto test = [](int i) -> maybe_view<int> {
-    switch (i) {
-    case 1:
-    case 3:
-    case 7:
-    case 9:
-        return maybe_view{i};
-    default:
-        return maybe_view<int>{};
-    }
-};
-
-auto&& r = v | ranges::views::transform(test) |
-           ranges::views::join |
-           ranges::views::transform([](int i) {
-               std::cout << i;
-               return i;
-           });
-for (auto&& i : r) {
-};
-\end{minted}
-\end{minipage}
 
 \end{tabular}
 
 \chapter{Motivation}
 
-In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. For types that model \tcode{nullable_object}, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well. The adapter \tcode{views::single} fills a similar purpose for non-nullable values, lifting a single value into a view, and \tcode{views::empty} provides a range of no values of a given type. The type \tcode{views::maybe} can be used to unify \tcode{single} and \tcode{empty} into a single type for further processing. This is, in particular, useful when translating list comprehensions.
+The \tcode{nullable} protocol that \tcode{views::nullable} adapts is inherently unsafe because it models unsafe pointer semantics. If a nullable type is disengaged, using the derefence operator \tcode{operator*()} is undefined behavior. The allowed operations of \mintinline{C++}{views::nullable} are all, in themselves, safe, and using the adapter can lead to safer code.
 
-\begin{minipage}[t]{0.45\columnwidth}
-  \begin{minted}{c++}
-std::vector<std::optional<int>> v{
-    std::optional<int>{42},
-    std::optional<int>{},
-    std::optional<int>{6 * 9}};
-
-auto r = views::join(
-    views::transform(v, views::nullable));
-
-for (auto i : r) {
-    std::cout << i; // prints 42 and 54
-}
-
-  \end{minted}
-\end{minipage}
-
-The \tcode{nullable} protocol that \tcode{views::nullable} adapts is inherently unsafe because it models unsafe pointer semantics. If a nullable type is disengaged, using the derefence operator \tcode{operator*()} is is undefined behavior. The allowed operations of \mintinline{C++}{views::nullable} are all, in themselves, safe, and using the adapter can lead to safer code.
-
-An example is using \mintinline{C++}{views::nullable} in a range based for loops, allowing the contained nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. This can be a particular issue in doing code reviews where the test, if it exists, is not visible. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the \tcode{for} loop eliminates some boilerplate code, the same way that range based \tcode{for} loops do.
+An example is using \mintinline{C++}{views::nullable} in range based for loops, allowing the contained nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. This can be a particular issue in doing code reviews where the test, if it exists, is not visible. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the \tcode{for} loop eliminates some boilerplate code, the same way that range based \tcode{for} loops do.
 
 \begin{minipage}[t]{\columnwidth}
 \begin{minted} {c++}
@@ -291,81 +234,12 @@ for (auto i : ranges::iota_view{1, 10} |
 \end{minipage}
 
 
-\chapter{Lazy monadic pythagorean triples}
-
-
-Eric Niebler's Pythagorean triple example, using current C++ and proposed \tcode{views::maybe}.
-\leavevmode\newline
-
-\begin{minipage}[t]{\columnwidth}
-  \begin{minted}{c++}
-
-
-// "and_then" creates a new view by applying a transformation
-// to each element in an input range, and flattening the resulting
-// range of ranges. A.k.a. monadic bind
-
-inline constexpr auto and_then = [](auto&& r, auto fun) {
-  return decltype(r)(r)
-         | std::ranges::views::transform(std::move(fun))
-         | std::ranges::views::join;
-};
-\end{minted}
-\end{minipage}
-
-\leavevmode\newline
-
-\begin{minipage}[t]{\columnwidth}
-  \begin{minted}{c++}
-
-// "yield_if" takes a bool and a value and returns
-// a view of zero or one  elements.
-
-inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? maybe_view{std::move(x)} : maybe_view<decltype(x)>{};
-};
-\end{minted}
-\end{minipage}
-
-\leavevmode\newline
-
-\begin{minipage}[t]{\columnwidth}
-  \begin{minted}{c++}
-
-void print_triples() {
-    using std::ranges::views::iota;
-    auto triples = and_then(iota(1), [](int z) {
-        return and_then(iota(1, z + 1), [=](int x) {
-            return and_then(iota(x, z + 1), [=](int y) {
-                return yield_if(x * x + y * y == z * z,
-                                std::make_tuple(x, y, z));
-            });
-        });
-    });
-
-    // Display the first 10 triples
-    for (auto triple : triples | std::ranges::views::take(10)) {
-        std::cout << '(' << std::get<0>(triple) << ',' << std::get<1>(triple)
-                  << ',' << std::get<2>(triple) << ')' << '\n';
-    }
-}
-
-\end{minted}
-\end{minipage}
-
-\leavevmode\newline
-
-The implementation of \tcode{yield_if} is essentially the type unification of \tcode{single} and \tcode{empty} into \tcode{maybe}, returning an empty on false, and a range containing one value on true. I plan to propose this function for standardization in a following paper.
-
-This code is essentially a mechanical translation of a list, or monadic, comprehension from Python or Haskell. In Haskell there is a pure desugaring of comprehension to \tcode{bind}s and \t{yield_if} for comprehension guard clauses. This is an open research area for C++, and again, not part of this proposal.
 
 \chapter{Borrowed Range}
 
 A \tcode{borrowed_range} is one whose iterators cannot be invalidated by ending the lifetime of the range.
 
-The reference specializations of both \tcode{nullable_view} and \tcode{maybe_view} are borrowed. Iterators refer to the underlying object directly.
-
-No other \tcode{maybe_view} is necessarily a borrowed range, and is not tagged as such.
+The reference specialization of \tcode{nullable_view} is borrowed. Iterators refer to the underlying object directly.
 
 All instantiations of \tcode{nullable_view} over a pointer to object are borrowed ranges. The iterator refers to the address of the object pointed to without involving any addresss in the view.
 
@@ -383,96 +257,18 @@ An example of code that is enabled by borrowed ranges, if unlikely code:
 Providing the facility is not a significant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. In particular there is no real implementation impact, other than providing template variable specializations for enable_borrowed_range.
 
 
-\chapter{Wait, There's More}
+\chapter{Reference Specialization}
+Having worked with \tcode{reference_wrapper} support for some time, the ergonomics are somewhat lacking. In addition, many of the Big Dumb Business Objects that are the result of lookups, or filters, and are thus good candidates for optionality, are also not good at move operations, having dozens of individual members that are a mix of primitives, strings, and sub-BDOs, resulting in complex move constructors. In addition, many old and well tested functions will mutate these objects, rather than making copies, using a more object oriented than value oriented style.
 
-\section{The Argument for a Vocabulary Type}
+For these reasons, supporting the common case of reference semantics ergonomically is important. Folding the implementation of \tcode{reference_wrapper} into a template specialization for \tcode{T\&} provides good ergonomics. The type \tcode{nullable_view} does not support assignment from the underlying type, so the only question for semantics is assignment from another instance of the same type. The semantics of \tcode{std::reference_wrapper} are well established and correct, where the implementation pointer is reassigned, putting the assignee into the same state as the assigned.
 
-The discussion around \tcode{std::static_vector} \cite{P0843R4} has solidified for me that \tcode{std::optional} is not a container, and making it one would be a mistake. There are too many operations that are problematic for a component that holds at most a fixed number of elements, and existing generic code will not understand that operations like \tcode{push_back} have commonly occuring failure modes.
+The range adaptor \tcode{views::nullable}, only produces the non-reference specialization. As range code is strongly rooted in value semantics, providing reference semantics without ceremony seems potentially dangerous. It is very easy to supply a reference unintentionally leading to surprises with lifetimes. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone.
 
-Ranges are not containers. The operations for a fixed sized range are the same as for any range, as it is not expected that ranges mutate that way. In practice \tcode{maybe_view} is a useful interface type in addition to \tcode{std::optional}.
-
-Just as there are use cases for having particular containers being returned from a function, there are use cases for returning near primitive ranges as explicit types. Explicit types are much easier for compilers to generate good code, and to further optimize that code. The more limited interface of \tcode{maybe_view} seems to, in practice, make intention clearer to the compiler, over \tcode{std::optional}, over adaptation or projection.
-
-Saying what you mean directly is better.
-
-A \tcode{std::optional} type says I will be checking if the value is engaged or disengaged, and possibly taking alternative action based on that, and that I might use a \tcode{std::optional<T>} in contexts that I would use a T, or that it might be used as a default parameter. The long list suggests that \tcode{std::optional<T>} is filling too many roles. A \tcode{maybe_view}, or a \tcode{nullable_view}, says that independent check will not be made, the value will have operations applied if present, and ignored otherwise. A concrete range type sets tighter expectations.
-
-Value types, which range types are, should, if they can, provide spaceship and equivalence operators. This is straight forward to specify, and to implement for both \tcode{maybe_view} or \tcode{nullable_view}.
-
-\section{The Argument for Monadic Operations}
-The generic templated type \tcode{maybe_view} is a monad in the category of C++ types in exactly the same way that \tcode{std::optional} and \tcode{std::expected} are. \cite{P0798R8} The operations stay strictly within the generic template type. Since it is a type that can be reasonably used on its own, it should, on its own, support all reasonable uses of the type. This should include the function application patterns of functor and monad, in exactly the same way they have been applied to \tcode{std::optional}. The member functions are much more strongly typed than the monad in the range category, staying within the template type.
-
-However, it is not feasible to give \tcode{nullable_view} the same monadic interface as it would require, for example, construction of a type that dereferences to \tcode{U} to support \tcode{transform} over \tcode{T -> U}, but that is not in general possible in the C++ type system. The additional level of indirection built in to \tcode{nullable_view} makes this infeasible. The inconsistency of implementablity supports the direction from SG9 to separate the templates by name, rather than just by concept.
-
-Most range types should be treated much like lambda expressions, with unnameable types. Even where it is possible to work out the type, that type may not be stable in the face of concept specialization based on the rest of the types involved. However, \tcode{maybe_view} and \tcode{nullable_view} are primitive ranges, built out of non-range types. It is natural to write functions, including lambdas, that return them, and staying within the type system can improve correctness and diagnostics when the code strays. Providing the monadic interface for the base and for the reference specialization of \tcode{nullable_view} is entirely straight-forward.
-
-Looking at the test code for the reference implementation, we can see that usage for the non-reference specialization is very similar:
-
-\begin{minipage}[t]{\linewidth}
-  \begin{minted}{c++}
-    maybe_view<int> mv{40};
-    auto            r = mv.and_then([](int i) { return maybe_view{i + 2}; });
-
-    ASSERT_TRUE(!r.empty());
-    ASSERT_TRUE(r.size() == 1);
-    ASSERT_TRUE(r.data() != nullptr);
-    ASSERT_TRUE(*(r.data()) == 42);
-    ASSERT_TRUE(!mv.empty());
-    ASSERT_TRUE(*(mv.data()) == 40);
-
-    auto r2 = mv.and_then([](int) { return maybe_view<int>{}; });
-    ASSERT_TRUE(r2.empty());
-    ASSERT_TRUE(r2.size() == 0);
-    ASSERT_TRUE(r2.data() == nullptr);
-    ASSERT_TRUE(!mv.empty());
-
-  \end{minted}
-\end{minipage}
-
-A test stanza for the \tcode{T\&} case suggests more interesting applications, as transform will be applied to the underlying referred to value.
-
-\begin{minipage}[t]{\linewidth}
-  \begin{minted}{c++}
-
-    int              forty{40};
-    maybe_view<int&> mv{forty};
-    auto             r9 = mv.transform([](int& i) {
-      int k = i;
-      i     = 56;
-      return k * 2;
-    });
-
-    for (auto r: r9) {
-      ASSERT_EQ(r, 80);
-    }
-
-    for (auto v: mv) {
-      ASSERT_EQ(v, 56);
-    }
-
-    ASSERT_EQ(forty, 56);
-
-  \end{minted}
-\end{minipage}
-
-Introducing a new optionalish type may provide a way out of the \tcode{std::optional<T\&>} quagmire. There is no risk of broken code or changes in SFINAE in template instantiation. The type \tcode{maybe_view} is not useful as a default parameter or a substitute for its underlying type. It behaves the same way that \tcode{std::reference_wrapper} has for more than a decade. Maybe as a name is common in the area for these sorts of types, it is not innovative.
-
-In order to affect the underlying referenced type, not only do we need to use \tcode{maybe_view<int\&>} explicitly, the function passed to \tcode{transform} must take the underlying type by reference. A significant amount of ceremony is required. Since the general direction has been and continues to be in favor of value oriented programming, making mutation require a context in a lonely place is appropriate.
-
-\section{The Argument for Reference Specialization}
-Having worked with the \tcode{reference_wrapper} support for some time, the ergonomics are somewhat lacking. In addition, many of the Big Dumb Business Objects that are the result of lookups, or filters, and are thus good candidates for optionality, are also not good at move operations, having dozens of individual members that are a mix of primitives, strings, and sub-BDOs, resulting in complex move constructors. In addition, many old and well tested functions will mutate these objects, rather than making copies, using a more object oriented than value oriented style.
-
-For these reasons, supporting the common case of reference semantics ergonomically is important. Folding the implementation of \tcode{reference_wrapper} into a template specialization for \tcode{T\&} provides good ergonomics. Neither \tcode{maybe_view} or \tcode{nullable_view} support assignment from the underlying type, so the only question for semantics is assignment from another instance of the same type. The semantics of \tcode{std::reference_wrapper} are well established and correct, where the implementation pointer is reassigned, putting the assignee into the same state as the assigned. The same semantics are adopted for \tcode{maybe_view} or \tcode{nullable_view}.
-
-The range adaptors, \tcode{views::maybe} and \tcode{views::nullable}, only produce the non-reference specialization. As range code is strongly rooted in value semantics, providing reference semantics without ceremony seems potentially dangerous. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone.
-
-The owning view \tcode{maybe_view} is not a container, and does not try to support the full container interface. As a range with a fixed upper size, emplace and push back operations are problematic. Not supplying them is not problematic.
-
-This means that all of the operations on \tcode{maybe_view} and \tcode{nullable_view} are directly safe. To construct a non-safe operation is possible, but looks unsafe in code. For example:
+This means that all of the operations on \tcode{nullable_view} are directly safe. To construct a non-safe operation is possible, but looks unsafe in code. For example:
 
 \begin{minipage}[t]{\columnwidth}
   \begin{minted}{c++}
-maybe_view<int> o1{42};
+nullable_view<int*> o1{null};
 assert(*(o1.data()) == 42));
   \end{minted}
 \end{minipage}
@@ -481,46 +277,28 @@ Dereferencing the result of \tcode{data()} without a check for null is of course
 
 \chapter{Design}
 
-
-For \tcode{maybe_view}, the design is a hybrid of \tcode{empty_view} and \tcode{single_view}, with the straightforward extension for reference type, holding a pointer to an existing object. For \tcode{nullable_view} we have the same semantics of zero or one objects, only based on if the underlying nullable object does or does not have a value.
-
-Using \tcode{maybe_view} as a named type to be returned from functions is an intended mode. This is in order to facilitate writing query functions that can avoid constructing large objects in order to check a property of the object, instead returing an disengaged object early. Although they could return a \tcode{std::optional}, that can still produce unnecessary copies, and introduces some potential safety issues. Support for \tcode{maybe_view<T\&>} allievates copies, however the reference type is never deduced by the customization point because that can lead to hard to reason about lifetime issues, so \tcode{maybe_view<T\&>} and \tcode{nullable_view<T\&>} must be spelled out.
-
-Adding the monadic functions followed, as withholding them seemed needlessly pedantic to my users.
+For \tcode{nullable_view} we have the semantics of zero or one objects based on if the underlying nullable object does or does not have a value.
 
 \chapter{Freestanding}
 
-
-Both \tcode{maybe_view} and \tcode{nullable_view} naturally meet the requirements for freestanding. The expository use of \tcode{optional} does not interfere with the ability of \tcode{maybe_view} to meet the requirements of freestanding.
-
+The type \tcode{nullable_view} naturally meets the requirements for freestanding.
 
 \chapter{Implementation}
 
-
 A publicly available implementation at \url{https://github.com/steve-downey/view_maybe}. There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as effects.
-
-The implementation, for exposition purposes, uses \tcode{std::optional} to hold the value for \tcode{maybe_view}. Implementations, to reduce the overhead of debugging implementations should probably hoist the storage and flag in a typical optional into \tcode{maybe_view}, in which case the flag should be checked first on reads with acquire/release atomic semantics, and last on writes, so as to provide a synchronization points. Although this note may be in the close neighborhood of teaching my grandmother to suck eggs. A \tcode{movable-box} does not work as it demands that the type be default constructable.
-
-Support to use \tcode{std::reference_wrapper} as a transparent implementation of a \tcode{views::maybe} has been part of the implementation for a long time. It does bifurcate most of the implementations in order to hide the necessary calls to \tcode{.get()} to pull the value out of the wrapper. This is one of the impediments to using \tcode{std::reference_wrapper} to achieve reference semantics.
-
-Implentation of the monadic functions on maybe_view is not simply forwarding to the \tcode{std::optional} monadic functions because the constraints on, for example, \tcode{and_then} require that the callable return an \tcode{optional}, where \tcode{and_then} on \tcode{maybe_view} requires that the function return a \tcode{maybe_view}. While it might be possible to do the type gymnastics to do the conversion, it does not seem it would provide much clarity.
-
 
 \chapter{Proposal}
 
-
-Add two range adaptor objects
+Add a range adaptor object
 
 \begin{itemize}
-\item
-  \tcode{views::maybe} a range adaptor that produces an owning view holding $0$ or $1$ elements of an object.
 \item
   \tcode{views::nullable} a range adaptor over a \tcode{nullable_object} producing a view into the nullable object.
 \end{itemize}
 
 A \tcode{nullable_object} object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, \tcode{std::optional}, and the proposed \tcode{std::expected} \cite{P0323R9} types all model \exposid{nullable_object}. Function pointers do not, as functions are not objects. Iterators do not generally model \exposid{nullable}, as they are not required to be contextually convertible to bool.
 
-The generic types \tcode{std::maybe_view} and \tcode{std::nullable_view}, which are produced by \tcode{views::maybe} and \tcode{views::nullable}, respectively, are further specialized over reference types, such that operations on the iterators of the range modify the object the range is over, if and only if the object exists.
+The generic type \tcode{std::nullable_view}, which is produced by \tcode{views::nullable} is further specialized over reference types, such that operations on the iterators of the range modify the object the range is over, if and only if the object exists.
 
 
 \chapter{Wording}
@@ -536,26 +314,6 @@ Modify 26.2 Header <ranges> synopsis
 \begin{adjustwidth}{1cm}{1cm}
   \begin{addedblock}
     \begin{codeblock}
-// \ref{range.maybe}, maybe view
-template<class T>
-class maybe_view;                                           // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{maybe_view}@<maybe_view<T*>> = true;  // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{maybe_view}@<maybe_view<reference_wrapper<T>> = true;  // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{maybe_view}@<maybe_view<T&>> = true;  // freestanding
-
-namespace views {
-  inline constexpr @\unspec@ maybe = @\unspec@;            // freestanding
-}
-
 // \ref{range.nullable}, nullable view
 template<typename T>
 requires @\seebelow@;
@@ -583,458 +341,6 @@ namespace views {
   \end{addedblock}
 \end{adjustwidth}
 
-\Sec2[range.maybe]{Maybe View}
-
-\Sec3[range.maybe.overview]{Overview}
-
-\pnum
-\tcode{maybe_view} produces a view that contains 0 or 1 objects.
-
-
-\pnum
-\indexlibrarymember{maybe}{views}%
-The name \tcode{views::maybe} denotes a
-customization point object\iref{customization.point.object}.
-Given a subexpression \tcode{E}, the expression
-\tcode{views::maybe(E)} is expression-equivalent to
-\tcode{maybe_view<decay_t<decltype((E))>>(E)}.
-
-
-\begin{example}
-  \begin{codeblock}
-int i{4};
-for (int i : views::maybe(i))
-  cout << i;        // prints \tcode{4}
-
-maybe_view<int> m2{};
-for (int k : m2)
-  cout << k;        // Does not execute
-\end{codeblock}
-\end{example}
-
-\Sec3[range.maybe.view]{Class template \tcode{maybe_view}}
-
-\begin{codeblock}
-
-namespace std::ranges {
-
-template <typename Value>
-class maybe_view;
-
-
-template <typename Value>
-class maybe_view : public view_interface<maybe_view<Value>> {
-  private:
-    std::optional<Value> @\exposidnc{value_}@;             // \expos{}
-
-  public:
-    constexpr maybe_view() = default;
-    constexpr explicit maybe_view(const Value& value) requires @\libconcept{copy_constructible}@<T>;
-    constexpr explicit maybe_view(Value&& value);
-    template <class... Args>
-      requires @\libconcept{constructible_from}@<T, Args...>
-    constexpr maybe_view(std::in_place_t, Args&&... args);
-
-    constexpr Value*       begin() noexcept;
-    constexpr const Value* begin() const noexcept;
-    constexpr Value*       end() noexcept;
-    constexpr const Value* end() const noexcept;
-
-    constexpr size_t size() const noexcept;
-    constexpr Value* data() noexcept;
-    constexpr const Value* data() const noexcept;
-
-    friend constexpr auto operator<=>(const maybe_view& lhs,
-    const maybe_view& rhs) {
-      return lhs.@\exposid{value_}@ <=> rhs.@\exposid{value_}@;
-    }
-
-    friend constexpr bool operator==(const maybe_view& lhs,
-    const maybe_view& rhs) {
-      return lhs.@\exposid{value_}@ == rhs.@\exposid{value_}@;
-    }
-
-    template <typename Self, typename F>
-    constexpr auto and_then(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto transform(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto or_else(this Self&& self, F&& f);
-};
-}
-\end{codeblock}
-
-%% BEGIN value defs
-\begin{itemdecl}
-  constexpr explicit maybe_view(Value const& maybe);
-\end{itemdecl}
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with maybe.
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr explicit maybe_view(Value&& maybe);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with \tcode{std::move(maybe)}.
-\end{itemdescr}
-
-\begin{itemdecl}
-template<class... Args>
-constexpr maybe_view(in_place_t, Args&&... args);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\effects
-Initializes \exposid{value_} as if by
-\tcode{\exposid{value_}\{in_place, std::forward<Args>(args)...\}}.
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* begin() noexcept;
-constexpr const T* begin() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns
-\tcode{data();}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* end() noexcept;
-constexpr const T* end() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{data() + size();}.
-\end{itemdescr}
-
-\begin{itemdecl}
-static constexpr size_t size() noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns
-\begin{codeblock}
-bool(@\exposid{value_}@);
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* data() noexcept;
-constexpr const T* data() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{addressof(*\exposid{value_});}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr auto operator<=>(const maybe_view& lhs, const maybe_view& rhs)
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{lhs.\exposid{value_}} <=> \tcode{rhs.\exposid{value_}};
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr auto operator==(const maybe_view& lhs, const maybe_view& rhs)
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{lhs.\exposid{value_}} == \tcode{rhs.\exposid{value_}};
-\end{itemdescr}
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto and_then(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-\pnum
-\mandates
-\tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view}.
-
-\pnum{}
-\effects{}
-Equivalent to:
-
-\begin{codeblock}
-  if (self.@\exposid{value_}@) {
-    return invoke(std::forward<F>(f),
-                  forward_like<Self>(*self.@\exposid{value_}@));
-  } else {
-    return remove_cvref_t<U>();
-  }
-\end{codeblock}
-\end{itemdescr}
-
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto transform(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-  (self.@\exposid{value_}@)
-  ? maybe_view<U>{invoke(forward<F>(f),
-                         forward_like<Self>(*self.@\exposid{value_}@))}
-  : maybe_view<U>{};
-\end{codeblock}
-\end{itemdescr}
-
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto or_else(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  Let \tcode{U} be \tcode{invoke_result_t<F>}.
-
-  \pnum
-  \mandates
-  \tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-self.@\exposid{value_}@ ? forward<Self>(self) : forward<F>(f)();
-\end{codeblock}
-\end{itemdescr}
-
-
-\Sec3[range.maybe.view.ref]{Class template specialization\tcode{maybe_view<T\&>}}
-
-\begin{codeblock}
-namespace std::ranges {
-template <typename Value>
-class maybe_view<Value&> : public view_interface<maybe_view<Value&>> {
-  private:
-    Value* @\exposidnc { value_ }@; // \expos{}
-
-  public:
-    constexpr maybe_view();
-    constexpr explicit maybe_view(Value& value);
-    constexpr explicit maybe_view(Value&& value) = delete;
-
-    constexpr Value*       begin() noexcept;
-    constexpr const Value* begin() const noexcept;
-    constexpr Value*       end() noexcept;
-    constexpr const Value* end() const noexcept;
-
-    constexpr size_t size() const noexcept;
-    constexpr Value* data() noexcept;
-    constexpr const Value* data() const noexcept;
-
-    friend constexpr auto operator<=>(const maybe_view& lhs,
-                                      const maybe_view& rhs);
-
-    friend constexpr bool operator==(const maybe_view& lhs,
-                                     const maybe_view& rhs);
-
-    template <typename Self, typename F>
-    constexpr auto and_then(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto transform(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto or_else(this Self&& self, F&& f);
-};
-
-\end{codeblock}
-
-\begin{itemdecl}
-constexpr explicit maybe_view();
-\end{itemdecl}
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with \tcode{nullptr}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr explicit maybe_view(Value maybe);
-\end{itemdecl}
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with \tcode{addressof(maybe)}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* begin() noexcept;
-constexpr const T* begin() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns
-\tcode{data();}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* end() noexcept;
-constexpr const T* end() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{data() + size();}.
-\end{itemdescr}
-
-\begin{itemdecl}
-static constexpr size_t size() noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns
-\begin{codeblock}
-bool(@\exposid{value_}@);
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* data() noexcept;
-constexpr const T* data() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Equivalent to:
-
-\begin{codeblock}
-if (!@\exposid{value_}@)
-    return nullptr;
-return addressof(*@\exposid{value_}@);
-
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-friend constexpr auto operator<=>(const maybe_view& lhs,
-                                  const maybe_view& rhs);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns{}
-\begin{codeblock}
-(bool(lhs.@\exposid{value_}@) && bool(rhs.@\exposid{value_}@))
-    ? (*lhs.@\exposid{value_}@ <=> *rhs.@\exposid{value_}@)
-    : (bool(lhs.@\exposid{value_}@) <=> bool(rhs.@\exposid{value_}@));
-
-\end{codeblock}
-
-\end{itemdescr}
-
-\begin{itemdecl}
-friend constexpr auto operator==(const maybe_view& lhs,
-                                 const maybe_view& rhs);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns
-\begin{codeblock}
-(bool(lhs.@\exposid{value_}@) && bool(@\exposid{value_}@))
-    ? (*lhs.@\exposid{value_}@ == *rhs.@\exposid{value_}@)
-    : (bool(lhs.@\exposid{value_}@) == bool(rhs.@\exposid{value_}@));
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-template <typename Self, typename F>
-constexpr auto and_then(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  \pnum
-  Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-  \pnum
-  \mandates
-  \tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view<T\&}.
-
-\pnum{}
-\effects{}
-Equivalent to:
-
-\begin{codeblock}
-  if (self.@\exposid{value_}@) {
-    return invoke(forward<F>(f),
-                  forward_like<Self>(*self.@\exposid{value_}@));
-  } else {
-    return remove_cvref_t<U>();
-  }
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto transform(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  \pnum
-  Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-  return (self.@\exposid{value_}@)
-     ? maybe_view<U>{invoke(forward<F>(f),
-                     forward_like<Self>(*self.@\exposid{value_}@))}
-     : maybe_view<U>{};
-
-\end{codeblock}
-\end{itemdescr}
-
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto or_else(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  Let \tcode{U} be \tcode{invoke_result_t<F>}.
-
-  \pnum
-  \mandates
-  \tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view<T\&>}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-  return self.@\exposid{value_}@ ? forward<Self>(self) : forward<F>(f)();
-\end{codeblock}
-\end{itemdescr}
 
 
 \Sec2[range.nullable]{Nullable View}
@@ -1101,10 +407,10 @@ namespace std::ranges {
         requires constructible_from<Nullable, Args...>
     constexpr nullable_view(in_place_t, Args&&... args);
 
-    constexpr auto begin() noexcept;
-    constexpr auto begin() const noexcept;
-    constexpr auto end() noexcept;
-    constexpr auto end() const noexcept;
+    constexpr T*       begin() noexcept;
+    constexpr const T* begin() const noexcept;
+    constexpr T*       end() noexcept;
+    constexpr const T* end() const noexcept;
 
     constexpr size_t size() const noexcept;
 
@@ -1266,7 +572,7 @@ if constexpr (is_reference_wrapper_v<Nullable>) {
 
 
 
-\Sec3[range.nullable.view.ref]{Class template specialization\tcode{nullable_view<T\&>}}
+\Sec3[range.nullable.view.ref]{Class template specialization \tcode{nullable_view<T\&>}}
 
 \begin{codeblock}
 template <typename Nullable>
