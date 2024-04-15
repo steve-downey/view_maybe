@@ -157,9 +157,9 @@ for (auto&& i : r) {
 
 \chapter{Motivation}
 
-The \tcode{nullable} protocol that \tcode{views::nullable} adapts is inherently unsafe because it models unsafe pointer semantics. If a nullable type is disengaged, using the derefence operator \tcode{operator*()} is is undefined behavior. The allowed operations of \mintinline{C++}{views::nullable} are all, in themselves, safe, and using the adapter can lead to safer code.
+The \tcode{nullable} protocol that \tcode{views::nullable} adapts is inherently unsafe because it models unsafe pointer semantics. If a nullable type is disengaged, using the derefence operator \tcode{operator*()} is undefined behavior. The allowed operations of \mintinline{C++}{views::nullable} are all, in themselves, safe, and using the adapter can lead to safer code.
 
-An example is using \mintinline{C++}{views::nullable} in a range based for loops, allowing the contained nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. This can be a particular issue in doing code reviews where the test, if it exists, is not visible. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the \tcode{for} loop eliminates some boilerplate code, the same way that range based \tcode{for} loops do.
+An example is using \mintinline{C++}{views::nullable} in range based for loops, allowing the contained nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. This can be a particular issue in doing code reviews where the test, if it exists, is not visible. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the \tcode{for} loop eliminates some boilerplate code, the same way that range based \tcode{for} loops do.
 
 \begin{minipage}[t]{\columnwidth}
 \begin{minted} {c++}
@@ -257,14 +257,12 @@ An example of code that is enabled by borrowed ranges, if unlikely code:
 Providing the facility is not a significant cost, and conveys the semantics correctly, even if the simple examples are not hugely motivating. In particular there is no real implementation impact, other than providing template variable specializations for enable_borrowed_range.
 
 
-\chapter{Wait, There's More}
+\chapter{Reference Specialization}
+Having worked with \tcode{reference_wrapper} support for some time, the ergonomics are somewhat lacking. In addition, many of the Big Dumb Business Objects that are the result of lookups, or filters, and are thus good candidates for optionality, are also not good at move operations, having dozens of individual members that are a mix of primitives, strings, and sub-BDOs, resulting in complex move constructors. In addition, many old and well tested functions will mutate these objects, rather than making copies, using a more object oriented than value oriented style.
 
-\section{The Argument for Reference Specialization}
-Having worked with the \tcode{reference_wrapper} support for some time, the ergonomics are somewhat lacking. In addition, many of the Big Dumb Business Objects that are the result of lookups, or filters, and are thus good candidates for optionality, are also not good at move operations, having dozens of individual members that are a mix of primitives, strings, and sub-BDOs, resulting in complex move constructors. In addition, many old and well tested functions will mutate these objects, rather than making copies, using a more object oriented than value oriented style.
+For these reasons, supporting the common case of reference semantics ergonomically is important. Folding the implementation of \tcode{reference_wrapper} into a template specialization for \tcode{T\&} provides good ergonomics. The type \tcode{nullable_view} does not support assignment from the underlying type, so the only question for semantics is assignment from another instance of the same type. The semantics of \tcode{std::reference_wrapper} are well established and correct, where the implementation pointer is reassigned, putting the assignee into the same state as the assigned.
 
-For these reasons, supporting the common case of reference semantics ergonomically is important. Folding the implementation of \tcode{reference_wrapper} into a template specialization for \tcode{T\&} provides good ergonomics. Neither \tcode{maybe_view} or \tcode{nullable_view} support assignment from the underlying type, so the only question for semantics is assignment from another instance of the same type. The semantics of \tcode{std::reference_wrapper} are well established and correct, where the implementation pointer is reassigned, putting the assignee into the same state as the assigned. The same semantics are adopted for \tcode{maybe_view} or \tcode{nullable_view}.
-
-The range adaptor \tcode{views::nullable}, only produces the non-reference specialization. As range code is strongly rooted in value semantics, providing reference semantics without ceremony seems potentially dangerous. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone.
+The range adaptor \tcode{views::nullable}, only produces the non-reference specialization. As range code is strongly rooted in value semantics, providing reference semantics without ceremony seems potentially dangerous. It is very easy to supply a reference unintentionally leading to surprises with lifetimes. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone.
 
 This means that all of the operations on \tcode{nullable_view} are directly safe. To construct a non-safe operation is possible, but looks unsafe in code. For example:
 
@@ -283,17 +281,13 @@ For \tcode{nullable_view} we have the semantics of zero or one objects based on 
 
 \chapter{Freestanding}
 
-
 The type \tcode{nullable_view} naturally meets the requirements for freestanding.
 
-
 \chapter{Implementation}
-
 
 A publicly available implementation at \url{https://github.com/steve-downey/view_maybe}. There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as effects.
 
 \chapter{Proposal}
-
 
 Add a range adaptor object
 
@@ -320,26 +314,6 @@ Modify 26.2 Header <ranges> synopsis
 \begin{adjustwidth}{1cm}{1cm}
   \begin{addedblock}
     \begin{codeblock}
-// \ref{range.maybe}, maybe view
-template<class T>
-class maybe_view;                                           // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{maybe_view}@<maybe_view<T*>> = true;  // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{maybe_view}@<maybe_view<reference_wrapper<T>> = true;  // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{maybe_view}@<maybe_view<T&>> = true;  // freestanding
-
-namespace views {
-  inline constexpr @\unspec@ maybe = @\unspec@;            // freestanding
-}
-
 // \ref{range.nullable}, nullable view
 template<typename T>
 requires @\seebelow@;
@@ -367,458 +341,6 @@ namespace views {
   \end{addedblock}
 \end{adjustwidth}
 
-\Sec2[range.maybe]{Maybe View}
-
-\Sec3[range.maybe.overview]{Overview}
-
-\pnum
-\tcode{maybe_view} produces a view that contains 0 or 1 objects.
-
-
-\pnum
-\indexlibrarymember{maybe}{views}%
-The name \tcode{views::maybe} denotes a
-customization point object\iref{customization.point.object}.
-Given a subexpression \tcode{E}, the expression
-\tcode{views::maybe(E)} is expression-equivalent to
-\tcode{maybe_view<decay_t<decltype((E))>>(E)}.
-
-
-\begin{example}
-  \begin{codeblock}
-int i{4};
-for (int i : views::maybe(i))
-  cout << i;        // prints \tcode{4}
-
-maybe_view<int> m2{};
-for (int k : m2)
-  cout << k;        // Does not execute
-\end{codeblock}
-\end{example}
-
-\Sec3[range.maybe.view]{Class template \tcode{maybe_view}}
-
-\begin{codeblock}
-
-namespace std::ranges {
-
-template <typename Value>
-class maybe_view;
-
-
-template <typename Value>
-class maybe_view : public view_interface<maybe_view<Value>> {
-  private:
-    std::optional<Value> @\exposidnc{value_}@;             // \expos{}
-
-  public:
-    constexpr maybe_view() = default;
-    constexpr explicit maybe_view(const Value& value) requires @\libconcept{copy_constructible}@<T>;
-    constexpr explicit maybe_view(Value&& value);
-    template <class... Args>
-      requires @\libconcept{constructible_from}@<T, Args...>
-    constexpr maybe_view(std::in_place_t, Args&&... args);
-
-    constexpr Value*       begin() noexcept;
-    constexpr const Value* begin() const noexcept;
-    constexpr Value*       end() noexcept;
-    constexpr const Value* end() const noexcept;
-
-    constexpr size_t size() const noexcept;
-    constexpr Value* data() noexcept;
-    constexpr const Value* data() const noexcept;
-
-    friend constexpr auto operator<=>(const maybe_view& lhs,
-    const maybe_view& rhs) {
-      return lhs.@\exposid{value_}@ <=> rhs.@\exposid{value_}@;
-    }
-
-    friend constexpr bool operator==(const maybe_view& lhs,
-    const maybe_view& rhs) {
-      return lhs.@\exposid{value_}@ == rhs.@\exposid{value_}@;
-    }
-
-    template <typename Self, typename F>
-    constexpr auto and_then(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto transform(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto or_else(this Self&& self, F&& f);
-};
-}
-\end{codeblock}
-
-%% BEGIN value defs
-\begin{itemdecl}
-  constexpr explicit maybe_view(Value const& maybe);
-\end{itemdecl}
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with maybe.
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr explicit maybe_view(Value&& maybe);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with \tcode{std::move(maybe)}.
-\end{itemdescr}
-
-\begin{itemdecl}
-template<class... Args>
-constexpr maybe_view(in_place_t, Args&&... args);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\effects
-Initializes \exposid{value_} as if by
-\tcode{\exposid{value_}\{in_place, std::forward<Args>(args)...\}}.
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* begin() noexcept;
-constexpr const T* begin() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns
-\tcode{data();}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* end() noexcept;
-constexpr const T* end() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{data() + size();}.
-\end{itemdescr}
-
-\begin{itemdecl}
-static constexpr size_t size() noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns
-\begin{codeblock}
-bool(@\exposid{value_}@);
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* data() noexcept;
-constexpr const T* data() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{addressof(*\exposid{value_});}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr auto operator<=>(const maybe_view& lhs, const maybe_view& rhs)
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{lhs.\exposid{value_}} <=> \tcode{rhs.\exposid{value_}};
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr auto operator==(const maybe_view& lhs, const maybe_view& rhs)
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{lhs.\exposid{value_}} == \tcode{rhs.\exposid{value_}};
-\end{itemdescr}
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto and_then(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-\pnum
-\mandates
-\tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view}.
-
-\pnum{}
-\effects{}
-Equivalent to:
-
-\begin{codeblock}
-  if (self.@\exposid{value_}@) {
-    return invoke(std::forward<F>(f),
-                  forward_like<Self>(*self.@\exposid{value_}@));
-  } else {
-    return remove_cvref_t<U>();
-  }
-\end{codeblock}
-\end{itemdescr}
-
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto transform(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-  (self.@\exposid{value_}@)
-  ? maybe_view<U>{invoke(forward<F>(f),
-                         forward_like<Self>(*self.@\exposid{value_}@))}
-  : maybe_view<U>{};
-\end{codeblock}
-\end{itemdescr}
-
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto or_else(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  Let \tcode{U} be \tcode{invoke_result_t<F>}.
-
-  \pnum
-  \mandates
-  \tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-self.@\exposid{value_}@ ? forward<Self>(self) : forward<F>(f)();
-\end{codeblock}
-\end{itemdescr}
-
-
-\Sec3[range.maybe.view.ref]{Class template specialization\tcode{maybe_view<T\&>}}
-
-\begin{codeblock}
-namespace std::ranges {
-template <typename Value>
-class maybe_view<Value&> : public view_interface<maybe_view<Value&>> {
-  private:
-    Value* @\exposidnc { value_ }@; // \expos{}
-
-  public:
-    constexpr maybe_view();
-    constexpr explicit maybe_view(Value& value);
-    constexpr explicit maybe_view(Value&& value) = delete;
-
-    constexpr Value*       begin() noexcept;
-    constexpr const Value* begin() const noexcept;
-    constexpr Value*       end() noexcept;
-    constexpr const Value* end() const noexcept;
-
-    constexpr size_t size() const noexcept;
-    constexpr Value* data() noexcept;
-    constexpr const Value* data() const noexcept;
-
-    friend constexpr auto operator<=>(const maybe_view& lhs,
-                                      const maybe_view& rhs);
-
-    friend constexpr bool operator==(const maybe_view& lhs,
-                                     const maybe_view& rhs);
-
-    template <typename Self, typename F>
-    constexpr auto and_then(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto transform(this Self&& self, F&& f);
-
-    template <typename Self, typename F>
-    constexpr auto or_else(this Self&& self, F&& f);
-};
-
-\end{codeblock}
-
-\begin{itemdecl}
-constexpr explicit maybe_view();
-\end{itemdecl}
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with \tcode{nullptr}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr explicit maybe_view(Value maybe);
-\end{itemdecl}
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Initializes \exposid{value_} with \tcode{addressof(maybe)}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* begin() noexcept;
-constexpr const T* begin() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns
-\tcode{data();}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* end() noexcept;
-constexpr const T* end() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns \tcode{data() + size();}.
-\end{itemdescr}
-
-\begin{itemdecl}
-static constexpr size_t size() noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns
-\begin{codeblock}
-bool(@\exposid{value_}@);
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-constexpr T* data() noexcept;
-constexpr const T* data() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\effects{}
-Equivalent to:
-
-\begin{codeblock}
-if (!@\exposid{value_}@)
-    return nullptr;
-return addressof(*@\exposid{value_}@);
-
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-friend constexpr auto operator<=>(const maybe_view& lhs,
-                                  const maybe_view& rhs);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns{}
-\begin{codeblock}
-(bool(lhs.@\exposid{value_}@) && bool(rhs.@\exposid{value_}@))
-    ? (*lhs.@\exposid{value_}@ <=> *rhs.@\exposid{value_}@)
-    : (bool(lhs.@\exposid{value_}@) <=> bool(rhs.@\exposid{value_}@));
-
-\end{codeblock}
-
-\end{itemdescr}
-
-\begin{itemdecl}
-friend constexpr auto operator==(const maybe_view& lhs,
-                                 const maybe_view& rhs);
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum{}
-\returns
-\begin{codeblock}
-(bool(lhs.@\exposid{value_}@) && bool(@\exposid{value_}@))
-    ? (*lhs.@\exposid{value_}@ == *rhs.@\exposid{value_}@)
-    : (bool(lhs.@\exposid{value_}@) == bool(rhs.@\exposid{value_}@));
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-template <typename Self, typename F>
-constexpr auto and_then(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  \pnum
-  Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-  \pnum
-  \mandates
-  \tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view<T\&}.
-
-\pnum{}
-\effects{}
-Equivalent to:
-
-\begin{codeblock}
-  if (self.@\exposid{value_}@) {
-    return invoke(forward<F>(f),
-                  forward_like<Self>(*self.@\exposid{value_}@));
-  } else {
-    return remove_cvref_t<U>();
-  }
-\end{codeblock}
-\end{itemdescr}
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto transform(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  \pnum
-  Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-  return (self.@\exposid{value_}@)
-     ? maybe_view<U>{invoke(forward<F>(f),
-                     forward_like<Self>(*self.@\exposid{value_}@))}
-     : maybe_view<U>{};
-
-\end{codeblock}
-\end{itemdescr}
-
-
-\begin{itemdecl}
-  template <typename Self, typename F>
-  constexpr auto or_else(this Self&& self, F&& f);
-\end{itemdecl}
-
-\begin{itemdescr}
-  Let \tcode{U} be \tcode{invoke_result_t<F>}.
-
-  \pnum
-  \mandates
-  \tcode{remove_cvref_t<U>} is a specialization of \tcode{maybe_view<T\&>}.
-
-\pnum{}
-\returns
-\begin{codeblock}
-  return self.@\exposid{value_}@ ? forward<Self>(self) : forward<F>(f)();
-\end{codeblock}
-\end{itemdescr}
 
 
 \Sec2[range.nullable]{Nullable View}
@@ -885,10 +407,10 @@ namespace std::ranges {
         requires constructible_from<Nullable, Args...>
     constexpr nullable_view(in_place_t, Args&&... args);
 
-    constexpr auto begin() noexcept;
-    constexpr auto begin() const noexcept;
-    constexpr auto end() noexcept;
-    constexpr auto end() const noexcept;
+    constexpr T*       begin() noexcept;
+    constexpr const T* begin() const noexcept;
+    constexpr T*       end() noexcept;
+    constexpr const T* end() const noexcept;
 
     constexpr size_t size() const noexcept;
 
@@ -1050,7 +572,7 @@ if constexpr (is_reference_wrapper_v<Nullable>) {
 
 
 
-\Sec3[range.nullable.view.ref]{Class template specialization\tcode{nullable_view<T\&>}}
+\Sec3[range.nullable.view.ref]{Class template specialization \tcode{nullable_view<T\&>}}
 
 \begin{codeblock}
 template <typename Nullable>
