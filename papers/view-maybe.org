@@ -38,6 +38,8 @@
 - Author: Steve Downey <sdowney2@bloomberg.net>, <sdowney@gmail.com>
 - Audience: LEWG
 
+    This is the export time: {{{time(%Y-%m-%d %T)}}}
+
 #+BEGIN_ABSTRACT
 Abstract: This paper proposes ~view::maybe~ a range adaptor that produces a view with cardinality 0 or 1 which adapts nullable types such as ~std::optional~ and pointer to object types.
 #+END_ABSTRACT
