@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include <ranges>
 #include <optional>
 
 using namespace smd::views;
@@ -27,7 +26,4 @@ TEST(ConceptsTest, Concept) {
     static_assert(!nullable_object<std::array<int, 1>>);
     static_assert(!nullable_object<void*>);
     static_assert(!nullable_object<decltype(func)>);
-
-    static_assert(
-        nullable_object_ref<std::reference_wrapper<std::optional<int>>>);
 }

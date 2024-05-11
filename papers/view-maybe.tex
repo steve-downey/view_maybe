@@ -85,11 +85,21 @@ std::cout << "o=" << *o << " prints 9\n";
 \begin{minted}[fontsize=\scriptsize]{c++}
 
 std::optional o{7};
-for (auto&& i : views::nullable(std::ref(o))) {
+for (auto&& i
+    : views::nullable_view<std::optional<int>&>(o)) {
     i = 9;
     std::cout << "i=" << i << " prints 9\n";
 }
 std::cout << "o=" << *o << " prints 9\n";
+
+// if range for is too much magic
+if (auto v = views::nullable_view<std::optional<int>&>(o);
+    std::begin(v) != std::end(v)) {
+    auto itr = std::begin(v);
+    *itr     = 10;
+    std::cout << "*itr=" << *itr << " prints 10\n";
+}
+std::cout << "o=" << *o << " prints 10\n";
 
 \end{minted}
 \end{minipage}
@@ -180,27 +190,13 @@ for (auto&& opt :
 \end{minted}
 \end{minipage}
 
-The view can be on a \mintinline{C++}{std::reference_wrapper}, allowing the underlying nullable to be modified:
-
-\begin{minipage}[t]{\columnwidth}
-\begin{minted} {c++}
-std::optional o{7};
-for (auto&& i : views::nullable(std::ref(o))) {
-    i = 9;
-    std::cout << "i=" << i << " prints 9\n";
-}
-std::cout << "o=" << *o << " prints 9\n";
-
-\end{minted}
-\end{minipage}
-
 Of course, if the nullable is empty, there is nothing in the view to act on.
 
 \begin{minipage}[t]{\columnwidth}
 \begin{minted} {c++}
 
 auto oe = std::optional<int>{};
-for (int i : views::nullable(std::ref(oe)))
+for (int i : views::nullable(oe))
     std::cout << "i=" << i
               << '\n'; // does not print
 
@@ -322,10 +318,6 @@ class nullable_view;                                       // freestanding
 template<class T>
 constexpr bool
 @\libspec{enable_borrowed_range}{nullable_view}@<nullable_view<T*>> = true;  // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{nullable_view}@<nullable_view<reference_wrapper<T>> = true;  // freestanding
 
 template<class T>
 constexpr bool
@@ -541,11 +533,7 @@ Equivalent to:
 if (!@\exposid{value_}@)
   return 0;
 Nullable& m = *@\exposid{value_}@;
-if constexpr (is_reference_wrapper_v<Nullable>) {
-  return bool(m.get());
-} else {
-  return bool(m);
-}
+return bool(m);
 \end{codeblock}
 \end{itemdescr}
 
@@ -562,11 +550,7 @@ Equivalent to:
 if (!@\exposid{value_}@)
   return nullptr;
 const Nullable& m = *@\exposid{value_}@;
-if constexpr (is_reference_wrapper_v<Nullable>) {
-  return m.get() ? addressof(*(m.get())) : nullptr;
-} else {
-  return m ? addressof(*m) : nullptr;
-}
+return m ? addressof(*m) : nullptr;
 \end{codeblock}
 \end{itemdescr}
 
@@ -673,11 +657,7 @@ constexpr explicit nullable_view(Nullable&& nullable) = delete;
   \begin{codeblock}
     if (!@\exposid{value_}@)
       return 0;
-    if constexpr (is_reference_wrapper_v<Nullable>) {
-      return bool(@\exposid{value_}@->get());
-    } else {
-      return bool(*@\exposid{value_}@);
-    }
+    return bool(*@\exposid{value_}@);
   \end{codeblock}
 \end{itemdescr}
 
@@ -693,11 +673,7 @@ Equivalent to:
 \begin{codeblock}
   if (!@\exposid{value_}@)
     return nullptr;
-  if constexpr (is_reference_wrapper_v<Nullable>) {
-    return @\exposid{value_}@->get() ? addressof(*(@\exposid{value_}@->get())) : nullptr;
-  } else {
-    return *@\exposid{value_}@ ? addressof(**@\exposid{value_}@) : nullptr;
-  }
+  return *@\exposid{value_}@ ? addressof(**@\exposid{value_}@) : nullptr;
 \end{codeblock}
 \end{itemdescr}
 

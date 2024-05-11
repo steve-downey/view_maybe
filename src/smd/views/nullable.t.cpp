@@ -9,8 +9,6 @@
 
 using namespace smd::views;
 
-template <nullable_object_ref NullableRef>
-void testNullableRef(const NullableRef&) {}
 
 TEST(ViewNullableTest, TestGTest) { ASSERT_EQ(1, 1); }
 
@@ -40,17 +38,6 @@ TEST(ViewNullableTest, ConceptCheck) {
     static_assert(std::ranges::common_range<nullable_view<int*>>);
     static_assert(std::ranges::viewable_range<nullable_view<int*>>);
     static_assert(std::ranges::borrowed_range<nullable_view<int*>>);
-
-    using ref = std::reference_wrapper<std::optional<int>>;
-    static_assert(std::ranges::range<nullable_view<ref>>);
-    static_assert(std::ranges::view<nullable_view<ref>>);
-    static_assert(std::ranges::input_range<nullable_view<ref>>);
-    static_assert(std::ranges::forward_range<nullable_view<ref>>);
-    static_assert(std::ranges::bidirectional_range<nullable_view<ref>>);
-    static_assert(std::ranges::contiguous_range<nullable_view<ref>>);
-    static_assert(std::ranges::common_range<nullable_view<ref>>);
-    static_assert(std::ranges::viewable_range<nullable_view<ref>>);
-    static_assert(std::ranges::borrowed_range<nullable_view<ref>>);
 }
 
 TEST(ViewNullableTest, ConceptCheckRef) {
@@ -81,16 +68,6 @@ TEST(ViewNullableTest, ConceptCheckRef) {
     static_assert(std::ranges::viewable_range<nullable_view<int*&>>);
     static_assert(std::ranges::borrowed_range<nullable_view<int*&>>);
 
-    using ref = std::reference_wrapper<std::optional<int>>&;
-    static_assert(std::ranges::range<nullable_view<ref>>);
-    static_assert(std::ranges::view<nullable_view<ref>>);
-    static_assert(std::ranges::input_range<nullable_view<ref>>);
-    static_assert(std::ranges::forward_range<nullable_view<ref>>);
-    static_assert(std::ranges::bidirectional_range<nullable_view<ref>>);
-    static_assert(std::ranges::contiguous_range<nullable_view<ref>>);
-    static_assert(std::ranges::common_range<nullable_view<ref>>);
-    static_assert(std::ranges::viewable_range<nullable_view<ref>>);
-    static_assert(std::ranges::borrowed_range<nullable_view<ref>>);
 }
 
 using namespace smd;
@@ -139,12 +116,6 @@ TEST(ViewNullableTest, Breathing) {
         ASSERT_EQ(i, 9);
     }
     ASSERT_EQ(*s, 7);
-
-    for (auto&& i : views::nullable(std::ref(s))) {
-        i = 9;
-        ASSERT_EQ(i, 9);
-    }
-    ASSERT_EQ(*s, 9);
 
     for (auto&& i : std::ranges::views::single(j)) {
         i = 19;
@@ -258,13 +229,6 @@ TEST(ViewNullableTest, BreathingRef) {
     }
     ASSERT_EQ(*s, 9);
 
-    auto wrapped_s = std::ref(s);
-    for (auto&& i : nullable_view<std::reference_wrapper<std::optional<int>>&>(
-             wrapped_s)) {
-        i = 19;
-        ASSERT_EQ(i, 19);
-    }
-    ASSERT_EQ(*s, 19);
 }
 
 TEST(ViewNullable, CompTest) {

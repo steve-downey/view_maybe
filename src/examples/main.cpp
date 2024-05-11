@@ -161,7 +161,6 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
            std::ranges::views::join;
 };
 
-
 int main() {
 
     std::unordered_set<int> set{1, 3, 7, 9};
@@ -187,7 +186,7 @@ int main() {
     for (auto i : ranges::views::single(s))
         std::cout << "i=" << *i << " prints 7\n"; // prints 7
 
-    nullable_view vs2{std::ref(s)};
+    nullable_view vs2{s};
     std::cout << *begin(vs2) << " prints 7\n";
 
     for (auto i : vs2)
@@ -219,13 +218,8 @@ int main() {
 
     std::cout << "j=" << j << " prints 27\n"; // prints 27
 
-    for (auto&& i : views::nullable(std::ref(s))) {
+    for (auto&& i : views::nullable_view<std::optional<int>&>(s)) {
         i = 9;
-        std::cout << "i=" << i << " prints 9\n"; // prints 9
-    }
-    std::cout << "s=" << *s << " prints 9\n"; // prints 9
-
-    for (auto&& i : views::nullable(std::optional{9})) {
         std::cout << "i=" << i << " prints 9\n"; // prints 9
     }
     std::cout << "s=" << *s << " prints 9\n"; // prints 9
@@ -274,7 +268,7 @@ int main() {
         std::cout << "*vs = " << *vs << " prints 42\n";
     }
 
-    nullable_view vvs2{std::ref(vs)};
+    nullable_view vvs2{vs};
     std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
 
     for (auto&& i : views::nullable(vs)) {
