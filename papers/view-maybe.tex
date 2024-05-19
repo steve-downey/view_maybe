@@ -44,6 +44,10 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
   \item \tcode{std::maybe} concept
   \item Free functions on \tcode{maybe} types such as optional and pointers.
   \end{itemize}
+\item \textbf{Changes since R12},
+  \begin{itemize}
+  \item Paper system issues---No text changes over R11
+  \end{itemize}
 \end{itemize}
 
 \chapter{Before / After Table}
@@ -191,21 +195,21 @@ for (auto&& i : r) {
 
 \chapter{Motivation}
 
-In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. For types that model \tcode{maybe} over object types, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well. The adapter \tcode{views::single} fills a similar purpose for non-nullable values, lifting a single value into a view, and \tcode{views::empty} provides a range of no values of a given type.
+In writing range transformation it is useful to be able to lift a value into a view that is either empty or contains the value. \tcode{std::optional} fills this function. For nullable types, types which model \tcode{maybe}, constructing an empty view for disengaged values and providing a view to the underlying value is useful as well.
 
 \begin{minipage}[t]{0.45\columnwidth}
   \begin{minted}{c++}
-std::vector<std::optional<int>> v{
-    std::optional<int>{42},
-    std::optional<int>{},
-    std::optional<int>{6 * 9}};
+    int fortytwo = 42;
+    int sixbynine = 54;
 
-auto r = views::join(
-    views::transform(v, views::nullable));
+    std::vector<int*> v{&fortytwo, nullptr, &sixbynine};
 
-for (auto i : r) {
-    std::cout << i; // prints 42 and 54
-}
+    auto r = std::views::join(std::views::transform(v, views::nullable));
+
+    for (auto i : r) {
+        std::cout << i << '\t'; // prints 42 and 54 skipping the nullptr
+    }
+    std::cout << std::endl;
 
   \end{minted}
 \end{minipage}
@@ -247,32 +251,6 @@ for (int i : views::nullable(std::ref(oe)))
 \end{minted}
 \end{minipage}
 
-Converting an optional type into a view can make APIs that return optional types, such as lookup operations, easier to work with in range pipelines.
-
-\begin{minipage}[t]{\columnwidth}
-\begin{minted} {c++}
-
-std::unordered_set<int> set{1, 3, 7, 9};
-
-auto flt = [=](int i) -> std::optional<int> {
-    if (set.contains(i))
-        return i;
-    else
-        return {};
-};
-
-for (auto i : ranges::iota_view{1, 10} |
-                  ranges::views::transform(flt)) {
-    for (auto j : views::nullable(i)) {
-        for (auto k : ranges::iota_view(0, j))
-            std::cout << '\a';
-        std::cout << '\n';
-    }
-}
-
-\end{minted}
-\end{minipage}
-
 
 \chapter{Borrowed Range}
 
@@ -303,9 +281,9 @@ It is not feasible to give \tcode{nullable_view} a direct monadic interface as i
 \section{Reference Specialization}
 Having worked with the \tcode{reference_wrapper} support for some time, the ergonomics are somewhat lacking. In addition, many of the Big Dumb Business Objects that are the result of lookups, or filters, and are thus good candidates for optionality, are also not good at move operations, having dozens of individual members that are a mix of primitives, strings, and sub-BDOs, resulting in complex move constructors. In addition, many old and well tested functions will mutate these objects, rather than making copies, using a more object oriented than value oriented style.
 
-For these reasons, supporting the common case of reference semantics ergonomically is important. Folding the implementation of \tcode{reference_wrapper} into a template specialization for \tcode{T\&} provides good ergonomics. Neither \tcode{maybe_view} or \tcode{nullable_view} support assignment from the underlying type, so the only question for semantics is assignment from another instance of the same type. The semantics of \tcode{std::reference_wrapper} are well established and correct, where the implementation pointer is reassigned, putting the assignee into the same state as the assigned. The same semantics are adopted for \tcode{maybe_view} or \tcode{nullable_view}.
+For these reasons, supporting the common case of reference semantics ergonomically is important. Folding the implementation of \tcode{reference_wrapper} into a template specialization for \tcode{T\&} provides good ergonomics. The type  \tcode{nullable_view} does not support assignment from the underlying type, so the only question for semantics is assignment from another instance of the same type. The semantics of \tcode{std::reference_wrapper} are well established and correct, where the implementation pointer is reassigned, putting the assignee into the same state as the assigned. These are the same semantics currently proposed for \tcode{optional<T\&>}.
 
-The range adaptor \tcode{views::nullable} only produces the non-reference specialization. As range code is strongly rooted in value semantics, providing reference semantics without ceremony seems potentially dangerous. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone.
+The range adaptor \tcode{views::nullable} only produces the non-reference specialization. As range code is strongly rooted in value semantics, providing reference semantics without ceremony seems potentially dangerous. Having it dependent on the value category of the expression would make it far too easy to produce reference types that would dangle. If the pattern becomes common, providing an instance of the function object with a distinct name would be non-breaking for anyone. Using the constructor form is not a particular burden.
 
 This means that all of the operations on \tcode{nullable_view} are directly safe. To construct a non-safe operation is possible, but looks unsafe in code. For example:
 
@@ -321,7 +299,7 @@ Dereferencing the result of \tcode{data()} without a check for null is of course
 
 \chapter{Design}
 
-The type \tcode{nullable_view} as the semantics of zero or one objects based on if the underlying nullable object does or does not have a value, as indicated by the \tcode{maybe} being truthy or falsy.
+The type \tcode{nullable_view} has the semantics of zero or one objects based on if the underlying nullable object does or does not have a value, as indicated by the \tcode{maybe} being truthy or falsy.
 
 \chapter{Freestanding}
 
@@ -1223,6 +1201,10 @@ The proposed changes are relative to the current working draft~\cite{N4958}.
 \chapter*{Document history}
 
 \begin{itemize}
+\item \textbf{R12},
+  \begin{itemize}
+  \item Paper system title issues - no text changes
+  \end{itemize}
 \item \textbf{Changes since R11},
   \begin{itemize}
   \item Expand on design and implementation details

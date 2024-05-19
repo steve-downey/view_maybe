@@ -129,6 +129,33 @@ void after3() {
     std::cout << std::endl;
 }
 
+void motivation1() {
+    std::vector<std::optional<int>> v{std::optional<int>{42},
+                                      std::optional<int>{},
+                                      std::optional<int>{6 * 9}};
+
+    auto r = std::views::join(std::views::transform(v, views::nullable));
+
+    for (auto i : r) {
+        std::cout << i << '\t'; // prints 42 and 54 skipping the empty optional
+    }
+    std::cout << std::endl;
+}
+
+void motivation1a() {
+    int fortytwo = 42;
+    int sixbynine = 54;
+
+    std::vector<int*> v{&fortytwo, nullptr, &sixbynine};
+
+    auto r = std::views::join(std::views::transform(v, views::nullable));
+
+    for (auto i : r) {
+        std::cout << i << '\t'; // prints 42 and 54 skipping the nullptr
+    }
+    std::cout << std::endl;
+}
+
 int main() {
     before0();
     after0();
@@ -139,4 +166,7 @@ int main() {
     before2();
     after2();
     after3();
+
+    motivation1();
+    motivation1a();
 }

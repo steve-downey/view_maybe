@@ -32,5 +32,7 @@ wg21.bib:
 clean:
 	latexmk -c
 
+paper: view-maybe.pdf
+
 # Include dependencies
 $(foreach file,$(TARGET),$(eval -include $(DEPS_DIR)/$(file).d))
