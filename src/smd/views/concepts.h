@@ -5,6 +5,7 @@
 #include <concepts>
 #include <type_traits>
 #include <ranges>
+#include <smd/maybe.h>
 
 //@PURPOSE:
 //
@@ -14,14 +15,7 @@
 //
 //@DESCRIPTION:
 
-namespace smd {
-template <class T>
-concept maybe = requires(const T t) {
-    bool(t);
-    *(t);
-};
-
-namespace views {
+namespace smd::views {
 
 template <class Ref, class ConstRef>
 concept readable_references =
@@ -39,6 +33,5 @@ concept nullable_object = std::is_object_v<T> && smd::maybe<T> &&
 
 template <class T>
 concept movable_object = (std::move_constructible<T> && std::is_object_v<T>);
-} // namespace views
-} // namespace smd
+} // namespace smd::views
 #endif
