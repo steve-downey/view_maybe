@@ -12,7 +12,6 @@
 #include <array>
 
 #include <unordered_set>
-#include <smd/views/maybe.h>
 #include <smd/views/nullable.h>
 
 using namespace smd::views;
@@ -162,30 +161,6 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
            std::ranges::views::join;
 };
 
-// "yield_if" takes a bool and a value and
-// returns a view of zero or one elements.
-inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? smd::views::maybe_view{std::move(x)}
-             : smd::views::maybe_view<decltype(x)>{};
-};
-
-void print_triples() {
-    using std::ranges::views::iota;
-    auto triples = and_then(iota(1), [](int z) {
-        return and_then(iota(1, z + 1), [=](int x) {
-            return and_then(iota(x, z + 1), [=](int y) {
-                return yield_if(x * x + y * y == z * z,
-                                std::make_tuple(x, y, z));
-            });
-        });
-    });
-
-    // Display the first 10 triples
-    for (auto triple : triples | std::ranges::views::take(10)) {
-        std::cout << '(' << std::get<0>(triple) << ',' << std::get<1>(triple)
-                  << ',' << std::get<2>(triple) << ')' << '\n';
-    }
-}
 
 int main() {
 
@@ -212,7 +187,7 @@ int main() {
     for (auto i : ranges::views::single(s))
         std::cout << "i=" << *i << " prints 7\n"; // prints 7
 
-    nullable_view vs2{std::ref(s)};
+    nullable_view vs2{s};
     std::cout << *begin(vs2) << " prints 7\n";
 
     for (auto i : vs2)
@@ -244,7 +219,7 @@ int main() {
 
     std::cout << "j=" << j << " prints 27\n"; // prints 27
 
-    for (auto&& i : views::nullable(std::ref(s))) {
+    for (auto&& i : views::nullable_view<std::optional<int>&>(s)) {
         i = 9;
         std::cout << "i=" << i << " prints 9\n"; // prints 9
     }
@@ -299,7 +274,7 @@ int main() {
         std::cout << "*vs = " << *vs << " prints 42\n";
     }
 
-    nullable_view vvs2{std::ref(vs)};
+    nullable_view<std::optional<volatile int>&> vvs2{vs};
     std::cout << "deref begin vvs=" << *begin(vvs2) << " prints 42\n";
 
     for (auto&& i : views::nullable(vs)) {
@@ -562,5 +537,4 @@ int main() {
     //     for (auto&& i : r) {
     //     };
     // }
-    print_triples();
 }

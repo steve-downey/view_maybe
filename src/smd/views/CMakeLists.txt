@@ -5,7 +5,6 @@ target_sources(
   PRIVATE
   concepts.cpp
   movable_box.cpp
-  maybe.cpp
   nullable.cpp)
 
 include(GNUInstallDirs)
@@ -39,7 +38,6 @@ target_sources(
   PRIVATE
   concepts.t.cpp
   movable_box.t.cpp
-  maybe.t.cpp
   nullable.t.cpp)
 
 target_link_libraries(view_maybe_test view_maybe)
