@@ -11,7 +11,7 @@
 \SetWatermarkColor[gray]{0.9}
 
 \begin{document}
-\title{A view of $0$ or $1$ elements: \tcode{views::maybe}}
+\title{A view of $0$ or $1$ elements: \tcode{views::nullable}}
 \author{
 Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 }
@@ -28,9 +28,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \end{flushright}
 
 \begin{abstract}
-  This paper proposes a range adaptor which produce a view with cardinality $0$ or $1$
-
-  \tcode{views::nullable} which adapts nullable types---such as \tcode{std::optional} or pointer to object types---into a range of the underlying type.
+  This paper proposes a range adaptor \tcode{views::nullable} which adapts nullable types---such as \tcode{std::optional} or pointer to object types---into a range of the underlying type.
 \end{abstract}
 
 \tableofcontents*
@@ -38,7 +36,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \chapter*{Changes Since Last Version}
 
 \begin{itemize}
-\item \textbf{Changes since R11},
+\item \textbf{Changes since R12},
   \begin{itemize}
   \item Removal of views::maybe in favor of range optional
   \item \tcode{std::maybe} concept
@@ -93,11 +91,21 @@ std::cout << "o=" << *o << " prints 9\n";
 \begin{minted}[fontsize=\scriptsize]{c++}
 
 std::optional o{7};
-for (auto&& i : views::nullable(std::ref(o))) {
+for (auto&& i
+    : views::nullable_view<std::optional<int>&>(o)) {
     i = 9;
     std::cout << "i=" << i << " prints 9\n";
 }
 std::cout << "o=" << *o << " prints 9\n";
+
+// if range for is too much magic
+if (auto v = views::nullable_view<std::optional<int>&>(o);
+    std::begin(v) != std::end(v)) {
+    auto itr = std::begin(v);
+    *itr     = 10;
+    std::cout << "*itr=" << *itr << " prints 10\n";
+}
+std::cout << "o=" << *o << " prints 10\n";
 
 \end{minted}
 \end{minipage}
@@ -216,7 +224,7 @@ In writing range transformation it is useful to be able to lift a value into a v
 
 The \tcode{maybe} protocol that \tcode{views::nullable} adapts is inherently unsafe because it models unsafe pointer semantics. If a nullable type is disengaged, using the derefence operator \tcode{operator*()} is undefined behavior, in practice reading from a union with the wrong type engaged. The allowed operations of \mintinline{C++}{views::nullable} are all, in themselves, safe, and using the adapter can lead to safer code.
 
-An example is using \mintinline{C++}{views::nullable} in a range based for loops, allowing the contained nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. This can be a particular issue in doing code reviews where the test, if it exists, is not visible. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the \tcode{for} loop eliminates some boilerplate code, the same way that range based \tcode{for} loops do.
+An example is using \mintinline{C++}{views::nullable} in range based for loops, allowing the contained nullable value to not be dereferenced within the body. This is of small value in small examples in contrast to testing the nullable in an if statement, but with longer bodies the dereference is often far away from the test. This can be a particular issue in doing code reviews where the test, if it exists, is not visible. Often the first line in the body of the \mintinline{C++}{if} is naming the dereferenced nullable, and lifting the dereference into the \tcode{for} loop eliminates some boilerplate code, the same way that range based \tcode{for} loops do.
 
 \begin{minipage}[t]{\columnwidth}
 \begin{minted} {c++}
@@ -244,12 +252,39 @@ Of course, if the \tcode{maybe} is empty, there is nothing in the view to act on
 \begin{minted} {c++}
 
 auto oe = std::optional<int>{};
-for (int i : views::nullable(std::ref(oe)))
+for (int i : views::nullable(oe))
     std::cout << "i=" << i
               << '\n'; // does not print
 
 \end{minted}
 \end{minipage}
+
+Converting an optional type into a view can make APIs that return optional types, such as lookup operations, easier to work with in range pipelines.
+
+\begin{minipage}[t]{\columnwidth}
+\begin{minted} {c++}
+
+std::unordered_set<int> set{1, 3, 7, 9};
+
+auto flt = [=](int i) -> std::optional<int> {
+    if (set.contains(i))
+        return i;
+    else
+        return {};
+};
+
+for (auto i : ranges::iota_view{1, 10} |
+                  ranges::views::transform(flt)) {
+    for (auto j : views::nullable(i)) {
+        for (auto k : ranges::iota_view(0, j))
+            std::cout << '\a';
+        std::cout << '\n';
+    }
+}
+
+\end{minted}
+\end{minipage}
+
 
 
 \chapter{Borrowed Range}
@@ -303,17 +338,13 @@ The type \tcode{nullable_view} has the semantics of zero or one objects based on
 
 \chapter{Freestanding}
 
-
 The type \tcode{nullable_view} naturally meets the requirements for freestanding.
 
 \chapter{Implementation}
 
-
 A publicly available implementation at \url{https://github.com/steve-downey/view_maybe}. There are no particular implementation difficulties or tricks. The declarations are essentially what is quoted in the Wording section and the implementations are described as effects.
 
-
 \chapter{Proposal}
-
 
 Add a range adaptor object
 
@@ -321,7 +352,7 @@ Add a range adaptor object
 
 A \tcode{maybe} object is one that is both contextually convertible to bool and for which the type produced by dereferencing is an equality preserving object. Non void pointers, \tcode{std::optional}, and the proposed \tcode{std::expected} \cite{P0323R9} types all model \exposid{maybe}. Function pointers do not, as functions are not objects. Iterators do not generally model \exposid{maybe}, as they are not required to be contextually convertible to bool.
 
-The generic type  \tcode{std::nullable_view}, which is produced by \tcode{views::nullable} are further specialized over reference types, such that operations on the iterators of the range modify the object the range is over, if and only if the object exists.
+The generic type \tcode{std::nullable_view}, which is produced by \tcode{views::nullable} is further specialized over reference types, such that operations on the iterators of the range modify the object the range is over, if and only if the object exists.
 
 
 \chapter{Wording}
@@ -345,10 +376,6 @@ class nullable_view;                                       // freestanding
 template<class T>
 constexpr bool
 @\libspec{enable_borrowed_range}{nullable_view}@<nullable_view<T*>> = true;  // freestanding
-
-template<class T>
-constexpr bool
-@\libspec{enable_borrowed_range}{nullable_view}@<nullable_view<reference_wrapper<T>> = true;  // freestanding
 
 template<class T>
 constexpr bool
@@ -429,10 +456,10 @@ namespace std::ranges {
         requires constructible_from<Nullable, Args...>
     constexpr nullable_view(in_place_t, Args&&... args);
 
-    constexpr auto begin() noexcept;
-    constexpr auto begin() const noexcept;
-    constexpr auto end() noexcept;
-    constexpr auto end() const noexcept;
+    constexpr T*       begin() noexcept;
+    constexpr const T* begin() const noexcept;
+    constexpr T*       end() noexcept;
+    constexpr const T* end() const noexcept;
 
     constexpr size_t size() const noexcept;
 
@@ -452,14 +479,13 @@ namespace std::ranges {
 \pnum
 The exposition-only \defexposconcept{readable_references} concept is equivalent to:
 \begin{itemdecl}
-  template<class I>
+  template<class Ref, class ConstRef>
   concept @\defexposconcept{readable_references}@ =               // \expos
   is_lvalue_reference_v<Ref> &&
   is_object_v<remove_reference_t<Ref>> &&
   is_lvalue_reference_v<ConstRef> &&
   is_object_v<remove_reference_t<ConstRef>> &&
-  convertible_to<add_pointer_t<ConstRef>,
-  const remove_reference_t<Ref>*>;
+  convertible_to<add_pointer_t<ConstRef>, const remove_reference_t<Ref>*>;
 
 \end{itemdecl}
 
@@ -564,11 +590,7 @@ Equivalent to:
 if (!@\exposid{value_}@)
   return 0;
 Nullable& m = *@\exposid{value_}@;
-if constexpr (is_reference_wrapper_v<Nullable>) {
-  return bool(m.get());
-} else {
-  return bool(m);
-}
+return bool(m);
 \end{codeblock}
 \end{itemdescr}
 
@@ -585,17 +607,13 @@ Equivalent to:
 if (!@\exposid{value_}@)
   return nullptr;
 const Nullable& m = *@\exposid{value_}@;
-if constexpr (is_reference_wrapper_v<Nullable>) {
-  return m.get() ? addressof(*(m.get())) : nullptr;
-} else {
-  return m ? addressof(*m) : nullptr;
-}
+return m ? addressof(*m) : nullptr;
 \end{codeblock}
 \end{itemdescr}
 
 
 
-\Sec3[range.nullable.view.ref]{Class template specialization\tcode{nullable_view<T\&>}}
+\Sec3[range.nullable.view.ref]{Class template specialization \tcode{nullable_view<T\&>}}
 
 \begin{codeblock}
 template <typename Nullable>
@@ -696,11 +714,7 @@ constexpr explicit nullable_view(Nullable&& nullable) = delete;
   \begin{codeblock}
     if (!@\exposid{value_}@)
       return 0;
-    if constexpr (is_reference_wrapper_v<Nullable>) {
-      return bool(@\exposid{value_}@->get());
-    } else {
-      return bool(*@\exposid{value_}@);
-    }
+    return bool(*@\exposid{value_}@);
   \end{codeblock}
 \end{itemdescr}
 
@@ -716,11 +730,7 @@ Equivalent to:
 \begin{codeblock}
   if (!@\exposid{value_}@)
     return nullptr;
-  if constexpr (is_reference_wrapper_v<Nullable>) {
-    return @\exposid{value_}@->get() ? addressof(*(@\exposid{value_}@->get())) : nullptr;
-  } else {
-    return *@\exposid{value_}@ ? addressof(**@\exposid{value_}@) : nullptr;
-  }
+  return *@\exposid{value_}@ ? addressof(**@\exposid{value_}@) : nullptr;
 \end{codeblock}
 \end{itemdescr}
 

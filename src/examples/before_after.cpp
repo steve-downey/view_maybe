@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <vector>
-#include <algorithm>
+#include <iostream>
 
 namespace ranges = std::ranges;
 using namespace smd;
@@ -39,9 +39,15 @@ void before1() {
 
 void after1() {
     std::optional o{7};
+    for (auto&& i : views::nullable_view<std::optional<int>&>(o)) {
+        i = 9;
+        std::cout << "i=" << i << " prints 9\n";
+    }
+    std::cout << "o=" << *o << " prints 9\n";
 
     // if range for is too much magic
-    if (auto v = views::nullable_view(o); std::begin(v) != std::end(v)) {
+    if (auto v = views::nullable_view<std::optional<int>&>(o);
+        std::begin(v) != std::end(v)) {
         auto itr = std::begin(v);
         *itr     = 10;
         std::cout << "*itr=" << *itr << " prints 10\n";

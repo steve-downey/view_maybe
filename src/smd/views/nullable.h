@@ -2,7 +2,6 @@
 #ifndef INCLUDED_SMD_VIEWS_NULLABLE
 #define INCLUDED_SMD_VIEWS_NULLABLE
 #include <concepts>
-#include <iostream>
 #include <ranges>
 #include <type_traits>
 #include <smd/views/concepts.h>
@@ -13,11 +12,10 @@ namespace smd::views {
 namespace ranges = std::ranges;
 
 template <typename T>
-class nullable_view : std::false_type {};
+class nullable_view;
 
 template <typename Nullable>
-    requires(movable_object<Nullable> &&
-             (nullable_object_val<Nullable>))
+    requires(movable_object<Nullable> && nullable_object_val<Nullable>)
 class nullable_view<Nullable>
     : public ranges::view_interface<nullable_view<Nullable>> {
   private:
@@ -64,24 +62,21 @@ class nullable_view<Nullable>
                                       const nullable_view& r) {
         const Nullable& lhs = *l.value_;
         const Nullable& rhs = *r.value_;
-        return (bool(lhs) && bool(rhs))
-            ? (*lhs <=> *rhs)
-            : (bool(lhs) <=> bool(rhs));
+        return (bool(lhs) && bool(rhs)) ? (*lhs <=> *rhs)
+                                        : (bool(lhs) <=> bool(rhs));
     }
 
     friend constexpr bool operator==(const nullable_view& l,
                                      const nullable_view& r) {
         const Nullable& lhs = *l.value_;
         const Nullable& rhs = *r.value_;
-
-            return (bool(lhs) && bool(rhs)) ? (*lhs == *rhs)
-                                            : (bool(lhs) == bool(rhs));
+        return (bool(lhs) && bool(rhs)) ? (*lhs == *rhs)
+                                        : (bool(lhs) == bool(rhs));
     }
 };
 
 template <typename Nullable>
-    requires(movable_object<Nullable> &&
-             (nullable_object_val<Nullable>))
+    requires(movable_object<Nullable> && nullable_object_val<Nullable>)
 class nullable_view<Nullable&>
     : public ranges::view_interface<nullable_view<Nullable>> {
   private:
@@ -128,24 +123,19 @@ nullable_view(T) -> nullable_view<std::decay_t<T>>;
 
 namespace std::ranges {
 template <typename T>
-inline constexpr bool
-    enable_borrowed_range<smd::views::nullable_view<T*>> = true;
+inline constexpr bool enable_borrowed_range<smd::views::nullable_view<T*>> =
+    true;
 
 template <typename T>
-inline constexpr bool enable_borrowed_range<
-    smd::views::nullable_view<std::reference_wrapper<T>>> = true;
-
-template <typename T>
-inline constexpr bool
-    enable_borrowed_range<smd::views::nullable_view<T&>> = true;
+inline constexpr bool enable_borrowed_range<smd::views::nullable_view<T&>> =
+    true;
 } // namespace std::ranges
 
 namespace smd::views {
 struct __nullable_fn {
     template <typename T>
     constexpr auto operator()(T&& t) const noexcept {
-        return nullable_view<std::decay_t<T>>(
-            std::forward<T>(t));
+        return nullable_view<std::decay_t<T>>(std::forward<T>(t));
     }
 };
 

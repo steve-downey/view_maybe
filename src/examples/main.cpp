@@ -161,7 +161,6 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
            std::ranges::views::join;
 };
 
-
 int main() {
 
     std::unordered_set<int> set{1, 3, 7, 9};
@@ -221,11 +220,6 @@ int main() {
 
     for (auto&& i : views::nullable_view<std::optional<int>&>(s)) {
         i = 9;
-        std::cout << "i=" << i << " prints 9\n"; // prints 9
-    }
-    std::cout << "s=" << *s << " prints 9\n"; // prints 9
-
-    for (auto&& i : views::nullable(std::optional{9})) {
         std::cout << "i=" << i << " prints 9\n"; // prints 9
     }
     std::cout << "s=" << *s << " prints 9\n"; // prints 9

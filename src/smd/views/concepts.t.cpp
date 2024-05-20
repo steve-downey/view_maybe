@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include <ranges>
 #include <optional>
 
 using namespace smd::views;
