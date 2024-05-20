@@ -12,60 +12,50 @@ using namespace smd::views;
 TEST(ViewNullableTest, TestGTest) { ASSERT_EQ(1, 1); }
 
 TEST(ViewNullableTest, ConceptCheck) {
-    static_assert(std::ranges::range<nullable_view<std::optional<int>>>);
-    static_assert(std::ranges::view<nullable_view<std::optional<int>>>);
-    static_assert(std::ranges::input_range<nullable_view<std::optional<int>>>);
-    static_assert(
-        std::ranges::forward_range<nullable_view<std::optional<int>>>);
-    static_assert(
-        std::ranges::bidirectional_range<nullable_view<std::optional<int>>>);
-    static_assert(
-        std::ranges::contiguous_range<nullable_view<std::optional<int>>>);
-    static_assert(
-        std::ranges::common_range<nullable_view<std::optional<int>>>);
-    static_assert(
-        std::ranges::viewable_range<nullable_view<std::optional<int>>>);
-    static_assert(
-        !std::ranges::borrowed_range<nullable_view<std::optional<int>>>);
+    namespace rg = std::ranges;
+    static_assert(rg::range<nullable_view<std::optional<int>>>);
+    static_assert(rg::view<nullable_view<std::optional<int>>>);
+    static_assert(rg::input_range<nullable_view<std::optional<int>>>);
+    static_assert(rg::forward_range<nullable_view<std::optional<int>>>);
+    static_assert(rg::bidirectional_range<nullable_view<std::optional<int>>>);
+    static_assert(rg::contiguous_range<nullable_view<std::optional<int>>>);
+    static_assert(rg::common_range<nullable_view<std::optional<int>>>);
+    static_assert(rg::viewable_range<nullable_view<std::optional<int>>>);
+    static_assert(!rg::borrowed_range<nullable_view<std::optional<int>>>);
 
-    static_assert(std::ranges::range<nullable_view<int*>>);
-    static_assert(std::ranges::view<nullable_view<int*>>);
-    static_assert(std::ranges::input_range<nullable_view<int*>>);
-    static_assert(std::ranges::forward_range<nullable_view<int*>>);
-    static_assert(std::ranges::bidirectional_range<nullable_view<int*>>);
-    static_assert(std::ranges::contiguous_range<nullable_view<int*>>);
-    static_assert(std::ranges::common_range<nullable_view<int*>>);
-    static_assert(std::ranges::viewable_range<nullable_view<int*>>);
-    static_assert(std::ranges::borrowed_range<nullable_view<int*>>);
+    static_assert(rg::range<nullable_view<int*>>);
+    static_assert(rg::view<nullable_view<int*>>);
+    static_assert(rg::input_range<nullable_view<int*>>);
+    static_assert(rg::forward_range<nullable_view<int*>>);
+    static_assert(rg::bidirectional_range<nullable_view<int*>>);
+    static_assert(rg::contiguous_range<nullable_view<int*>>);
+    static_assert(rg::common_range<nullable_view<int*>>);
+    static_assert(rg::viewable_range<nullable_view<int*>>);
+    static_assert(rg::borrowed_range<nullable_view<int*>>);
 }
 
 TEST(ViewNullableTest, ConceptCheckRef) {
-    static_assert(std::ranges::range<nullable_view<std::optional<int>&>>);
-    static_assert(std::ranges::view<nullable_view<std::optional<int>&>>);
-    static_assert(
-        std::ranges::input_range<nullable_view<std::optional<int>&>>);
-    static_assert(
-        std::ranges::forward_range<nullable_view<std::optional<int>&>>);
-    static_assert(
-        std::ranges::bidirectional_range<nullable_view<std::optional<int>&>>);
-    static_assert(
-        std::ranges::contiguous_range<nullable_view<std::optional<int>&>>);
-    static_assert(
-        std::ranges::common_range<nullable_view<std::optional<int>&>>);
-    static_assert(
-        std::ranges::viewable_range<nullable_view<std::optional<int>&>>);
-    static_assert(
-        std::ranges::borrowed_range<nullable_view<std::optional<int>&>>);
+    namespace rg = std::ranges;
 
-    static_assert(std::ranges::range<nullable_view<int*&>>);
-    static_assert(std::ranges::view<nullable_view<int*&>>);
-    static_assert(std::ranges::input_range<nullable_view<int*&>>);
-    static_assert(std::ranges::forward_range<nullable_view<int*&>>);
-    static_assert(std::ranges::bidirectional_range<nullable_view<int*&>>);
-    static_assert(std::ranges::contiguous_range<nullable_view<int*&>>);
-    static_assert(std::ranges::common_range<nullable_view<int*&>>);
-    static_assert(std::ranges::viewable_range<nullable_view<int*&>>);
-    static_assert(std::ranges::borrowed_range<nullable_view<int*&>>);
+    static_assert(rg::range<nullable_view<std::optional<int>&>>);
+    static_assert(rg::view<nullable_view<std::optional<int>&>>);
+    static_assert(rg::input_range<nullable_view<std::optional<int>&>>);
+    static_assert(rg::forward_range<nullable_view<std::optional<int>&>>);
+    static_assert(rg::bidirectional_range<nullable_view<std::optional<int>&>>);
+    static_assert(rg::contiguous_range<nullable_view<std::optional<int>&>>);
+    static_assert(rg::common_range<nullable_view<std::optional<int>&>>);
+    static_assert(rg::viewable_range<nullable_view<std::optional<int>&>>);
+    static_assert(rg::borrowed_range<nullable_view<std::optional<int>&>>);
+
+    static_assert(rg::range<nullable_view<int*&>>);
+    static_assert(rg::view<nullable_view<int*&>>);
+    static_assert(rg::input_range<nullable_view<int*&>>);
+    static_assert(rg::forward_range<nullable_view<int*&>>);
+    static_assert(rg::bidirectional_range<nullable_view<int*&>>);
+    static_assert(rg::contiguous_range<nullable_view<int*&>>);
+    static_assert(rg::common_range<nullable_view<int*&>>);
+    static_assert(rg::viewable_range<nullable_view<int*&>>);
+    static_assert(rg::borrowed_range<nullable_view<int*&>>);
 }
 
 using namespace smd;
@@ -77,6 +67,9 @@ TEST(ViewNullableTest, Breathing) {
 
     for (auto i : views::nullable(s))
         ASSERT_EQ(i, 7);
+
+    for (auto i : views::nullable(e))
+        ASSERT_EQ(i, 7); //unreachable
 
     nullable_view e2{std::optional<int>{}};
     for (int i : e2)
@@ -228,6 +221,35 @@ TEST(ViewNullableTest, BreathingRef) {
     ASSERT_EQ(*s, 9);
 }
 
+TEST(ViewNullableTest, BreathingRefWrap) {
+    nullable_view<int*&> n;
+    ASSERT_TRUE(n.size() == 0);
+    int                  k   = 7;
+    int * p_k = &k;
+    nullable_view<int*&> v_p_k{std::ref(p_k)};
+    ASSERT_TRUE(v_p_k.size() == 1);
+
+    std::optional      s{7};
+    std::optional<int> e{};
+
+    for (auto i : nullable_view(std::ref(s)))
+        ASSERT_EQ(i, 7);
+
+    nullable_view<std::optional<int>&> e2{std::ref(e)};
+    ASSERT_TRUE(ranges::begin(e2) == nullptr);
+    ASSERT_TRUE(e2.size() == 0);
+    ASSERT_TRUE(ranges::begin(e2) == ranges::end(e2));
+    for (int i : e2)
+        ASSERT_TRUE(i != i); // tautology to avoid unused variable warning
+
+    for (auto&& i : nullable_view(std::ref(s))) {
+        ASSERT_EQ(i, 7);
+        i = 9;
+        ASSERT_EQ(i, 9);
+    }
+    ASSERT_EQ(*s, 9);
+}
+
 TEST(ViewNullable, CompTest) {
     int zero  = 0;
     int one   = 1;
@@ -309,6 +331,7 @@ TEST(ViewNullableTest, CVTest) {
 TEST(ViewNullableTest, Optionals) {
     int i = 7;
     std::optional p{i};
+    nullable_view<std::optional<int>> v{views::nullable(p)};
     for (auto&& k : views::nullable(p)) {
         k++;
         ASSERT_EQ(k, 8);
@@ -322,6 +345,75 @@ TEST(ViewNullableTest, Optionals) {
     }
     ASSERT_EQ(*p, 8);
     ASSERT_EQ(i, 7);
+
+    int k = 7;
+    std::optional p2{k};
+
+    int j = 8;
+    std::optional p3{j};
+
+    auto v1 = views::nullable(p);
+    auto v2 = views::nullable(p2);
+    auto v3 = views::nullable(p3);
+    ASSERT_EQ(v, v);
+    ASSERT_NE(v, v1); // 7 != 8
+    ASSERT_NE(v1, v2);
+    ASSERT_EQ(v1, v3);
+
+    std::optional<int> e;
+    auto ve = views::nullable(e);
+    ASSERT_EQ(ve, ve);
+    ASSERT_NE(ve, v);
+    ASSERT_NE(v, ve);
+
+    std::optional<int> e2;
+    auto ve2 = views::nullable(e2);
+    ASSERT_EQ(ve, ve2);
+
+    ASSERT_LT(v, v1);
+    ASSERT_LT(v2, v3);
+    ASSERT_GT(v3, v2);
+
+    ASSERT_LT(ve, v1);
+    ASSERT_LT(ve, v2);
+    ASSERT_GT(v3, ve);
+
+    }
+
+TEST(ViewNullableTest, WrappedOptional) {
+    int i = 7;
+    std::optional p{i};
+    nullable_view<std::optional<int>&> v{views::nullable(std::ref(p))};
+    for (auto&& k : views::nullable(std::ref(p))) {
+        k++;
+        ASSERT_EQ(k, 8);
+    }
+    ASSERT_EQ(*p, 8);
+    ASSERT_EQ(i, 7);
+
+    int k = 7;
+    std::optional p2{k};
+
+    int j = 8;
+    std::optional p3{j};
+
+    auto v1 = views::nullable(std::ref(p));
+    auto v2 = views::nullable(std::ref(p2));
+    auto v3 = views::nullable(std::ref(p3));
+    ASSERT_EQ(v, v);
+    ASSERT_EQ(v, v1);
+    ASSERT_NE(v1, v2);
+    ASSERT_EQ(v1, v3);
+
+    std::optional<int> e;
+    auto ve = views::nullable(std::ref(e));
+    ASSERT_EQ(ve, ve);
+    ASSERT_NE(ve, v);
+    ASSERT_NE(v, ve);
+
+    std::optional<int> e2;
+    auto ve2 = views::nullable(std::ref(e2));
+    ASSERT_EQ(ve, ve2);
 
 }
 
@@ -356,8 +448,8 @@ TEST(ViewNullableTest, NonObjects) {
     /* functions aren't objects - even if we relax the object requirement we
        can't form a one past the end element.*/
 
-    // auto p = func;
-    // for (auto&& k : views::nullable(p)) {
+    // auto const& p = func;
+    // for (auto&& k : views::nullable_view<int (&)(int)>(p)) {
     //     ASSERT_EQ(k, func);
     // }
 
