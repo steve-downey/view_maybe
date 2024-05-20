@@ -3,8 +3,8 @@
 #define INCLUDED_SMD_VIEWS_CONCEPTS
 
 #include <concepts>
-#include <ranges>
 #include <type_traits>
+#include <ranges>
 
 //@PURPOSE:
 //
@@ -14,7 +14,14 @@
 //
 //@DESCRIPTION:
 
-namespace smd::views {
+namespace smd {
+template <class T>
+concept maybe = requires(const T t) {
+    bool(t);
+    *(t);
+};
+
+namespace views {
 
 template <class Ref, class ConstRef>
 concept readable_references =
@@ -26,19 +33,12 @@ concept readable_references =
                         const std::remove_reference_t<Ref>*>;
 
 template <class T>
-concept nullable_object = std::is_object_v<T> && requires(T& t, const T& ct) {
-    bool(t);
-    bool(ct);
-    *(t);
-    *(ct);
-};
-
-template <class T>
-concept nullable_object_val =
-    nullable_object<T> && readable_references<std::iter_reference_t<T>,
+concept nullable_object = std::is_object_v<T> && smd::maybe<T> &&
+                          readable_references<std::iter_reference_t<T>,
                                               std::iter_reference_t<const T>>;
 
 template <class T>
 concept movable_object = (std::move_constructible<T> && std::is_object_v<T>);
-} // namespace smd::views
+} // namespace views
+} // namespace smd
 #endif
