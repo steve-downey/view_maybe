@@ -23,13 +23,13 @@ concept maybe = requires(const T t) {
 template <class T, class R>
 constexpr auto yield_if(bool b, T&& t) -> R;
 
-template <smd::maybe T, class U, class R>
+template <maybe T, class U, class R>
 constexpr auto reference_or(T&& m, U&& u) -> R;
 
-template <smd::maybe T, class U, class R>
+template <maybe T, class U, class R>
 constexpr auto value_or(T&& m, U&& u) -> R;
 
-template <class T, class I, class R>
+template <maybe T, class I, class R>
 constexpr auto or_invoke(T&& m, I&& invocable) -> R;
 
 } // namespace smd
@@ -57,7 +57,7 @@ constexpr auto smd::value_or(T&& m, U&& u) -> R {
     return bool(m) ? static_cast<R>(*m) : static_cast<R>((U&&)u);
 }
 
-template <class T,
+template <smd::maybe T,
           class I,
           class R = std::common_type_t<std::iter_reference_t<T>,
                                        std::invoke_result_t<I>>>
