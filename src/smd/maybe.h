@@ -20,35 +20,49 @@ concept maybe = requires(const T t) {
     *(t);
 };
 
-template <class T>
-constexpr auto yield_if(bool b, T&& t) -> std::optional<std::decay_t<T>>;
+template <class T, class R>
+constexpr auto yield_if(bool b, T&& t) -> R;
 
 template <smd::maybe T, class U, class R>
-auto reference_or(T&& m, U&& u) -> R;
+constexpr auto reference_or(T&& m, U&& u) -> R;
 
-template <smd::maybe T, class U>
-auto value_or();
+template <smd::maybe T, class U, class R>
+constexpr auto value_or(T&& m, U&& u) -> R;
 
-template <class T, class I>
-auto or_invoke();
+template <class T, class I, class R>
+constexpr auto or_invoke(T&& m, I&& invocable) -> R;
 
 } // namespace smd
 
-template <class T>
-constexpr auto smd::yield_if(bool b, T&& t) -> std::optional<std::decay_t<T>> {
-    using O = std::optional<std::decay_t<T>>;
-    return b ? std::forward<T>(t) : O{};
+template <class T, class R = std::optional<std::decay_t<T>>>
+constexpr auto smd::yield_if(bool b, T&& t) -> R {
+    return b ? std::forward<T>(t) : R{};
 }
 
 template <smd::maybe T,
           class U,
           class R = std::common_reference_t<std::iter_reference_t<T>, U&&>>
-auto smd::reference_or(T&& m, U&& u) -> R {
+constexpr auto smd::reference_or(T&& m, U&& u) -> R {
 #ifdef __cpp_lib_reference_from_temporary
     static_assert(!std::reference_constructs_from_temporary_v<R, U>);
     static_assert(!std::reference_constructs_from_temporary_v<R, T&>);
 #endif
     return bool(m) ? static_cast<R>(*m) : static_cast<R>((U&&)u);
+}
+
+template <smd::maybe T,
+          class U,
+          class R = std::common_type_t<std::iter_reference_t<T>, U&&>>
+constexpr auto smd::value_or(T&& m, U&& u) -> R {
+    return bool(m) ? static_cast<R>(*m) : static_cast<R>((U&&)u);
+}
+
+template <class T,
+          class I,
+          class R = std::common_type_t<std::iter_reference_t<T>,
+                                       std::invoke_result_t<I>>>
+constexpr auto smd::or_invoke(T&& m, I&& invocable) -> R {
+    return bool(m) ? static_cast<R>(*m) : static_cast<R>(invocable());
 }
 
 #endif

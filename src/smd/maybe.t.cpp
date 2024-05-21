@@ -108,3 +108,94 @@ TEST(MaybeConceptsTest, ReferenceOr) {
     ASSERT_EQ(os, "assign a different string");
 
 }
+
+TEST(MaybeConceptsTest, ValueOr) {
+    std::optional<int> e;
+    std::optional<int> five{5};
+
+    const int fortytwo = 42;
+    int       nine     = 9;
+
+    // auto&& r1 = smd::reference_or(e, nine);
+    // auto&& r2 = smd::reference_or(five, fortytwo);
+    // auto&& r3 = smd::reference_or(five, ifunc());
+
+    static_assert(std::same_as<int, decltype(smd::value_or(e, nine))>);
+    static_assert(
+        std::same_as<int, decltype(smd::value_or(five, fortytwo))>);
+    static_assert(
+        std::same_as<int, decltype(smd::value_or(five, ifunc()))>);
+    static_assert(
+        std::same_as<int, decltype(smd::value_or(five, irfunc()))>);
+
+    std::string longString{"A very long string that is not short at all and will allocate"};
+    std::optional<std::string> os{"data"};
+    std::optional<std::string> es{};
+
+    std::string s1 = smd::value_or(os, testLVal(longString));
+    std::string s2 = smd::value_or(es, testLVal(longString));
+
+    static_assert(std::same_as<std::string , decltype(smd::value_or(os, testLVal(longString)))>);
+
+    std::string r1 = smd::value_or(es, testLVal(longString));
+    std::string r2 = smd::value_or(os, testLVal(longString));
+
+    ASSERT_EQ(r1, longString);
+    ASSERT_EQ(r2, "data");
+
+    r1 = "assign a string";
+    r2 = "assign a different string";
+
+    ASSERT_EQ(r1, "assign a string");
+    ASSERT_EQ(longString, "A very long string that is not short at all and will allocate");
+    ASSERT_NE(r2, "data");
+    ASSERT_EQ(r2, "assign a different string");
+    ASSERT_EQ(os, "data");
+
+}
+
+int returnNine(){return 9;}
+int returnFortyTwo(){return 42;}
+
+TEST(MaybeConceptsTest, OrInvoke) {
+    std::optional<int> e;
+    std::optional<int> five{5};
+
+    const int fortytwo = 42;
+    int       nine     = 9;
+
+    auto r = smd::or_invoke(e, returnNine);
+
+    static_assert(std::same_as<int, decltype(smd::or_invoke(e, returnNine))>);
+    static_assert(
+        std::same_as<int, decltype(smd::or_invoke(five, returnFortyTwo))>);
+    static_assert(
+        std::same_as<int, decltype(smd::or_invoke(five, ifunc))>);
+    static_assert(
+        std::same_as<int, decltype(smd::or_invoke(five, irfunc))>);
+
+    std::string longString{"A very long string that is not short at all and will allocate"};
+    std::optional<std::string> os{"data"};
+    std::optional<std::string> es{};
+
+    std::string s1 = smd::or_invoke(os, [&](){return testLVal(longString);});
+    std::string s2 = smd::or_invoke(es, [&](){return testLVal(longString);});
+
+    static_assert(std::same_as<std::string , decltype(smd::or_invoke(os, [&](){return testLVal(longString);}))>);
+
+    std::string r1 = smd::or_invoke(es, [&](){return testLVal(longString);});
+    std::string r2 = smd::or_invoke(os, [&](){return testLVal(longString);});
+
+    ASSERT_EQ(r1, longString);
+    ASSERT_EQ(r2, "data");
+
+    r1 = "assign a string";
+    r2 = "assign a different string";
+
+    ASSERT_EQ(r1, "assign a string");
+    ASSERT_EQ(longString, "A very long string that is not short at all and will allocate");
+    ASSERT_NE(r2, "data");
+    ASSERT_EQ(r2, "assign a different string");
+    ASSERT_EQ(os, "data");
+
+}
