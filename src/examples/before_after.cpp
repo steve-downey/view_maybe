@@ -4,7 +4,6 @@
 #include <vector>
 #include <iostream>
 
-
 namespace ranges = std::ranges;
 using namespace smd;
 
@@ -40,14 +39,15 @@ void before1() {
 
 void after1() {
     std::optional o{7};
-    for (auto&& i : views::nullable(std::ref(o))) {
+    for (auto&& i : views::nullable_view<std::optional<int>&>(o)) {
         i = 9;
         std::cout << "i=" << i << " prints 9\n";
     }
     std::cout << "o=" << *o << " prints 9\n";
 
     // if range for is too much magic
-    if (auto v = views::nullable(std::ref(o)); std::begin(v) != std::end(v)) {
+    if (auto v = views::nullable_view<std::optional<int>&>(o);
+        std::begin(v) != std::end(v)) {
         auto itr = std::begin(v);
         *itr     = 10;
         std::cout << "*itr=" << *itr << " prints 10\n";
@@ -106,6 +106,33 @@ void after2() {
 }
 
 
+void motivation1() {
+    std::vector<std::optional<int>> v{std::optional<int>{42},
+                                      std::optional<int>{},
+                                      std::optional<int>{6 * 9}};
+
+    auto r = std::views::join(std::views::transform(v, views::nullable));
+
+    for (auto i : r) {
+        std::cout << i << '\t'; // prints 42 and 54 skipping the empty optional
+    }
+    std::cout << std::endl;
+}
+
+void motivation1a() {
+    int fortytwo = 42;
+    int sixbynine = 54;
+
+    std::vector<int*> v{&fortytwo, nullptr, &sixbynine};
+
+    auto r = std::views::join(std::views::transform(v, views::nullable));
+
+    for (auto i : r) {
+        std::cout << i << '\t'; // prints 42 and 54 skipping the nullptr
+    }
+    std::cout << std::endl;
+}
+
 int main() {
     before0();
     after0();
@@ -115,4 +142,7 @@ int main() {
 
     before2();
     after2();
+
+    motivation1();
+    motivation1a();
 }
