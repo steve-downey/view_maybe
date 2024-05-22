@@ -11,7 +11,11 @@
 \SetWatermarkColor[gray]{0.9}
 
 \begin{document}
-\title{A view of $0$ or $1$ elements: \tcode{views::nullable}}
+\title{
+  A view of $0$ or $1$ elements: \tcode{views::nullable}
+
+  And a concept to constrain \tcode{maybe}s
+}
 \author{
 Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 }
@@ -20,7 +24,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \begin{flushright}
 \begin{tabular}{ll}
-  Document \#: & D1255R13 \\
+  Document \#: & P1255R13 \\
   Date: & \today \\
   Project: & Programming Language C++ \\
   Audience: & LEWG
@@ -29,6 +33,8 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \begin{abstract}
   This paper proposes a range adaptor \tcode{views::nullable} which adapts nullable types---such as \tcode{std::optional} or pointer to object types---into a range of the underlying type.
+
+  It also proposes a concept \tcode{maybe}, that types which are contextually convertible to bool and dereferenceable model.
 \end{abstract}
 
 \tableofcontents*
@@ -332,13 +338,103 @@ assert(*(o1.data()) == 42));
 
 Dereferencing the result of \tcode{data()} without a check for null is of course unsafe, but in a way that should be visible to programmers, reviewers,  and tools.
 
+\chapter{Maybe Concept and Functions}
+The \tcode{nullable_view} adapts types that model \tcode{maybe}. In addition to the adapter, this paper propsoses exposing the concept and the most generally used helper functions for \tcode{maybe}s
+\begin{itemize}
+\item \tcode{value_or}---The referred to value or an alternative
+\item \tcode{reference_or}---A reference to the referred to value or a reference to an alternative
+\item \tcode{or_invoke}---The referred to value or a function to invoke to return a value
+\item \tcode{yield_if}---An optional holding a value or not conditioned on a boolean
+\end{itemize}
+
+These mirror functions commonly found in optional implementations, however most of the implementations were specified before traits like \tcode{common_reference} were standardised, and can not be fixed today. For example \tcode{std::optional<T>::value_or(U)} returns a T.
+
+The concept is very minimal, as most uses of a \tcode{maybe} impose few constraints.
+
+\begin{figure}[!htbp]
+  \begin{minipage}[t]{\columnwidth}
+  \begin{minted}{c++}
+template <class T>
+concept maybe = requires(const T t) {
+    bool(t);
+    *(t);
+};
+  \end{minted}
+\caption{concept maybe}
+\end{minipage}
+\end{figure}
+
+This ensures that a user type provides a conversion to \tcode{bool} and a derefence operator that can be used for \tcode{const} qualified types.
+
+The implementation of each of the functions is relatively straightforward, albiet somewhat anoying.
+
+\begin{figure}[!htbp]
+\begin{minipage}[t]{\columnwidth}
+\begin{minted} {c++}
+
+template <class T, class R = optional<decay_t<T>>>
+constexpr auto yield_if(bool b, T&& t) -> R {
+    return b ? forward<T>(t) : R{};
+}
+
+\end{minted}
+\caption{yield_if}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[!htbp]
+\begin{minipage}[t]{\columnwidth}
+\begin{minted} {c++}
+template <maybe T,
+          class U,
+          class R = common_reference_t<iter_reference_t<T>, U&&>>
+constexpr auto reference_or(T&& m, U&& u) -> R {
+    static_assert(!reference_constructs_from_temporary_v<R, U>);
+    static_assert(!reference_constructs_from_temporary_v<R, T&>);
+    return bool(m) ? static_cast<R>(*m) : static_cast<R>((U&&)u);
+}
+\end{minted}
+\caption{reference_or}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[!htbp]
+\begin{minipage}[t]{\columnwidth}
+\begin{minted} {c++}
+template <maybe T,
+          class U,
+          class R = common_type_t<iter_reference_t<T>, U&&>>
+constexpr auto value_or(T&& m, U&& u) -> R {
+    return bool(m) ? static_cast<R>(*m) : static_cast<R>(forward<U>(u))
+}
+\end{minted}
+\caption{value_or}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[!htbp]
+\begin{minipage}[t]{\columnwidth}
+\begin{minted} {c++}
+template <maybe T,
+          class I,
+          class R = common_type_t<iter_reference_t<T>,
+                                  invoke_result_t<I>>>
+constexpr auto or_invoke(T&& m, I&& invocable) -> R {
+    return bool(m) ? static_cast<R>(*m) : static_cast<R>(invocable());
+}
+
+\end{minted}
+\caption{or_invoke}
+\end{minipage}
+\end{figure}
+
 \chapter{Design}
 
 The type \tcode{nullable_view} has the semantics of zero or one objects based on if the underlying nullable object does or does not have a value, as indicated by the \tcode{maybe} being truthy or falsy.
 
 \chapter{Freestanding}
 
-The type \tcode{nullable_view} naturally meets the requirements for freestanding.
+The type \tcode{nullable_view} naturally meets the requirements for freestanding, as do the concept and proposed functions.
 
 \chapter{Implementation}
 
@@ -355,10 +451,127 @@ A \tcode{maybe} object is one that is both contextually convertible to bool and 
 The generic type \tcode{std::nullable_view}, which is produced by \tcode{views::nullable} is further specialized over reference types, such that operations on the iterators of the range modify the object the range is over, if and only if the object exists.
 
 
+
 \chapter{Wording}
 
-
 \begin{wording}
+
+Modify 22 General utilities library[utilities]
+
+
+\rSec1[maybe]{Maybe Types}
+\indexlibraryglobal{maybe}%
+
+\rSec2[maybe.general]{In general}
+
+\pnum
+Subclause \ref{maybe} describes the concept \tcode{maybe}
+that represents types that model optionality and functions that operate on such types.
+
+\rSec2[maybe.syn]{Header \tcode{<maybe>} synopsis}
+
+\indexheader{maybe}%
+\begin{codeblock}
+namespace std {
+  // \ref{maybe.maybe}, class template \tcode{maybe}
+template <class T>
+concept maybe = requires(const T t) {
+    bool(t);
+    *(t);
+  };
+
+template <maybe T, class U, class R>
+constexpr auto value_or(T&& m, U&& u) -> R;
+
+template <maybe T, class U, class R>
+constexpr auto reference_or(T&& m, U&& u) -> R;
+
+template <maybe T, class I, class R>
+constexpr auto or_invoke(T&& m, I&& invocable) -> R;
+
+}
+\end{codeblock}
+
+\indexlibrarymember{value_or}{maybe}%
+\begin{itemdecl}
+template <maybe T, class U, class R = common_type_t<iter_reference_t<T>, U&&>>>
+constexpr auto value_or(T&& m, U&& u) -> R;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\mandates
+\tcode{T} models \tcode{maybe}
+\tcode{common_type_t<iter_reference_t<T>, U\&\&>::type} is defined
+
+\pnum
+\returns
+\tcode{bool(m) ? static_cast<R>(*m) : static_cast<R>(forward<U>(u))}.
+\end{itemdescr}
+
+\indexlibrarymember{reference_or}{maybe}%
+\begin{itemdecl}
+template <maybe T, class U, class R = common_reference_t<iter_reference_t<T>, U&&>>
+constexpr auto smd::reference_or(T&& m, U&& u) -> R;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\mandates
+\tcode{T} models \tcode{maybe}
+\tcode{common_reference<iter_reference_t<T>, U\&\&>::type} is defined
+
+\pnum
+\constraints
+\tcode{!reference_constructs_from_temporary_v<R, U>}
+\tcode{!reference_constructs_from_temporary_v<R, T\&>}
+
+\pnum
+\returns
+\tcode{bool(m) ? static_cast<R>(*m) : static_cast<R>((U\&\&)u)}
+\end{itemdescr}
+
+\indexlibrarymember{or_invoke}{maybe}%
+\begin{itemdecl}
+template <maybe T, class I,
+         class R = common_type_t<iter_reference_t<T>, invoke_result_t<I>>>
+constexpr auto or_invoke(T&& m, I&& invocable) -> R
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\mandates
+\tcode{T} models \tcode{maybe}
+\tcode{common_type<iter_reference_t<T>, invoke_result_t<I>>::type} is defined
+
+\pnum
+\returns
+\tcode{bool(m) ? static_cast<R>(*m) : static_cast<R>(invocable())}
+\end{itemdescr}
+
+Modify 22.5 Optional objects[optional]
+
+Add to 22.5.2 Header <optional> synopsis
+\begin{codeblock}
+template <class T, class R>
+constexpr auto yield_if(bool b, T&& t) -> R;
+\end{codeblock}
+
+Add 22.5.X
+\Sec2[optional.yield_if]{yield_if}
+
+\indexlibrarymember{yield_if}{optional}%
+\begin{itemdecl}
+template <class T, class R = optional<decay_t<T>>>
+@constexpr auto yield_if(bool b, T\&\& t) -> R;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+\tcode{b ? forward<T>(t) : R{}}.
+\end{itemdescr}
+
 
 
 Modify 26.2 Header <ranges> synopsis

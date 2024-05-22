@@ -54,7 +54,7 @@ template <smd::maybe T,
           class U,
           class R = std::common_type_t<std::iter_reference_t<T>, U&&>>
 constexpr auto smd::value_or(T&& m, U&& u) -> R {
-    return bool(m) ? static_cast<R>(*m) : static_cast<R>((U&&)u);
+    return bool(m) ? static_cast<R>(*m) : static_cast<R>(std::forward<U>(u));
 }
 
 template <smd::maybe T,

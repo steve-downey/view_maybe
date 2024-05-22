@@ -6,6 +6,7 @@
 #include <optional>
 #include <memory>
 #include <array>
+#include <expected>
 
 using namespace smd;
 
@@ -57,6 +58,22 @@ TEST(MaybeConceptsTest, YieldIf) {
     std::array<int, 5> ar = {0, 1, 2, 3, 4};
     auto               a2 = smd::yield_if(t, ar);
     ASSERT_EQ(a2, a2);
+}
+
+TEST(MaybeConceptsTest, YieldIfExpected) {
+    bool t = true;
+    bool f = false;
+    int  i = 5;
+
+    auto v1 = smd::yield_if<int, std::expected<int, int>>(t, 5);
+    auto v2 = smd::yield_if<int&, std::expected<int, int>>(t, i);
+
+    auto e1 = smd::yield_if<int&, std::expected<int, int>>(f, i);
+    auto e2 = smd::yield_if<int, std::expected<int, int>>(f, 5);
+
+    ASSERT_EQ(v1, v2);
+    ASSERT_NE(v1, e1);
+    ASSERT_EQ(e1, e2);
 }
 
 int   ifunc();
@@ -135,6 +152,51 @@ TEST(MaybeConceptsTest, ValueOr) {
     std::string s1 = smd::value_or(os, testLVal(longString));
     std::string s2 = smd::value_or(es, testLVal(longString));
 
+    static_assert(std::same_as<std::string , decltype(smd::value_or(os, testLVal(longString)))>);
+    ASSERT_EQ(longString, testLVal(longString));
+
+    std::string r1 = smd::value_or(es, testLVal(longString));
+    std::string r2 = smd::value_or(os, testLVal(longString));
+
+    ASSERT_EQ(r1, longString);
+    ASSERT_EQ(r2, "data");
+
+    r1 = "assign a string";
+    r2 = "assign a different string";
+
+    ASSERT_EQ(r1, "assign a string");
+    ASSERT_EQ(longString, "A very long string that is not short at all and will allocate");
+    ASSERT_NE(r2, "data");
+    ASSERT_EQ(r2, "assign a different string");
+    ASSERT_EQ(os, "data");
+
+}
+
+TEST(MaybeConceptsTest, ValueOrExpected) {
+    std::expected<int, std::monostate> e;
+    std::expected<int, std::monostate> five{5};
+
+    const int fortytwo = 42;
+    int       nine     = 9;
+
+    // auto&& r1 = smd::reference_or(e, nine);
+    // auto&& r2 = smd::reference_or(five, fortytwo);
+    // auto&& r3 = smd::reference_or(five, ifunc());
+
+    static_assert(std::same_as<int, decltype(smd::value_or(e, nine))>);
+    static_assert(
+        std::same_as<int, decltype(smd::value_or(five, fortytwo))>);
+    static_assert(
+        std::same_as<int, decltype(smd::value_or(five, ifunc()))>);
+    static_assert(
+        std::same_as<int, decltype(smd::value_or(five, irfunc()))>);
+
+    std::string longString{"A very long string that is not short at all and will allocate"};
+    std::expected<std::string, int> os{"data"};
+    std::expected<std::string, int> es{std::unexpect, -1 };
+
+    std::string s1 = smd::value_or(os, testLVal(longString));
+    std::string s2 = smd::value_or(es, testLVal(longString));
     static_assert(std::same_as<std::string , decltype(smd::value_or(os, testLVal(longString)))>);
 
     std::string r1 = smd::value_or(es, testLVal(longString));
