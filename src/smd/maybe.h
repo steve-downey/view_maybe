@@ -194,10 +194,9 @@ constexpr auto smd::or_invoke(T&& m, I&& invocable) -> decltype(auto) {
         !std::is_same_v<R, void> || requires { typename CommonType::type; },
         "No common type between value type and invoke result type");
 
-    using Ret = std::conditional_t<
-        std::is_same_v<R, void>,
-        typename CommonType::type,
-        R>;
+    using Ret = typename std::conditional_t<std::is_same_v<R, void>,
+                                            CommonType,
+                                            std::type_identity<R>>::type;
 
     static_assert(std::is_constructible_v<Ret, DerefType>,
                   "Cannot construct return type from value type");
