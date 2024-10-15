@@ -61,8 +61,7 @@ template <class R = void, maybe T, class U>
 constexpr auto reference_or(T&& m, U&& u) -> decltype(auto);
 
 template <class R = void, maybe T, class... U>
-constexpr auto value_or(T&& m, U&&... u)
-    -> decltype(auto);
+constexpr auto value_or(T&& m, U&&... u) -> decltype(auto);
 
 template <class R = void, maybe T, class I>
 constexpr auto or_invoke(T&& m, I&& invocable) -> decltype(auto);
@@ -79,8 +78,7 @@ constexpr auto smd::reference_or(T&& m, U&& u) -> decltype(auto) {
     // Find the type returned by dereferencing `m`
     using DerefType = decltype(*forward<T>(m)); // Often a reference type.
 
-    using RetCalc =
-        std::common_reference<DerefType, U&&>;
+    using RetCalc = std::common_reference<DerefType, U&&>;
 
     // If `R` is non-void, the return type is exactly `R`, otherwise it is
     // `RetCalc::type`.
@@ -97,8 +95,9 @@ constexpr auto smd::reference_or(T&& m, U&& u) -> decltype(auto) {
     static_assert(std::is_constructible_v<Ret, U>,
                   "Cannot construct return type from argument types");
 
-    static_assert(!detail::reference_constructs_from_temporary_v<Ret, DerefType>,
-                  "Would construct a dangling reference from a temporary");
+    static_assert(
+        !detail::reference_constructs_from_temporary_v<Ret, DerefType>,
+        "Would construct a dangling reference from a temporary");
     static_assert(!detail::reference_constructs_from_temporary_v<Ret, U>,
                   "Would construct a dangling reference from a temporary");
 
@@ -117,12 +116,11 @@ using pack0_t = typename pack0<Args...>::type;
 } // namespace smd::detail
 
 template <class R, smd::maybe T, class... U>
-constexpr auto smd::value_or(T&& m, U&&... u) -> decltype(auto)
-    {
+constexpr auto smd::value_or(T&& m, U&&... u) -> decltype(auto) {
     // Construct the return value from either `*m` or `forward<U>(u)... )`.
 
     // Find the type returned by dereferencing `m`
-    using DerefType = decltype(*forward<T>(m));  // Often a reference type.
+    using DerefType = decltype(*forward<T>(m)); // Often a reference type.
     using ValueType = std::remove_cvref_t<DerefType>; // Non-reference value
 
     // If `U...` represents exactly one argument type, then `RetCalc::type` is
@@ -168,10 +166,10 @@ constexpr auto smd::value_or(T&& m, U&&... u) -> decltype(auto)
 }
 
 template <class R = void, smd::maybe T, class IL, class... U>
-constexpr auto
-value_or(T&& m, std::initializer_list<IL> il, U&&... u) -> decltype(auto) {
+constexpr auto value_or(T&& m, std::initializer_list<IL> il, U&&... u)
+    -> decltype(auto) {
     // Find the type returned by dereferencing `m`
-    using DerefType = decltype(*forward<T>(m));  // Often a reference type.
+    using DerefType = decltype(*forward<T>(m)); // Often a reference type.
     using ValueType = std::remove_cvref_t<DerefType>; // Non-reference value
 
     using Ret = std::conditional_t<std::is_same_v<R, void>, ValueType, R>;
@@ -179,27 +177,41 @@ value_or(T&& m, std::initializer_list<IL> il, U&&... u) -> decltype(auto) {
     // Check the mandates
     static_assert(std::is_constructible_v<Ret, DerefType>,
                   "Cannot construct return type from value type");
-    static_assert(std::is_constructible_v<Ret, std::initializer_list<IL>, U...>,
-                  "Cannot construct return type from argument types");
+    static_assert(
+        std::is_constructible_v<Ret, std::initializer_list<IL>, U...>,
+        "Cannot construct return type from argument types");
 
     return bool(m) ? static_cast<Ret>(*m) : Ret(il, std::forward<U>(u)...);
 }
 
-template <class R, smd:: maybe T, class I>
+template <class R, smd::maybe T, class I>
 constexpr auto smd::or_invoke(T&& m, I&& invocable) -> decltype(auto) {
-    using DerefType = decltype(*forward<T>(m)); // Often a reference type.
-    using Ret       = std::conditional_t<
-              std::is_same_v<R, void>,
-              std::common_type_t<DerefType, std::invoke_result_t<I>>,
-              R>;
+    using DerefType  = decltype(*forward<T>(m)); // Often a reference type.
+    using InvokeType = std::invoke_result_t<I>;
+    using CommonType = std::common_type<DerefType, InvokeType>;
 
-    static_assert(requires {
-        typename std::common_type<DerefType, std::invoke_result_t<I>>::type;
-    });
+    static_assert(
+        !std::is_same_v<R, void> || requires { typename CommonType::type; },
+        "No common type between value type and invoke result type");
 
-    static_assert(requires { typename Ret; });
+    using Ret = std::conditional_t<
+        std::is_same_v<R, void>,
+        typename CommonType::type,
+        R>;
 
-    return bool(m) ? static_cast<Ret>(*m)
+    static_assert(std::is_constructible_v<Ret, DerefType>,
+                  "Cannot construct return type from value type");
+    static_assert(std::is_constructible_v<Ret, InvokeType>,
+                  "Cannot construct return type from invoke result type");
+
+    static_assert(
+        !detail::reference_constructs_from_temporary_v<Ret, DerefType>,
+        "Would construct a dangling reference from a temporary");
+    static_assert(
+        !detail::reference_constructs_from_temporary_v<Ret, InvokeType>,
+        "Would construct a dangling reference from a temporary");
+
+    return bool(m) ? static_cast<Ret>(*forward<T>(m))
                    : static_cast<Ret>(std::forward<I>(invocable)());
 }
 #endif
