@@ -473,80 +473,147 @@ that represents types that model optionality and functions that operate on such 
 \indexheader{maybe}%
 \begin{codeblock}
 namespace std {
-  // \ref{maybe.maybe}, class template \tcode{maybe}
+  // \ref{maybe.maybe}, concept \tcode{maybe}
 template <class T>
 concept maybe = requires(const T t) {
     bool(t);
     *(t);
   };
 
-template <maybe T, class U, class R>
-constexpr auto value_or(T&& m, U&& u) -> R;
+template <class R = void, maybe T, class... U>
+    constexpr auto value_or(T&& m, U&&... u) -> @\seebelow@;
 
-template <maybe T, class U, class R>
-constexpr auto reference_or(T&& m, U&& u) -> R;
+template <class R = void, maybe T, class IL, class... U>
+    constexpr auto value_or(T&& m, initializer_list<IL> il, U&&... u) -> @\seebelow@;
 
-template <maybe T, class I, class R>
-constexpr auto or_invoke(T&& m, I&& invocable) -> R;
+template <class R = void, maybe T, class U>
+    constexpr auto reference_or(T&& m, U&& u) -> @\seebelow@;
+
+template <class R = void, maybe T, class I>
+    constexpr auto or_invoke(T&& m, I&& invocable) -> @\seebelow@;
 
 }
 \end{codeblock}
 
 \indexlibrarymember{value_or}{maybe}%
 \begin{itemdecl}
-template <maybe T, class U, class R = common_type_t<iter_reference_t<T>, U&&>>>
-constexpr auto value_or(T&& m, U&& u) -> R;
+template <class R = void, maybe T, class... U>
+    constexpr auto value_or(T&& m, U&&... u) -> @\seebelow@;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-\mandates
-\tcode{T} models \tcode{maybe}
-\tcode{common_type_t<iter_reference_t<T>, U\&\&>::type} is defined
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R}.
+
+Otherwise,
+
+if sizeof...(U) is 1,
+
+\tcode{RT} is \tcode{common_type_t<remove_cvref_t<decltype(*std::forward<T>(m))>>}.
+
+Otherwise, \tcode{RT} is \tcode{remove_cvref_t<decltype(*std::forward<T>(m))>}.
 
 \pnum
-\returns
-\tcode{bool(m) ? static_cast<R>(*m) : static_cast<R>(forward<U>(u))}.
+\mandates
+\begin{itemize}
+\item \tcode{RT}, is a valid type.
+\item \tcode{is_constructible_v<RT, decltype(*std::forward<T>(m))> \&\& \\
+    is_constructible_v<RT, U...>} is true.
+\item If \tcode{RT} is a reference type, then
+  \begin{itemize}
+  \item \tcode{sizeof(U...)} is 1 and
+  \item \tcode{reference_constructs_from_temporary_v<RT, decltype(*std::forward<T>(m))> \\
+      || reference_constructs_from_temporary_v<RT, U...>} is false.
+  \end{itemize}
+\end{itemize}
+\pnum
+\effects
+Equivalent to:
+\begin{codeblock}
+return bool(m) ? static_cast<RT>(*forward<T>(m)) : RT(forward<U>(u)...);
+\end{codeblock}
+
+\end{itemdescr}
+
+\indexlibrarymember{value_or}{maybe}%
+\begin{itemdecl}
+template <class R = void, maybe T, class IL, class... U>
+    constexpr auto value_or(T&& m, initializer_list<IL> il, U&&... u) -> @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R},
+
+otherwise \tcode{RT} is \tcode{remove_cvref_t<decltype(*std::forward<T>(m))>}.
+
+\pnum
+\mandates
+\tcode{is_constructible_v<RT, decltype(*std::forward<T>(m))> \&\&} \\
+  \tcode{is_constructible_v<RT, initializer_list<IT> il, U...>} is true.
+
+\pnum
+\effects
+Equivalent to:
+\begin{codeblock}
+return bool(m) ? static_cast<RT>(*forward<T>(m)) : RT(il, forward<U>(u)...);
+\end{codeblock}
 \end{itemdescr}
 
 \indexlibrarymember{reference_or}{maybe}%
 \begin{itemdecl}
-template <maybe T, class U, class R = common_reference_t<iter_reference_t<T>, U&&>>
-constexpr auto smd::reference_or(T&& m, U&& u) -> R;
+template <class R = void, maybe T, class U>
+    constexpr auto reference_or(T&& m, U&& u) -> @\seebelow@;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R}, \\
+otherwise \tcode{R}T is \tcode{common_reference_t<decltype(*std::forward<T>(m)), U\&\&>}.
+
+\pnum
 \mandates
-\tcode{T} models \tcode{maybe}
-\tcode{common_reference<iter_reference_t<T>, U\&\&>::type} is defined
+\begin{itemize}
+\item \tcode{RT} is a valid type.
+\item \tcode{reference_constructs_from_temporary_v<RT, U> || \\
+    reference_constructs_from_temporary_v<RT, decltype(*std::forward<T>(m)>} is false.
+\end{itemize}
 
 \pnum
-\constraints
-\tcode{!reference_constructs_from_temporary_v<R, U>}
-\tcode{!reference_constructs_from_temporary_v<R, T\&>}
+\effects
+Equivalent to:
+\begin{codeblock}
+return  bool(m) ?
+  static_cast<RT>(*std::forward<T>(m)) :
+  static_cast<RT>(std::forward<U>(u))
+\end{codeblock}
 
-\pnum
-\returns
-\tcode{bool(m) ? static_cast<R>(*m) : static_cast<R>((U\&\&)u)}
 \end{itemdescr}
 
 \indexlibrarymember{or_invoke}{maybe}%
 \begin{itemdecl}
-template <maybe T, class I,
-         class R = common_type_t<iter_reference_t<T>, invoke_result_t<I>>>
-constexpr auto or_invoke(T&& m, I&& invocable) -> R
+template <class R = void, maybe T, class I>
+    constexpr auto or_invoke(T\&\& m, I\&\& invocable) -> \seebelow;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-\mandates
-\tcode{T} models \tcode{maybe}
-\tcode{common_type<iter_reference_t<T>, invoke_result_t<I>>::type} is defined
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R}, \\
+otherwise \tcode{RT} is \tcode{common_type_t<decltype(*std::forward<T>(m)), invoke_result_t<I>>}.
 
 \pnum
-\returns
-\tcode{bool(m) ? static_cast<R>(*m) : static_cast<R>(invocable())}
+\mandates
+\tcode{RT} is a valid type.
+\tcode{common_type<decltype(*std::forward<T>(m)>, invoke_result_t<I>>::type} is defined
+
+\pnum
+\effects
+Equivalent to:
+\begin{codeblock}
+return bool(m) ?
+  static_cast<RT>(*m) :
+  static_cast<RT>(std::forward<I>(invocable)());
+\end{codeblock}
 \end{itemdescr}
 
 Modify 22.5 Optional objects[optional]
@@ -569,7 +636,7 @@ template <class T, class R = optional<decay_t<T>>>
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{b ? forward<T>(t) : R{}}.
+\tcode{b ? forward<T>(t) : R\{nullopt\}}.
 \end{itemdescr}
 
 
@@ -1068,5 +1135,6 @@ The proposed changes are relative to the current working draft~\cite{N4958}.
 \bibliography{wg21,mybiblio}
 
 \nocite{viewmayb27:online}
+\nocite{P3091R2}
 
 \end{document}
