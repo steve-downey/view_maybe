@@ -1,4 +1,4 @@
-#include <smd/views/maybe.h>
+#include <smd/views/possible.h>
 
 #include <functional>
 #include <ranges>
@@ -10,96 +10,96 @@
 
 using namespace smd::views;
 
-TEST(ViewMaybeTest, Constructors) {
+TEST(ViewPossibleTest, Constructors) {
     std::ranges::single_view<std::optional<int>> s;
     std::ranges::single_view<std::optional<int>> s2{s};
     std::ranges::single_view<std::optional<int>> s3{std::optional<int>{}};
 
-    maybe_view<std::optional<int>> n;
-    maybe_view<std::optional<int>> n2{n};
-    maybe_view<std::optional<int>> n3{std::optional<int>{}};
+    possible_view<std::optional<int>> n;
+    possible_view<std::optional<int>> n2{n};
+    possible_view<std::optional<int>> n3{std::optional<int>{}};
 }
 
-TEST(ViewMaybeTest, ConceptCheck) {
-    static_assert(std::ranges::range<maybe_view<int>>);
-    static_assert(std::ranges::view<maybe_view<int>>);
-    static_assert(std::ranges::input_range<maybe_view<int>>);
-    static_assert(std::ranges::forward_range<maybe_view<int>>);
-    static_assert(std::ranges::bidirectional_range<maybe_view<int>>);
-    static_assert(std::ranges::contiguous_range<maybe_view<int>>);
-    static_assert(std::ranges::common_range<maybe_view<int>>);
-    static_assert(std::ranges::viewable_range<maybe_view<int>>);
-    static_assert(!std::ranges::borrowed_range<maybe_view<int>>);
-    static_assert(std::ranges::random_access_range<maybe_view<int>>);
-    static_assert(std::ranges::sized_range<maybe_view<int>>);
+TEST(ViewPossibleTest, ConceptCheck) {
+    static_assert(std::ranges::range<possible_view<int>>);
+    static_assert(std::ranges::view<possible_view<int>>);
+    static_assert(std::ranges::input_range<possible_view<int>>);
+    static_assert(std::ranges::forward_range<possible_view<int>>);
+    static_assert(std::ranges::bidirectional_range<possible_view<int>>);
+    static_assert(std::ranges::contiguous_range<possible_view<int>>);
+    static_assert(std::ranges::common_range<possible_view<int>>);
+    static_assert(std::ranges::viewable_range<possible_view<int>>);
+    static_assert(!std::ranges::borrowed_range<possible_view<int>>);
+    static_assert(std::ranges::random_access_range<possible_view<int>>);
+    static_assert(std::ranges::sized_range<possible_view<int>>);
 
-    static_assert(std::ranges::range<maybe_view<int*>>);
-    static_assert(std::ranges::view<maybe_view<int*>>);
-    static_assert(std::ranges::input_range<maybe_view<int*>>);
-    static_assert(std::ranges::forward_range<maybe_view<int*>>);
-    static_assert(std::ranges::bidirectional_range<maybe_view<int*>>);
-    static_assert(std::ranges::contiguous_range<maybe_view<int*>>);
-    static_assert(std::ranges::common_range<maybe_view<int*>>);
-    static_assert(std::ranges::viewable_range<maybe_view<int*>>);
-    static_assert(std::ranges::borrowed_range<maybe_view<int*>>);
-    static_assert(std::ranges::random_access_range<maybe_view<int*>>);
+    static_assert(std::ranges::range<possible_view<int*>>);
+    static_assert(std::ranges::view<possible_view<int*>>);
+    static_assert(std::ranges::input_range<possible_view<int*>>);
+    static_assert(std::ranges::forward_range<possible_view<int*>>);
+    static_assert(std::ranges::bidirectional_range<possible_view<int*>>);
+    static_assert(std::ranges::contiguous_range<possible_view<int*>>);
+    static_assert(std::ranges::common_range<possible_view<int*>>);
+    static_assert(std::ranges::viewable_range<possible_view<int*>>);
+    static_assert(std::ranges::borrowed_range<possible_view<int*>>);
+    static_assert(std::ranges::random_access_range<possible_view<int*>>);
 
     using ref = std::reference_wrapper<int>;
-    static_assert(std::ranges::range<maybe_view<ref>>);
-    static_assert(std::ranges::view<maybe_view<ref>>);
-    static_assert(std::ranges::input_range<maybe_view<ref>>);
-    static_assert(std::ranges::forward_range<maybe_view<ref>>);
-    static_assert(std::ranges::bidirectional_range<maybe_view<ref>>);
-    static_assert(std::ranges::contiguous_range<maybe_view<ref>>);
-    static_assert(std::ranges::common_range<maybe_view<ref>>);
-    static_assert(std::ranges::viewable_range<maybe_view<ref>>);
-    static_assert(std::ranges::borrowed_range<maybe_view<ref>>);
-    static_assert(std::ranges::random_access_range<maybe_view<ref>>);
+    static_assert(std::ranges::range<possible_view<ref>>);
+    static_assert(std::ranges::view<possible_view<ref>>);
+    static_assert(std::ranges::input_range<possible_view<ref>>);
+    static_assert(std::ranges::forward_range<possible_view<ref>>);
+    static_assert(std::ranges::bidirectional_range<possible_view<ref>>);
+    static_assert(std::ranges::contiguous_range<possible_view<ref>>);
+    static_assert(std::ranges::common_range<possible_view<ref>>);
+    static_assert(std::ranges::viewable_range<possible_view<ref>>);
+    static_assert(std::ranges::borrowed_range<possible_view<ref>>);
+    static_assert(std::ranges::random_access_range<possible_view<ref>>);
 }
 
-TEST(ViewMaybeTest, ConceptCheckRef) {
-    static_assert(std::ranges::range<maybe_view<int&>>);
-    static_assert(std::ranges::view<maybe_view<int&>>);
-    static_assert(std::ranges::input_range<maybe_view<int&>>);
-    static_assert(std::ranges::forward_range<maybe_view<int&>>);
-    static_assert(std::ranges::bidirectional_range<maybe_view<int&>>);
-    static_assert(std::ranges::contiguous_range<maybe_view<int&>>);
-    static_assert(std::ranges::common_range<maybe_view<int&>>);
-    static_assert(std::ranges::viewable_range<maybe_view<int&>>);
-    static_assert(std::ranges::borrowed_range<maybe_view<int&>>);
-    static_assert(std::ranges::random_access_range<maybe_view<int&>>);
+TEST(ViewPossibleTest, ConceptCheckRef) {
+    static_assert(std::ranges::range<possible_view<int&>>);
+    static_assert(std::ranges::view<possible_view<int&>>);
+    static_assert(std::ranges::input_range<possible_view<int&>>);
+    static_assert(std::ranges::forward_range<possible_view<int&>>);
+    static_assert(std::ranges::bidirectional_range<possible_view<int&>>);
+    static_assert(std::ranges::contiguous_range<possible_view<int&>>);
+    static_assert(std::ranges::common_range<possible_view<int&>>);
+    static_assert(std::ranges::viewable_range<possible_view<int&>>);
+    static_assert(std::ranges::borrowed_range<possible_view<int&>>);
+    static_assert(std::ranges::random_access_range<possible_view<int&>>);
 
-    static_assert(std::ranges::range<maybe_view<int*&>>);
-    static_assert(std::ranges::view<maybe_view<int*&>>);
-    static_assert(std::ranges::input_range<maybe_view<int*&>>);
-    static_assert(std::ranges::forward_range<maybe_view<int*&>>);
-    static_assert(std::ranges::bidirectional_range<maybe_view<int*&>>);
-    static_assert(std::ranges::contiguous_range<maybe_view<int*&>>);
-    static_assert(std::ranges::common_range<maybe_view<int*&>>);
-    static_assert(std::ranges::viewable_range<maybe_view<int*&>>);
-    static_assert(std::ranges::borrowed_range<maybe_view<int*&>>);
-    static_assert(std::ranges::random_access_range<maybe_view<int*&>>);
+    static_assert(std::ranges::range<possible_view<int*&>>);
+    static_assert(std::ranges::view<possible_view<int*&>>);
+    static_assert(std::ranges::input_range<possible_view<int*&>>);
+    static_assert(std::ranges::forward_range<possible_view<int*&>>);
+    static_assert(std::ranges::bidirectional_range<possible_view<int*&>>);
+    static_assert(std::ranges::contiguous_range<possible_view<int*&>>);
+    static_assert(std::ranges::common_range<possible_view<int*&>>);
+    static_assert(std::ranges::viewable_range<possible_view<int*&>>);
+    static_assert(std::ranges::borrowed_range<possible_view<int*&>>);
+    static_assert(std::ranges::random_access_range<possible_view<int*&>>);
 
     using ref = std::reference_wrapper<int>&;
-    static_assert(std::ranges::range<maybe_view<ref>>);
-    static_assert(std::ranges::view<maybe_view<ref>>);
-    static_assert(std::ranges::input_range<maybe_view<ref>>);
-    static_assert(std::ranges::forward_range<maybe_view<ref>>);
-    static_assert(std::ranges::bidirectional_range<maybe_view<ref>>);
-    static_assert(std::ranges::contiguous_range<maybe_view<ref>>);
-    static_assert(std::ranges::common_range<maybe_view<ref>>);
-    static_assert(std::ranges::viewable_range<maybe_view<ref>>);
-    static_assert(std::ranges::borrowed_range<maybe_view<ref>>);
-    static_assert(std::ranges::random_access_range<maybe_view<ref>>);
+    static_assert(std::ranges::range<possible_view<ref>>);
+    static_assert(std::ranges::view<possible_view<ref>>);
+    static_assert(std::ranges::input_range<possible_view<ref>>);
+    static_assert(std::ranges::forward_range<possible_view<ref>>);
+    static_assert(std::ranges::bidirectional_range<possible_view<ref>>);
+    static_assert(std::ranges::contiguous_range<possible_view<ref>>);
+    static_assert(std::ranges::common_range<possible_view<ref>>);
+    static_assert(std::ranges::viewable_range<possible_view<ref>>);
+    static_assert(std::ranges::borrowed_range<possible_view<ref>>);
+    static_assert(std::ranges::random_access_range<possible_view<ref>>);
 }
 
-TEST(ViewMaybeTest, BreathingTest) {
-    maybe_view<int> m;
+TEST(ViewPossibleTest, BreathingTest) {
+    possible_view<int> m;
     ASSERT_TRUE(m.empty());
     ASSERT_TRUE(m.size() == 0);
     ASSERT_TRUE(m.data() == nullptr);
 
-    maybe_view<int> m1{1};
+    possible_view<int> m1{1};
     ASSERT_TRUE(!m1.empty());
     ASSERT_TRUE(m1.size() == 1);
     ASSERT_TRUE(m1.data() != nullptr);
@@ -112,24 +112,24 @@ TEST(ViewMaybeTest, BreathingTest) {
     ASSERT_TRUE(m.size() == 0);
     ASSERT_TRUE(m1.size() == 1);
 
-    maybe_view<double> d0{0};
+    possible_view<double> d0{0};
     ASSERT_TRUE(!d0.empty());
 
-    maybe_view<double> d1{1};
+    possible_view<double> d1{1};
     ASSERT_TRUE(!d1.empty());
 
     d0 = d1;
     ASSERT_EQ(*std::begin(d0), 1.0);
 }
 
-TEST(ViewMaybeTest, BreathingTestRef) {
-    maybe_view<int&> m;
+TEST(ViewPossibleTest, BreathingTestRef) {
+    possible_view<int&> m;
     ASSERT_TRUE(m.empty());
     ASSERT_TRUE(m.size() == 0);
     ASSERT_TRUE(m.data() == nullptr);
 
     int              one = 1;
-    maybe_view<int&> m1{one};
+    possible_view<int&> m1{one};
     ASSERT_TRUE(!m1.empty());
     ASSERT_TRUE(m1.size() == 1);
     ASSERT_TRUE(m1.data() != nullptr);
@@ -143,22 +143,22 @@ TEST(ViewMaybeTest, BreathingTestRef) {
     ASSERT_TRUE(m1.size() == 1);
 
     double              zero = 0.0;
-    maybe_view<double&> d0{zero};
+    possible_view<double&> d0{zero};
     ASSERT_TRUE(!d0.empty());
 
     double              one_d = 1.0;
-    maybe_view<double&> d1{one_d};
+    possible_view<double&> d1{one_d};
     ASSERT_TRUE(!d1.empty());
 
     d0 = d1;
     ASSERT_EQ(*std::begin(d0), 1.0);
 }
 
-TEST(ViewMaybe, CompTest) {
-    maybe_view<int> m;
-    maybe_view<int> m0{0};
-    maybe_view<int> m1{1};
-    maybe_view<int> m1a{1};
+TEST(ViewPossible, CompTest) {
+    possible_view<int> m;
+    possible_view<int> m0{0};
+    possible_view<int> m1{1};
+    possible_view<int> m1a{1};
 
     ASSERT_EQ(m, m);
     ASSERT_EQ(m0, m0);
@@ -174,14 +174,14 @@ TEST(ViewMaybe, CompTest) {
     ASSERT_TRUE(m1 <= m1a);
 }
 
-TEST(ViewMaybe, CompTestRef) {
-    maybe_view<int&> m;
+TEST(ViewPossible, CompTestRef) {
+    possible_view<int&> m;
     int              zero  = 0;
     int              one   = 1;
     int              one_a = 1;
-    maybe_view<int&> m0{zero};
-    maybe_view<int&> m1{one};
-    maybe_view<int&> m1a{one_a};
+    possible_view<int&> m0{zero};
+    possible_view<int&> m1{one};
+    possible_view<int&> m1a{one_a};
 
     ASSERT_EQ(m, m);
     ASSERT_EQ(m0, m0);
@@ -212,10 +212,10 @@ inline constexpr auto and_then = [](auto&& r, auto fun) {
 // "yield_if" takes a bool and a value and
 // returns a view of zero or one elements.
 inline constexpr auto yield_if = [](bool b, auto x) {
-    return b ? maybe_view{std::move(x)} : maybe_view<decltype(x)>{};
+    return b ? possible_view{std::move(x)} : possible_view<decltype(x)>{};
 };
 
-TEST(ViewMaybeTest, PythTripleTest) {
+TEST(ViewPossibleTest, PythTripleTest) {
     using std::ranges::views::iota;
     auto triples = and_then(iota(1), [](int z) {
         return and_then(iota(1, z + 1), [=](int x) {
@@ -231,12 +231,12 @@ TEST(ViewMaybeTest, PythTripleTest) {
 
 using namespace smd;
 
-TEST(ViewMaybeTest, ValueBase) {
+TEST(ViewPossibleTest, ValueBase) {
     int             i = 7;
-    maybe_view<int> v1{};
+    possible_view<int> v1{};
     ASSERT_TRUE(v1.size() == 0);
 
-    maybe_view<int> v2{i};
+    possible_view<int> v2{i};
     ASSERT_TRUE(v2.size() == 1);
     for (auto i : v1)
         ASSERT_TRUE(i != i); // tautology so i is used and not warned
@@ -249,7 +249,7 @@ TEST(ViewMaybeTest, ValueBase) {
 //    auto x = v2[1000];
 
     int s = 4;
-    for (auto&& i : views::maybe(s)) {
+    for (auto&& i : views::possible(s)) {
         ASSERT_EQ(i, 4);
         i = 9;
         ASSERT_EQ(i, 9);
@@ -257,16 +257,16 @@ TEST(ViewMaybeTest, ValueBase) {
     ASSERT_EQ(s, 4);
 }
 
-TEST(ViewMaybeTest, RefWrapper) {
+TEST(ViewPossibleTest, RefWrapper) {
     int i = 7;
 
-    maybe_view<int> v2{std::ref(i)};
+    possible_view<int> v2{std::ref(i)};
 
     for (auto i : v2)
         ASSERT_EQ(i, 7);
 
     int s = 4;
-    for (auto&& i : views::maybe(std::ref(s))) {
+    for (auto&& i : views::possible(std::ref(s))) {
         ASSERT_EQ(i, 4);
         i.get() = 9;
         ASSERT_EQ(i, 9);
@@ -283,18 +283,18 @@ class NoDefault {
 };
 } // namespace
 
-TEST(ViewMaybeTest, ValueNonDefaultConstruct) {
+TEST(ViewPossibleTest, ValueNonDefaultConstruct) {
     NoDefault             i = 7;
-    maybe_view<NoDefault> v1{};
-    maybe_view<NoDefault> v2{i};
+    possible_view<NoDefault> v1{};
+    possible_view<NoDefault> v2{i};
 }
 
-TEST(ViewMaybeTest, RefBase) {
+TEST(ViewPossibleTest, RefBase) {
     int              i = 7;
-    maybe_view<int&> v1{};
+    possible_view<int&> v1{};
     ASSERT_TRUE(v1.size() == 0);
 
-    maybe_view<int&> v2{i};
+    possible_view<int&> v2{i};
     ASSERT_TRUE(v2.size() == 1);
     for (auto i : v1)
         ASSERT_TRUE(i != i); // tautology so i is used and not warned
@@ -314,14 +314,14 @@ TEST(ViewMaybeTest, RefBase) {
     ASSERT_EQ(i, 9);
 
     int s = 4;
-    for (auto&& i : views::maybe(s)) {
+    for (auto&& i : views::possible(s)) {
         ASSERT_EQ(i, 4);
         i = 9;
         ASSERT_EQ(i, 9);
     }
     ASSERT_EQ(s, 4);
 
-    for (auto&& i : maybe_view<int&>(s)) {
+    for (auto&& i : possible_view<int&>(s)) {
         ASSERT_EQ(i, 4);
         i = 9;
         ASSERT_EQ(i, 9);
@@ -329,9 +329,9 @@ TEST(ViewMaybeTest, RefBase) {
     ASSERT_EQ(s, 9);
 }
 
-TEST(ViewMaybeTest, MonadicAndThen) {
-    maybe_view<int> mv{40};
-    auto            r = mv.and_then([](int i) { return maybe_view{i + 2}; });
+TEST(ViewPossibleTest, MonadicAndThen) {
+    possible_view<int> mv{40};
+    auto            r = mv.and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
     ASSERT_TRUE(r.data() != nullptr);
@@ -339,28 +339,28 @@ TEST(ViewMaybeTest, MonadicAndThen) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
-    auto r2 = mv.and_then([](int) { return maybe_view<int>{}; });
+    auto r2 = mv.and_then([](int) { return possible_view<int>{}; });
     ASSERT_TRUE(r2.empty());
     ASSERT_TRUE(r2.size() == 0);
     ASSERT_TRUE(r2.data() == nullptr);
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
-    maybe_view<int> empty{};
+    possible_view<int> empty{};
 
-    auto r3 = empty.and_then([](int i) { return maybe_view{i + 2}; });
+    auto r3 = empty.and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(r3.empty());
     ASSERT_TRUE(r3.size() == 0);
     ASSERT_TRUE(r3.data() == nullptr);
     ASSERT_TRUE(empty.empty());
 
-    auto r4 = mv.and_then([](double d) { return maybe_view{d + 2}; });
+    auto r4 = mv.and_then([](double d) { return possible_view{d + 2}; });
     ASSERT_TRUE(!r4.empty());
     ASSERT_TRUE(r4.size() == 1);
     ASSERT_TRUE(*(r4.data()) == 42.0);
-    static_assert(std::is_same_v<decltype(r4), maybe_view<double>>);
+    static_assert(std::is_same_v<decltype(r4), possible_view<double>>);
 
-    auto r5 = std::move(mv).and_then([](int i) { return maybe_view{i + 2}; });
+    auto r5 = std::move(mv).and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r5.empty());
     ASSERT_TRUE(r5.size() == 1);
     ASSERT_TRUE(r5.data() != nullptr);
@@ -371,7 +371,7 @@ TEST(ViewMaybeTest, MonadicAndThen) {
     auto r6 = std::move(mv).and_then([](int&& i) {
         int k = i;
         i     = 0;
-        return maybe_view{k + 2};
+        return possible_view{k + 2};
     });
     ASSERT_TRUE(!r6.empty());
     ASSERT_TRUE(r6.size() == 1);
@@ -380,8 +380,8 @@ TEST(ViewMaybeTest, MonadicAndThen) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 0);
 
-    const maybe_view<int> cmv{40};
-    auto r7 = cmv.and_then([](int i) { return maybe_view{i + 2}; });
+    const possible_view<int> cmv{40};
+    auto r7 = cmv.and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r7.empty());
     ASSERT_TRUE(r7.size() == 1);
     ASSERT_TRUE(r7.data() != nullptr);
@@ -389,7 +389,7 @@ TEST(ViewMaybeTest, MonadicAndThen) {
     ASSERT_TRUE(!cmv.empty());
     ASSERT_TRUE(*(cmv.data()) == 40);
 
-    auto r8 = std::move(cmv).and_then([](int i) { return maybe_view{i + 2}; });
+    auto r8 = std::move(cmv).and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r8.empty());
     ASSERT_TRUE(r8.size() == 1);
     ASSERT_TRUE(r8.data() != nullptr);
@@ -398,8 +398,8 @@ TEST(ViewMaybeTest, MonadicAndThen) {
     ASSERT_TRUE(*(cmv.data()) == 40);
 }
 
-TEST(MaybeView, MonadicTransform) {
-    maybe_view<int> mv{40};
+TEST(PossibleView, MonadicTransform) {
+    possible_view<int> mv{40};
     auto            r = mv.transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
@@ -419,7 +419,7 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 42);
 
-    maybe_view<int> empty{};
+    possible_view<int> empty{};
 
     auto r3 = empty.transform([](int i) { return i + 2; });
     ASSERT_TRUE(r3.empty());
@@ -431,7 +431,7 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(!r4.empty());
     ASSERT_TRUE(r4.size() == 1);
     ASSERT_TRUE(*(r4.data()) == 44.0);
-    static_assert(std::is_same_v<decltype(r4), maybe_view<double>>);
+    static_assert(std::is_same_v<decltype(r4), possible_view<double>>);
 
     auto r5 = std::move(mv).transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r5.empty());
@@ -453,7 +453,7 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 0);
 
-    const maybe_view<int> cmv{40};
+    const possible_view<int> cmv{40};
     auto                  r7 = cmv.transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r7.empty());
     ASSERT_TRUE(r7.size() == 1);
@@ -471,26 +471,26 @@ TEST(MaybeView, MonadicTransform) {
     ASSERT_TRUE(*(cmv.data()) == 40);
 }
 
-TEST(MaybeView, MonadicOrElse) {
-    maybe_view<int> o1(42);
-    auto            r = o1.or_else([] { return maybe_view<int>(13); });
+TEST(PossibleView, MonadicOrElse) {
+    possible_view<int> o1(42);
+    auto            r = o1.or_else([] { return possible_view<int>(13); });
     ASSERT_TRUE(*(r.data()) == 42);
 
-    maybe_view<int> o2;
-    ASSERT_TRUE(*(o2.or_else([] { return maybe_view<int>(13); })).data() ==
+    possible_view<int> o2;
+    ASSERT_TRUE(*(o2.or_else([] { return possible_view<int>(13); })).data() ==
                 13);
 
-    auto r2 = std::move(o1).or_else([] { return maybe_view<int>(13); });
+    auto r2 = std::move(o1).or_else([] { return possible_view<int>(13); });
     ASSERT_TRUE(*(r2.data()) == 42);
 
-    auto r3 = std::move(o2).or_else([] { return maybe_view<int>(13); });
+    auto r3 = std::move(o2).or_else([] { return possible_view<int>(13); });
     ASSERT_TRUE(*(r3.data()) == 13);
 }
 
-TEST(ViewMaybeTest, MonadicAndThenRef) {
+TEST(ViewPossibleTest, MonadicAndThenRef) {
     int              forty{40};
-    maybe_view<int&> mv{forty};
-    auto             r = mv.and_then([](int i) { return maybe_view{i + 2}; });
+    possible_view<int&> mv{forty};
+    auto             r = mv.and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
     ASSERT_TRUE(r.data() != nullptr);
@@ -498,28 +498,28 @@ TEST(ViewMaybeTest, MonadicAndThenRef) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
-    auto r2 = mv.and_then([](int) { return maybe_view<int&>{}; });
+    auto r2 = mv.and_then([](int) { return possible_view<int&>{}; });
     ASSERT_TRUE(r2.empty());
     ASSERT_TRUE(r2.size() == 0);
     ASSERT_TRUE(r2.data() == nullptr);
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
-    maybe_view<int&> empty{};
+    possible_view<int&> empty{};
 
-    auto r3 = empty.and_then([](int i) { return maybe_view{i + 2}; });
+    auto r3 = empty.and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(r3.empty());
     ASSERT_TRUE(r3.size() == 0);
     ASSERT_TRUE(r3.data() == nullptr);
     ASSERT_TRUE(empty.empty());
 
-    auto r4 = mv.and_then([](double d) { return maybe_view{d + 2}; });
+    auto r4 = mv.and_then([](double d) { return possible_view{d + 2}; });
     ASSERT_TRUE(!r4.empty());
     ASSERT_TRUE(r4.size() == 1);
     ASSERT_TRUE(*(r4.data()) == 42.0);
-    static_assert(std::is_same_v<decltype(r4), maybe_view<double>>);
+    static_assert(std::is_same_v<decltype(r4), possible_view<double>>);
 
-    auto r5 = std::move(mv).and_then([](int i) { return maybe_view{i + 2}; });
+    auto r5 = std::move(mv).and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r5.empty());
     ASSERT_TRUE(r5.size() == 1);
     ASSERT_TRUE(r5.data() != nullptr);
@@ -530,7 +530,7 @@ TEST(ViewMaybeTest, MonadicAndThenRef) {
     auto r6 = std::move(mv).and_then([](int&& i) {
         int k = i;
         i     = 0;
-        return maybe_view{k + 2};
+        return possible_view{k + 2};
     });
     ASSERT_TRUE(!r6.empty());
     ASSERT_TRUE(r6.size() == 1);
@@ -541,8 +541,8 @@ TEST(ViewMaybeTest, MonadicAndThenRef) {
     ASSERT_EQ(forty, 0);
     forty = 40;
 
-    const maybe_view<int&> cmv{forty};
-    auto r7 = cmv.and_then([](int i) { return maybe_view{i + 2}; });
+    const possible_view<int&> cmv{forty};
+    auto r7 = cmv.and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r7.empty());
     ASSERT_TRUE(r7.size() == 1);
     ASSERT_TRUE(r7.data() != nullptr);
@@ -550,7 +550,7 @@ TEST(ViewMaybeTest, MonadicAndThenRef) {
     ASSERT_TRUE(!cmv.empty());
     ASSERT_TRUE(*(cmv.data()) == 40);
 
-    auto r8 = std::move(cmv).and_then([](int i) { return maybe_view{i + 2}; });
+    auto r8 = std::move(cmv).and_then([](int i) { return possible_view{i + 2}; });
     ASSERT_TRUE(!r8.empty());
     ASSERT_TRUE(r8.size() == 1);
     ASSERT_TRUE(r8.data() != nullptr);
@@ -559,9 +559,9 @@ TEST(ViewMaybeTest, MonadicAndThenRef) {
     ASSERT_TRUE(*(cmv.data()) == 40);
 }
 
-TEST(MaybeView, MonadicTransformRef) {
+TEST(PossibleView, MonadicTransformRef) {
     int              forty{40};
-    maybe_view<int&> mv{forty};
+    possible_view<int&> mv{forty};
     auto             r = mv.transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r.empty());
     ASSERT_TRUE(r.size() == 1);
@@ -570,7 +570,7 @@ TEST(MaybeView, MonadicTransformRef) {
     ASSERT_TRUE(!mv.empty());
     ASSERT_TRUE(*(mv.data()) == 40);
 
-    maybe_view<int&> empty{};
+    possible_view<int&> empty{};
 
     auto r3 = empty.transform([](int i) { return i + 2; });
     ASSERT_TRUE(r3.empty());
@@ -582,7 +582,7 @@ TEST(MaybeView, MonadicTransformRef) {
     ASSERT_TRUE(!r4.empty());
     ASSERT_TRUE(r4.size() == 1);
     ASSERT_TRUE(*(r4.data()) == 42.0);
-    static_assert(std::is_same_v<decltype(r4), maybe_view<double>>);
+    static_assert(std::is_same_v<decltype(r4), possible_view<double>>);
 
     auto r5 = std::move(mv).transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r5.empty());
@@ -606,7 +606,7 @@ TEST(MaybeView, MonadicTransformRef) {
     ASSERT_EQ(forty, 0);
     forty = 40;
 
-    const maybe_view<int&> cmv{forty};
+    const possible_view<int&> cmv{forty};
     ASSERT_EQ(*(cmv.data()), 40);
     auto r7 = cmv.transform([](int i) { return i + 2; });
     ASSERT_TRUE(!r7.empty());
@@ -643,23 +643,23 @@ TEST(MaybeView, MonadicTransformRef) {
     forty = 40;
 }
 
-TEST(MaybeView, MonadicOrElseRef) {
+TEST(PossibleView, MonadicOrElseRef) {
     int              fortytwo{42};
     int              thirteen{13};
-    maybe_view<int&> o1(fortytwo);
-    auto r = o1.or_else([&thirteen] { return maybe_view<int&>(thirteen); });
+    possible_view<int&> o1(fortytwo);
+    auto r = o1.or_else([&thirteen] { return possible_view<int&>(thirteen); });
     ASSERT_TRUE(*(r.data()) == 42);
 
-    maybe_view<int&> o2;
+    possible_view<int&> o2;
     ASSERT_TRUE(*(o2.or_else([&thirteen] {
-                     return maybe_view<int&>(thirteen);
+                     return possible_view<int&>(thirteen);
                  })).data() == 13);
 
     auto r2 = std::move(o1).or_else(
-        [&thirteen] { return maybe_view<int&>(thirteen); });
+        [&thirteen] { return possible_view<int&>(thirteen); });
     ASSERT_TRUE(*(r2.data()) == 42);
 
     auto r3 = std::move(o2).or_else(
-        [&thirteen] { return maybe_view<int&>(thirteen); });
+        [&thirteen] { return possible_view<int&>(thirteen); });
     ASSERT_TRUE(*(r3.data()) == 13);
 }
