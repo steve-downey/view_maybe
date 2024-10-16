@@ -24,7 +24,7 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 
 \begin{flushright}
 \begin{tabular}{ll}
-  Document \#: & P1255R13 \\
+  Document \#: & P1255R14 \\
   Date: & \today \\
   Project: & Programming Language C++ \\
   Audience: & LEWG
@@ -42,6 +42,10 @@ Steve Downey \small(\href{mailto:sdowney@gmail.com}{sdowney@gmail.com}) \\
 \chapter*{Changes Since Last Version}
 
 \begin{itemize}
+\item \textbf{Changes since R13},
+  \begin{itemize}
+  \item Specification of free functions
+  \end{itemize}
 \item \textbf{Changes since R12},
   \begin{itemize}
   \item Removal of views::maybe in favor of range optional
@@ -593,7 +597,7 @@ return  bool(m) ?
 \indexlibrarymember{or_invoke}{maybe}%
 \begin{itemdecl}
 template <class R = void, maybe T, class I>
-    constexpr auto or_invoke(T\&\& m, I\&\& invocable) -> \seebelow;
+    constexpr auto or_invoke(T&& m, I&& invocable) -> @\seebelow@;
 \end{itemdecl}
 
 \begin{itemdescr}
