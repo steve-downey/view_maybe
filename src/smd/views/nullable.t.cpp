@@ -221,34 +221,34 @@ TEST(ViewNullableTest, BreathingRef) {
     ASSERT_EQ(*s, 9);
 }
 
-TEST(ViewNullableTest, BreathingRefWrap) {
-    nullable_view<int*&> n;
-    ASSERT_TRUE(n.size() == 0);
-    int                  k   = 7;
-    int * p_k = &k;
-    nullable_view<int*&> v_p_k{std::ref(p_k)};
-    ASSERT_TRUE(v_p_k.size() == 1);
+// TEST(ViewNullableTest, BreathingRefWrap) {
+//     nullable_view<int*&> n;
+//     ASSERT_TRUE(n.size() == 0);
+//     int                  k   = 7;
+//     int * p_k = &k;
+//     nullable_view<int*&> v_p_k{std::ref(p_k)};
+//     ASSERT_TRUE(v_p_k.size() == 1);
 
-    std::optional      s{7};
-    std::optional<int> e{};
+//     std::optional      s{7};
+//     std::optional<int> e{};
 
-    for (auto i : nullable_view(std::ref(s)))
-        ASSERT_EQ(i, 7);
+//     for (auto i : nullable_view(std::ref(s)))
+//         ASSERT_EQ(i, 7);
 
-    nullable_view<std::optional<int>&> e2{std::ref(e)};
-    ASSERT_TRUE(ranges::begin(e2) == nullptr);
-    ASSERT_TRUE(e2.size() == 0);
-    ASSERT_TRUE(ranges::begin(e2) == ranges::end(e2));
-    for (int i : e2)
-        ASSERT_TRUE(i != i); // tautology to avoid unused variable warning
+//     nullable_view<std::optional<int>&> e2{std::ref(e)};
+//     ASSERT_TRUE(ranges::begin(e2) == nullptr);
+//     ASSERT_TRUE(e2.size() == 0);
+//     ASSERT_TRUE(ranges::begin(e2) == ranges::end(e2));
+//     for (int i : e2)
+//         ASSERT_TRUE(i != i); // tautology to avoid unused variable warning
 
-    for (auto&& i : nullable_view(std::ref(s))) {
-        ASSERT_EQ(i, 7);
-        i = 9;
-        ASSERT_EQ(i, 9);
-    }
-    ASSERT_EQ(*s, 9);
-}
+//     for (auto&& i : nullable_view(std::ref(s))) {
+//         ASSERT_EQ(i, 7);
+//         i = 9;
+//         ASSERT_EQ(i, 9);
+//     }
+//     ASSERT_EQ(*s, 9);
+// }
 
 TEST(ViewNullable, CompTest) {
     int zero  = 0;
@@ -380,42 +380,42 @@ TEST(ViewNullableTest, Optionals) {
 
     }
 
-TEST(ViewNullableTest, WrappedOptional) {
-    int i = 7;
-    std::optional p{i};
-    nullable_view<std::optional<int>&> v{views::nullable(std::ref(p))};
-    for (auto&& k : views::nullable(std::ref(p))) {
-        k++;
-        ASSERT_EQ(k, 8);
-    }
-    ASSERT_EQ(*p, 8);
-    ASSERT_EQ(i, 7);
+// TEST(ViewNullableTest, WrappedOptional) {
+//     int i = 7;
+//     std::optional p{i};
+//     nullable_view<std::optional<int>&> v{views::nullable(std::ref(p))};
+//     for (auto&& k : views::nullable(std::ref(p))) {
+//         k++;
+//         ASSERT_EQ(k, 8);
+//     }
+//     ASSERT_EQ(*p, 8);
+//     ASSERT_EQ(i, 7);
 
-    int k = 7;
-    std::optional p2{k};
+//     int k = 7;
+//     std::optional p2{k};
 
-    int j = 8;
-    std::optional p3{j};
+//     int j = 8;
+//     std::optional p3{j};
 
-    auto v1 = views::nullable(std::ref(p));
-    auto v2 = views::nullable(std::ref(p2));
-    auto v3 = views::nullable(std::ref(p3));
-    ASSERT_EQ(v, v);
-    ASSERT_EQ(v, v1);
-    ASSERT_NE(v1, v2);
-    ASSERT_EQ(v1, v3);
+//     auto v1 = views::nullable(std::ref(p));
+//     auto v2 = views::nullable(std::ref(p2));
+//     auto v3 = views::nullable(std::ref(p3));
+//     ASSERT_EQ(v, v);
+//     ASSERT_EQ(v, v1);
+//     ASSERT_NE(v1, v2);
+//     ASSERT_EQ(v1, v3);
 
-    std::optional<int> e;
-    auto ve = views::nullable(std::ref(e));
-    ASSERT_EQ(ve, ve);
-    ASSERT_NE(ve, v);
-    ASSERT_NE(v, ve);
+//     std::optional<int> e;
+//     auto ve = views::nullable(std::ref(e));
+//     ASSERT_EQ(ve, ve);
+//     ASSERT_NE(ve, v);
+//     ASSERT_NE(v, ve);
 
-    std::optional<int> e2;
-    auto ve2 = views::nullable(std::ref(e2));
-    ASSERT_EQ(ve, ve2);
+//     std::optional<int> e2;
+//     auto ve2 = views::nullable(std::ref(e2));
+//     ASSERT_EQ(ve, ve2);
 
-}
+// }
 
 TEST(ViewNullableTest, Pointers) {
     int i = 7;

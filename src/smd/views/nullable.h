@@ -91,10 +91,6 @@ class nullable_view<Nullable&>
     constexpr explicit nullable_view(Nullable& nullable)
         : value_(std::addressof(nullable)) {}
 
-    constexpr explicit nullable_view(
-        const std::reference_wrapper<Nullable>& ref)
-        : value_(std::addressof(ref.get())) {}
-
     constexpr explicit nullable_view(Nullable&& nullable) = delete;
 
     constexpr U*       begin() noexcept { return data(); }
@@ -137,9 +133,6 @@ class nullable_view<Nullable&>
 template <typename T>
 nullable_view(T) -> nullable_view<std::decay_t<T>>;
 
-template <class T>
-nullable_view(std::reference_wrapper<T>) -> nullable_view<T&>;
-
 } // namespace smd::views
 
 namespace std::ranges {
@@ -157,11 +150,6 @@ struct __nullable_fn {
     template <typename T>
     constexpr auto operator()(T&& t) const noexcept {
         return nullable_view<std::decay_t<T>>(std::forward<T>(t));
-    }
-
-    template <typename T>
-    constexpr auto operator()(std::reference_wrapper<T>&& r) const noexcept {
-        return nullable_view<std::decay_t<T>&>(r.get());
     }
 };
 

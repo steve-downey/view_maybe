@@ -312,10 +312,6 @@ inline constexpr bool
     std::ranges::enable_borrowed_range<smd::views::possible_view<T*>> = true;
 
 template <class T>
-inline constexpr bool std::ranges::enable_borrowed_range<
-    smd::views::possible_view<std::reference_wrapper<T>>> = true;
-
-template <class T>
 inline constexpr bool
     std::ranges::enable_borrowed_range<smd::views::possible_view<T&>> = true;
 
