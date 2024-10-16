@@ -15,3 +15,15 @@
   \settocdepth{section}
 
 }
+
+\newenvironment{auxwording}{
+  \chapterstyle{cppstd}
+  \newcounter{scratchChapter2}\setcounter{scratchChapter2}{\value{chapter}}
+  \settocdepth{part}
+  \renewcommand\thesection{\ucr.\arabic{section}}
+  \renewcommand\thesubsection{\makebox{$\ucr$}.\makebox{$\ucr$}.\arabic{subsection}}
+} {
+  \setcounter{chapter}{\value{scratchChapter2}}
+  \settocdepth{section}
+
+}

@@ -1,4 +1,4 @@
-// smd/views/possible.h                                                  -*-C++-*-
+// smd/views/possible.h -*-C++-*-
 #ifndef INCLUDED_SMD_VIEWS_POSSIBLE
 #define INCLUDED_SMD_VIEWS_POSSIBLE
 
@@ -94,7 +94,8 @@ class possible_view : public ranges::view_interface<possible_view<Value>> {
 };
 
 template <typename Value>
-constexpr possible_view<Value>::possible_view(const Value& value) : value_(value) {}
+constexpr possible_view<Value>::possible_view(const Value& value)
+    : value_(value) {}
 
 template <typename Value>
 constexpr possible_view<Value>::possible_view(Value&& value)
@@ -158,25 +159,26 @@ constexpr auto possible_view<Value>::transform(this Self&& self, F&& f) {
     using U =
         std::invoke_result_t<F, decltype(forward_like<Self>(*self.value_))>;
     return (self.value_)
-               ? possible_view<U>{std::invoke(std::forward<F>(f),
-                                           forward_like<Self>(*self.value_))}
+               ? possible_view<U>{std::invoke(
+                     std::forward<F>(f), forward_like<Self>(*self.value_))}
                : possible_view<U>{};
 }
 
 template <typename Value>
-    template <typename Self, typename F>
-    constexpr auto possible_view<Value>::or_else(this Self&& self, F&& f) {
-        using U = std::invoke_result_t<F>;
-        static_assert(std::is_same_v<std::remove_cvref_t<U>, possible_view>);
-        return self.value_ ? std::forward<Self>(self) : std::forward<F>(f)();
-    }
+template <typename Self, typename F>
+constexpr auto possible_view<Value>::or_else(this Self&& self, F&& f) {
+    using U = std::invoke_result_t<F>;
+    static_assert(std::is_same_v<std::remove_cvref_t<U>, possible_view>);
+    return self.value_ ? std::forward<Self>(self) : std::forward<F>(f)();
+}
 
 /////////////////////
 // possible_view<T&>
 ////////////////////
 
 template <typename Value>
-class possible_view<Value&> : public ranges::view_interface<possible_view<Value&>> {
+class possible_view<Value&>
+    : public ranges::view_interface<possible_view<Value&>> {
   private:
     Value* value_;
 
@@ -220,11 +222,6 @@ class possible_view<Value&> : public ranges::view_interface<possible_view<Value&
 
     template <typename Self, typename F>
     constexpr possible_view or_else(this Self&& self, F&& f);
-
-    // template <typename F>
-    // constexpr possible_view or_else(F&& f) &&;
-    // template <typename F>
-    // constexpr possible_view or_else(F&& f) const&;
 };
 
 template <typename Value>
@@ -290,17 +287,18 @@ constexpr auto possible_view<Value&>::transform(this Self&& self, F&& f) {
     using U =
         std::invoke_result_t<F, decltype(forward_like<Self>(*self.value_))>;
     return (self.value_)
-               ? possible_view<U>{std::invoke(std::forward<F>(f),
-                                           forward_like<Self>(*self.value_))}
+               ? possible_view<U>{std::invoke(
+                     std::forward<F>(f), forward_like<Self>(*self.value_))}
                : possible_view<U>{};
 }
 
 template <typename Value>
 template <typename Self, typename F>
-constexpr possible_view<Value&> possible_view<Value&>::or_else(this Self&& self,
-                                                         F&&         f) {
+constexpr possible_view<Value&>
+possible_view<Value&>::or_else(this Self&& self, F&& f) {
     using U = std::invoke_result_t<F>;
-    static_assert(std::is_same_v<std::remove_cvref_t<U>, possible_view<Value&>>);
+    static_assert(
+        std::is_same_v<std::remove_cvref_t<U>, possible_view<Value&>>);
     return self.value_ ? std::forward<Self>(self) : std::forward<F>(f)();
 }
 
@@ -310,16 +308,16 @@ possible_view(Value) -> possible_view<Value>;
 } // namespace smd::views
 
 template <class T>
-    inline constexpr bool std::ranges::enable_borrowed_range <
-        smd::views::possible_view<T*>> = true;
+inline constexpr bool
+    std::ranges::enable_borrowed_range<smd::views::possible_view<T*>> = true;
 
 template <class T>
-    inline constexpr bool std::ranges::enable_borrowed_range <
-        smd::views::possible_view<std::reference_wrapper<T>>> = true;
+inline constexpr bool std::ranges::enable_borrowed_range<
+    smd::views::possible_view<std::reference_wrapper<T>>> = true;
 
 template <class T>
-    inline constexpr bool std::ranges::enable_borrowed_range <
-        smd::views::possible_view<T&>> = true;
+inline constexpr bool
+    std::ranges::enable_borrowed_range<smd::views::possible_view<T&>> = true;
 
 namespace smd::views {
 struct possible_fn {

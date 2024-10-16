@@ -21,8 +21,10 @@ create-venv:
 	rm -rf $(VENV)
 	make $(VENV)
 
-%.pdf : %.tex wg21.bib | $(VENV)
+$(DEPS_DIR):
 	mkdir -p $(DEPS_DIR)
+
+%.pdf : %.tex wg21.bib $(DEPS_DIR) | $(VENV)
 	$(SOURCE_VENV) latexmk -shell-escape -pdflua -use-make -deps -deps-out=$(DEPS_DIR)/$@.d -MP $<
 
 wg21.bib:
@@ -31,8 +33,12 @@ wg21.bib:
 .PHONY: clean
 clean:
 	latexmk -c
+	@$(MAKE) -f wg21/Makefile clean
+	-rm *.pdf
 
 paper: view-maybe.pdf
 
-# Include dependencies
-$(foreach file,$(TARGET),$(eval -include $(DEPS_DIR)/$(file).d))
+# # Include dependencies
+# $(foreach file,$(TARGET),$(eval -include $(DEPS_DIR)/$(file).d))
+
+-include $(DEPS_DIR)/*.d

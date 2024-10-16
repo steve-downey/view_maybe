@@ -186,7 +186,7 @@ constexpr auto value_or(T&& m, std::initializer_list<IL> il, U&&... u)
 
 template <class R, smd::maybe T, class I>
 constexpr auto smd::or_invoke(T&& m, I&& invocable) -> decltype(auto) {
-    using DerefType  = decltype(*forward<T>(m)); // Often a reference type.
+    using DerefType  = decltype(*std::forward<T>(m)); // Often a reference type.
     using InvokeType = std::invoke_result_t<I>;
     using CommonType = std::common_type<DerefType, InvokeType>;
 

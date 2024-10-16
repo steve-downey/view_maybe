@@ -607,8 +607,15 @@ otherwise \tcode{RT} is \tcode{common_type_t<decltype(*std::forward<T>(m)), invo
 
 \pnum
 \mandates
-\tcode{RT} is a valid type.
-\tcode{common_type<decltype(*std::forward<T>(m)>, invoke_result_t<I>>::type} is defined
+\begin{itemize}
+\item Where \tcode{DerefType} is \tcode{decltype(*forward<T>(m))} and
+\item \tcode{InvokeType} is  \tcode{std::invoke_result_t<I>}
+\item \tcode{common_type<DerefType, invoke_result_t<I>>::type} is defined and is \tcode{Ret}
+\item \tcode{is_constructible_v<Ret, DerefType>} is true
+\item \tcode{is_constructible_v<Ret, InvokeType>} is true
+\item \tcode{reference_constructs_from_temporary_v<Ret, DerefType>} is false
+\item \tcode{reference_constructs_from_temporary_v<Ret, InvokeType>} is false
+\end{itemize}
 
 \pnum
 \effects
@@ -1140,5 +1147,14 @@ The proposed changes are relative to the current working draft~\cite{N4958}.
 
 \nocite{viewmayb27:online}
 \nocite{P3091R2}
+
+\chapter{Possible Wording}
+
+\begin{auxwording}
+
+\include{possible}
+
+\end{auxwording}
+
 
 \end{document}
