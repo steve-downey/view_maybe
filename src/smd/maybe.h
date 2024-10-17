@@ -63,6 +63,10 @@ constexpr auto reference_or(T&& m, U&& u) -> decltype(auto);
 template <class R = void, maybe T, class... U>
 constexpr auto value_or(T&& m, U&&... u) -> decltype(auto);
 
+template <class R = void, smd::maybe T, class IL, class... U>
+constexpr auto
+value_or(T&& m, std::initializer_list<IL> il, U&&... u) -> decltype(auto);
+
 template <class R = void, maybe T, class I>
 constexpr auto or_invoke(T&& m, I&& invocable) -> decltype(auto);
 
@@ -165,8 +169,8 @@ constexpr auto smd::value_or(T&& m, U&&... u) -> decltype(auto) {
                    : Ret(std::forward<U>(u)...);
 }
 
-template <class R = void, smd::maybe T, class IL, class... U>
-constexpr auto value_or(T&& m, std::initializer_list<IL> il, U&&... u)
+template <class R, smd::maybe T, class IL, class... U>
+constexpr auto smd::value_or(T&& m, std::initializer_list<IL> il, U&&... u)
     -> decltype(auto) {
     // Find the type returned by dereferencing `m`
     using DerefType = decltype(*forward<T>(m)); // Often a reference type.
