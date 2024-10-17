@@ -1,0 +1,537 @@
+Modify 22 General utilities library[utilities]
+
+
+\rSec1[maybe]{Maybe Types}
+\indexlibraryglobal{maybe}%
+
+\rSec2[maybe.general]{In general}
+
+\pnum
+Subclause \ref{maybe} describes the concept \tcode{maybe}
+that represents types that model optionality and functions that operate on such types.
+
+\rSec2[maybe.syn]{Header \tcode{<maybe>} synopsis}
+
+\indexheader{maybe}%
+\begin{codeblock}
+namespace std {
+  // \ref{maybe.maybe}, concept \tcode{maybe}
+template <class T>
+concept maybe = requires(const T t) {
+    bool(t);
+    *(t);
+  };
+
+template <class R = void, maybe T, class... U>
+    constexpr auto value_or(T&& m, U&&... u) -> @\seebelow@;
+
+template <class R = void, maybe T, class IL, class... U>
+    constexpr auto value_or(T&& m, initializer_list<IL> il, U&&... u) -> @\seebelow@;
+
+template <class R = void, maybe T, class U>
+    constexpr auto reference_or(T&& m, U&& u) -> @\seebelow@;
+
+template <class R = void, maybe T, class I>
+    constexpr auto or_invoke(T&& m, I&& invocable) -> @\seebelow@;
+
+}
+\end{codeblock}
+
+\indexlibrarymember{value_or}{maybe}%
+\begin{itemdecl}
+template <class R = void, maybe T, class... U>
+    constexpr auto value_or(T&& m, U&&... u) -> @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R}.
+
+Otherwise,
+
+if sizeof...(U) is 1,
+
+\tcode{RT} is \tcode{common_type_t<remove_cvref_t<decltype(*std::forward<T>(m))>>}.
+
+Otherwise, \tcode{RT} is \tcode{remove_cvref_t<decltype(*std::forward<T>(m))>}.
+
+\pnum
+\mandates
+\begin{itemize}
+\item \tcode{RT}, is a valid type.
+\item \tcode{is_constructible_v<RT, decltype(*std::forward<T>(m))> \&\& \\
+    is_constructible_v<RT, U...>} is true.
+\item If \tcode{RT} is a reference type, then
+  \begin{itemize}
+  \item \tcode{sizeof(U...)} is 1 and
+  \item \tcode{reference_constructs_from_temporary_v<RT, decltype(*std::forward<T>(m))> \\
+      || reference_constructs_from_temporary_v<RT, U...>} is false.
+  \end{itemize}
+\end{itemize}
+\pnum
+\effects
+Equivalent to:
+\begin{codeblock}
+return bool(m) ? static_cast<RT>(*forward<T>(m)) : RT(forward<U>(u)...);
+\end{codeblock}
+
+\end{itemdescr}
+
+\indexlibrarymember{value_or}{maybe}%
+\begin{itemdecl}
+template <class R = void, maybe T, class IL, class... U>
+    constexpr auto value_or(T&& m, initializer_list<IL> il, U&&... u) -> @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R},
+
+otherwise \tcode{RT} is \tcode{remove_cvref_t<decltype(*std::forward<T>(m))>}.
+
+\pnum
+\mandates
+\tcode{is_constructible_v<RT, decltype(*std::forward<T>(m))> \&\&} \\
+  \tcode{is_constructible_v<RT, initializer_list<IT> il, U...>} is true.
+
+\pnum
+\effects
+Equivalent to:
+\begin{codeblock}
+return bool(m) ? static_cast<RT>(*forward<T>(m)) : RT(il, forward<U>(u)...);
+\end{codeblock}
+\end{itemdescr}
+
+\indexlibrarymember{reference_or}{maybe}%
+\begin{itemdecl}
+template <class R = void, maybe T, class U>
+    constexpr auto reference_or(T&& m, U&& u) -> @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R}, \\
+otherwise \tcode{R}T is \tcode{common_reference_t<decltype(*std::forward<T>(m)), U\&\&>}.
+
+\pnum
+\mandates
+\begin{itemize}
+\item \tcode{RT} is a valid type.
+\item \tcode{reference_constructs_from_temporary_v<RT, U> || \\
+    reference_constructs_from_temporary_v<RT, decltype(*std::forward<T>(m)>} is false.
+\end{itemize}
+
+\pnum
+\effects
+Equivalent to:
+\begin{codeblock}
+return  bool(m) ?
+  static_cast<RT>(*std::forward<T>(m)) :
+  static_cast<RT>(std::forward<U>(u))
+\end{codeblock}
+
+\end{itemdescr}
+
+\indexlibrarymember{or_invoke}{maybe}%
+\begin{itemdecl}
+template <class R = void, maybe T, class I>
+    constexpr auto or_invoke(T&& m, I&& invocable) -> @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+If \tcode{R} is not void, the return type, \tcode{RT} is \tcode{R}, \\
+otherwise \tcode{RT} is \tcode{common_type_t<decltype(*std::forward<T>(m)), invoke_result_t<I>>}.
+
+\pnum
+\mandates
+\begin{itemize}
+\item Where \tcode{DerefType} is \tcode{decltype(*forward<T>(m))} and
+\item \tcode{InvokeType} is  \tcode{std::invoke_result_t<I>}
+\item \tcode{common_type<DerefType, invoke_result_t<I>>::type} is defined and is \tcode{Ret}
+\item \tcode{is_constructible_v<Ret, DerefType>} is true
+\item \tcode{is_constructible_v<Ret, InvokeType>} is true
+\item \tcode{reference_constructs_from_temporary_v<Ret, DerefType>} is false
+\item \tcode{reference_constructs_from_temporary_v<Ret, InvokeType>} is false
+\end{itemize}
+
+\pnum
+\effects
+Equivalent to:
+\begin{codeblock}
+return bool(m) ?
+  static_cast<RT>(*m) :
+  static_cast<RT>(std::forward<I>(invocable)());
+\end{codeblock}
+\end{itemdescr}
+
+Modify 22.5 Optional objects[optional]
+
+Add to 22.5.2 Header <optional> synopsis
+\begin{codeblock}
+template <class T, class R>
+constexpr auto yield_if(bool b, T&& t) -> R;
+\end{codeblock}
+
+Add 22.5.X
+\Sec2[optional.yield_if]{yield_if}
+
+\indexlibrarymember{yield_if}{optional}%
+\begin{itemdecl}
+template <class T, class R = optional<decay_t<T>>>
+@constexpr auto yield_if(bool b, T\&\& t) -> R;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+\tcode{b ? forward<T>(t) : R\{nullopt\}}.
+\end{itemdescr}
+
+
+
+Modify 26.2 Header <ranges> synopsis
+
+\rSec1[ranges.syn]{Header \tcode{<ranges>} synopsis}
+
+\begin{adjustwidth}{1cm}{1cm}
+  \begin{addedblock}
+    \begin{codeblock}
+// \ref{range.nullable}, nullable view
+template<typename T>
+requires @\seebelow@;
+class nullable_view;                                       // freestanding
+
+template<class T>
+constexpr bool
+@\libspec{enable_borrowed_range}{nullable_view}@<nullable_view<T*>> = true;  // freestanding
+
+template<class T>
+constexpr bool
+@\libspec{enable_borrowed_range}{nullable_view}@<nullable_view<T&>> = true;  // freestanding
+
+namespace views {
+  inline constexpr @\unspec@ nullable = @\unspec@;          // freestanding
+}
+
+
+
+    \end{codeblock}
+  \end{addedblock}
+\end{adjustwidth}
+
+
+\Sec2[range.nullable]{Nullable View}
+
+\Sec3[range.nullable.overview]{Overview}
+
+\pnum
+\tcode{nullable_view} is a range adaptor that produces a \libconcept{view} with cardinality 0 or 1. It adapts object types which model the exposition only concept \libconcept{nullable_object}.
+
+
+\pnum
+\indexlibrarymember{nullable}{views}%
+The name \tcode{views::nullable} denotes a
+customization point object\iref{customization.point.object}.
+Given a subexpression \tcode{E}, the expression
+\tcode{views::nullable(E)} is expression-equivalent to
+\tcode{nullable_view<decay_t<decltype((E))>>(E)}.
+
+\Sec3[range.nullable.view]{Class template \tcode{nullable_view}}
+
+\begin{example}
+  \begin{codeblock}
+    optional o{4};
+    for (int k : nullable_view m{o})
+      cout << k;        // prints \tcode{4}
+  \end{codeblock}
+\end{example}
+
+\Sec3[range.nullable.view]{Class template \tcode{nullable_view}}
+
+\begin{codeblock}
+namespace std::ranges {
+  template<class I>
+  concept @\exposconceptnc{readable-references}@ = @\seebelownc@;  // \expos
+
+  template<class I>
+    concept @\exposconceptnc{nullable-object}@ = @\seebelownc@;  // \expos
+
+  template <class T>
+    concept @\exposconceptnc{movable-object}@ = @\seebelownc@;  // \expos
+
+  template <typename Nullable>
+    requires(@\libconcept{movable-object}@<Nullable>
+  class nullable_view<Nullable>
+    : public ranges::view_interface<nullable_view<Nullable>> {
+  private:
+    using T = remove_reference_t<
+        iter_reference_t<typename unwrap_reference_t<Nullable>>>;
+
+    @\exposidnc{movable-box}@<Nullable> @\exposidnc{value}@; // \expos{} (see \ref{range.move.wrap})
+
+  public:
+    constexpr nullable_view() = default;
+
+    constexpr explicit nullable_view(Nullable const& nullable);
+
+    constexpr explicit nullable_view(Nullable&& nullable);
+
+    template <class... Args>
+        requires constructible_from<Nullable, Args...>
+    constexpr nullable_view(in_place_t, Args&&... args);
+
+    constexpr T*       begin() noexcept;
+    constexpr const T* begin() const noexcept;
+    constexpr T*       end() noexcept;
+    constexpr const T* end() const noexcept;
+
+    constexpr size_t size() const noexcept;
+
+    constexpr auto data() noexcept;
+
+    constexpr const auto data() const noexcept;
+
+    friend constexpr auto operator<=>(const nullable_view& l,
+                                      const nullable_view& r);
+
+    friend constexpr bool operator==(const nullable_view& l,
+                                     const nullable_view& r);
+};
+
+\end{codeblock}
+
+\pnum
+The exposition-only \defexposconcept{readable-references} concept is equivalent to:
+\begin{itemdecl}
+  template<class Ref, class ConstRef>
+  concept @\defexposconcept{readable-references}@ =               // \expos
+  is_lvalue_reference_v<Ref> &&
+  is_object_v<remove_reference_t<Ref>> &&
+  is_lvalue_reference_v<ConstRef> &&
+  is_object_v<remove_reference_t<ConstRef>> &&
+  convertible_to<add_pointer_t<ConstRef>, const remove_reference_t<Ref>*>;
+
+\end{itemdecl}
+
+
+\pnum
+The exposition-only \defexposconcept{nullable-object} concept is equivalent to:
+\begin{itemdecl}
+  template<class I>
+  concept @\defexposconcept{nullable-object}@ =               // \expos
+  is_object_v<I> &&
+  maybe<T> &&
+  @\exposconceptnc{readable-references}@<std::iter_reference_t<T>,
+                      std::iter_reference_t<const T>>;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+When an object is contextually convertible to \tcode{bool} and dereferencable via \tcode{operator \ast()}, the object is said to be a \term{nullable object}.
+\end{itemdescr}
+
+\indexlibraryctor{nullable_view}%
+
+\pnum
+\begin{itemdecl}
+constexpr explicit nullable_view();
+\end{itemdecl}
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value} with \tcode{nullptr}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr explicit nullable_view(Nullable nullable);
+\end{itemdecl}
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value} with \tcode{addressof(nullable)}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* begin() noexcept;
+constexpr const T* begin() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+\tcode{data();}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* end() noexcept;
+constexpr const T* end() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns \tcode{data() + size();}.
+\end{itemdescr}
+
+\begin{itemdecl}
+static constexpr size_t size() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Equivalent to:
+
+\begin{codeblock}
+if (!@\exposid{value}@)
+  return 0;
+Nullable& m = *@\exposid{value}@;
+return bool(m);
+\end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* data() noexcept;
+constexpr const T* data() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Equivalent to:
+\begin{codeblock}
+if (!@\exposid{value}@)
+  return nullptr;
+const Nullable& m = *@\exposid{value}@;
+return m ? addressof(*m) : nullptr;
+\end{codeblock}
+\end{itemdescr}
+
+
+
+\Sec3[range.nullable.view.ref]{Class template specialization \tcode{nullable_view<T\&>}}
+
+\begin{codeblock}
+template <typename Nullable>
+  requires(nullable-object<Nullable>
+class nullable_view<Nullable&>
+    : public ranges::view_interface<nullable_view<Nullable>> {
+  private:
+    using T = remove_reference_t<
+        iter_reference_t<typename unwrap_reference_t<Nullable>>>;
+
+    Value* @\exposidnc { value }@; // \expos{}
+
+  public:
+    constexpr nullable_view() : @\exposid{value}@(nullptr){};
+
+    constexpr explicit nullable_view(Nullable& nullable);
+
+    constexpr explicit nullable_view(Nullable&& nullable) = delete;
+
+    constexpr T*       begin() noexcept;
+    constexpr const T* begin() const noexcept;
+    constexpr T*       end() noexcept;
+    constexpr const T* end() const noexcept;
+
+    constexpr size_t size() const noexcept;
+
+    constexpr T* data() noexcept;
+
+    constexpr const T* data() const noexcept;
+};
+
+\end{codeblock}
+
+
+
+\indexlibraryctor{nullable_view}%
+
+\pnum
+\begin{itemdecl}
+  constexpr explicit nullable_view();
+\end{itemdecl}
+\begin{itemdescr}
+  \pnum{}
+  \effects{}
+  Initializes \exposid{value} with \tcode{nullptr}
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr explicit nullable_view(Nullable nullable);
+\end{itemdecl}
+\begin{itemdescr}
+  \pnum{}
+  \effects{}
+  Initializes \exposid{value} with \tcode{addressof(nullable)}
+\end{itemdescr}
+
+
+\begin{itemdecl}
+constexpr explicit nullable_view(Nullable&& nullable) = delete;
+\end{itemdecl}
+\begin{itemdescr}
+  \pnum{}
+  Deleted
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr T* begin() noexcept;
+  constexpr const T* begin() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum
+  \returns
+  \tcode{data();}
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr T* end() noexcept;
+  constexpr const T* end() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \returns
+  \tcode{data() + size();}.
+\end{itemdescr}
+
+\begin{itemdecl}
+  static constexpr size_t size() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum{}
+  \effects{}
+  Equivalent to:
+
+  \begin{codeblock}
+    if (!@\exposid{value}@)
+      return 0;
+    return bool(*@\exposid{value}@);
+  \end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+  constexpr T* data() noexcept;
+  constexpr const T* data() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Equivalent to:
+\begin{codeblock}
+  if (!@\exposid{value}@)
+    return nullptr;
+  return *@\exposid{value}@ ? addressof(**@\exposid{value}@) : nullptr;
+\end{codeblock}
+\end{itemdescr}
+
+\Sec2[version.syn]{Feature-test macro}
+Add the following macro definition to [version.syn], header <version> synopsis, with the value selected by the editor to reflect the date of adoption of this paper:
+
+\begin{codeblock}
+  #define __cpp_lib_ranges_nullable 20XXXXL // also in <ranges>, <tuple>, <utility>
+\end{codeblock}

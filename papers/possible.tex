@@ -1,0 +1,464 @@
+
+Modify 26.2 Header <ranges> synopsis
+
+\rSec1[ranges.syn]{Header \tcode{<ranges>} synopsis}
+
+
+\Sec2[range.possible]{Possible View}
+
+\Sec3[range.possible.overview]{Overview}
+
+\pnum
+\tcode{possible_view} produces a view that contains 0 or 1 objects.
+
+
+\pnum
+\indexlibrarymember{possible}{views}%
+The name \tcode{views::possible} denotes a
+customization point object\iref{customization.point.object}.
+Given a subexpression \tcode{E}, the expression
+\tcode{views::possible(E)} is expression-equivalent to
+\tcode{possible_view<decay_t<decltype((E))>>(E)}.
+
+
+\begin{example}
+  \begin{codeblock}
+int i{4};
+for (int i : views::possible(4))
+  cout << i;        // prints \tcode{4}
+
+possible_view<int> m2{};
+for (int k : m2)
+  cout << k;        // Does not execute
+\end{codeblock}
+\end{example}
+
+\Sec3[range.possible.view]{Class template \tcode{possible_view}}
+
+\begin{codeblock}
+
+template <typename Value>
+class possible_view;
+
+
+template <typename Value>
+class possible_view : public ranges::view_interface<possible_view<Value>> {
+  private:
+    std::optional<Value> @\exposidnc{value_}@;             // \expos{}
+
+  public:
+    constexpr possible_view() = default;
+
+    constexpr explicit possible_view(const Value& value) requires @\libconcept{copy_constructible}@<T>;
+
+    constexpr explicit possible_view(Value&& value);
+
+    template <class... Args>
+      requires @\libconcept{constructible_from}@<T, Args...>
+    constexpr possible_view(std::in_place_t, Args&&... args);
+
+    constexpr Value*       begin() noexcept;
+    constexpr const Value* begin() const noexcept;
+    constexpr Value*       end() noexcept;
+    constexpr const Value* end() const noexcept;
+
+    constexpr size_t size() const noexcept;
+
+    constexpr Value* data() noexcept;
+
+    constexpr const Value* data() const noexcept;
+
+    friend constexpr auto operator<=>(const possible_view& lhs,
+    const possible_view& rhs) {
+      return lhs.@\exposid{value_}@ <=> rhs.@\exposid{value_}@;
+    }
+
+    friend constexpr bool operator==(const possible_view& lhs,
+    const possible_view& rhs) {
+      return lhs.@\exposid{value_}@ == rhs.@\exposid{value_}@;
+    }
+
+    template <typename Self, typename F>
+    constexpr auto and_then(this Self&& self, F&& f);
+
+    template <typename Self, typename F>
+    constexpr auto transform(this Self&& self, F&& f);
+
+    template <typename Self, typename F>
+    constexpr auto or_else(this Self&& self, F&& f);
+};
+
+\end{codeblock}
+
+%% BEGIN value defs
+\begin{itemdecl}
+  constexpr explicit possible_view(Value const& possible);
+\end{itemdecl}
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value_} with possible.
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr explicit possible_view(Value&& possible);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value_} with \tcode{std::move(possible)}.
+\end{itemdescr}
+
+\begin{itemdecl}
+template<class... Args>
+constexpr possible_view(in_place_t, Args&&... args);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects
+Initializes \exposid{value_} as if by
+\tcode{\exposid{value_}\{in_place, std::forward<Args>(args)...\}}.
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* begin() noexcept;
+constexpr const T* begin() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+\tcode{data();}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* end() noexcept;
+constexpr const T* end() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns \tcode{data() + size();}.
+\end{itemdescr}
+
+\begin{itemdecl}
+static constexpr size_t size() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns
+\begin{codeblock}
+bool(@\exposid{value_}@);
+\end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* data() noexcept;
+constexpr const T* data() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns \tcode{addressof(*\exposid{value_});}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr auto operator<=>(const possible_view& lhs, const possible_view& rhs)
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns \tcode{lhs.\exposid{value_}} <=> \tcode{rhs.\exposid{value_}};
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr auto operator==(const possible_view& lhs, const possible_view& rhs)
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns \tcode{lhs.\exposid{value_}} == \tcode{rhs.\exposid{value_}};
+\end{itemdescr}
+
+\begin{itemdecl}
+  template <typename Self, typename F>
+  constexpr auto and_then(this Self&& self, F&& f);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
+
+\pnum
+\mandates
+\tcode{remove_cvref_t<U>} is a specialization of \tcode{possible_view}.
+
+\pnum{}
+\effects{}
+Equivalent to:
+
+\begin{codeblock}
+  if (self.@\exposid{value_}@) {
+    return std::invoke(std::forward<F>(f),
+                      forward_like<Self>(*self.@\exposid{value_}@));
+  } else {
+    return std::remove_cvref_t<U>();
+  }
+\end{codeblock}
+\end{itemdescr}
+
+
+\begin{itemdecl}
+  template <typename Self, typename F>
+  constexpr auto transform(this Self&& self, F&& f);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
+
+\pnum{}
+\returns
+\begin{codeblock}
+  (self.@\exposid{value_}@)
+  ? possible_view<U>{std::invoke(std::forward<F>(f),
+                              forward_like<Self>(*self.@\exposid{value_}@))}
+  : possible_view<U>{};
+\end{codeblock}
+\end{itemdescr}
+
+
+\begin{itemdecl}
+  template <typename Self, typename F>
+  constexpr auto or_else(this Self&& self, F&& f);
+\end{itemdecl}
+
+\begin{itemdescr}
+  Let \tcode{U} be \tcode{invoke_result_t<F>}.
+
+  \pnum
+  \mandates
+  \tcode{remove_cvref_t<U>} is a specialization of \tcode{possible_view}.
+
+\pnum{}
+\returns
+\begin{codeblock}
+self.@\exposid{value_}@ ? std::forward<Self>(self) : std::forward<F>(f)();
+\end{codeblock}
+\end{itemdescr}
+
+
+\Sec3[range.possible.view.ref]{Class template specialization\tcode{possible_view<T\&>}}
+
+\begin{codeblock}
+template <typename Value>
+class possible_view<Value&> : public ranges::view_interface<possible_view<Value&>> {
+  private:
+    Value* @\exposidnc { value_ }@; // \expos{}
+
+  public:
+    constexpr possible_view();
+
+    constexpr explicit possible_view(Value& value);
+
+    constexpr explicit possible_view(Value&& value) = delete;
+
+    constexpr Value*       begin() noexcept;
+    constexpr const Value* begin() const noexcept;
+    constexpr Value*       end() noexcept;
+    constexpr const Value* end() const noexcept;
+
+    constexpr size_t size() const noexcept;
+
+    constexpr Value* data() noexcept;
+
+    constexpr const Value* data() const noexcept;
+
+    friend constexpr auto operator<=>(const possible_view& lhs,
+                                      const possible_view& rhs);
+
+    friend constexpr bool operator==(const possible_view& lhs,
+                                     const possible_view& rhs);
+
+    template <typename Self, typename F>
+    constexpr auto and_then(this Self&& self, F&& f);
+
+    template <typename Self, typename F>
+    constexpr auto transform(this Self&& self, F&& f);
+
+    template <typename Self, typename F>
+    constexpr auto or_else(this Self&& self, F&& f);
+};
+
+\end{codeblock}
+
+\begin{itemdecl}
+constexpr explicit possible_view();
+\end{itemdecl}
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value_} with \tcode{nullptr}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr explicit possible_view(Value possible);
+\end{itemdecl}
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Initializes \exposid{value_} with \tcode{addressof(possible)}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* begin() noexcept;
+constexpr const T* begin() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+\tcode{data();}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* end() noexcept;
+constexpr const T* end() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns \tcode{data() + size();}.
+\end{itemdescr}
+
+\begin{itemdecl}
+static constexpr size_t size() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns
+\begin{codeblock}
+bool(@\exposid{value_}@);
+\end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+constexpr T* data() noexcept;
+constexpr const T* data() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\effects{}
+Equivalent to:
+
+\begin{codeblock}
+if (!@\exposid{value_}@)
+    return nullptr;
+return addressof(*@\exposid{value_}@);
+
+\end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+friend constexpr auto operator<=>(const possible_view& lhs,
+                                  const possible_view& rhs);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns{}
+\begin{codeblock}
+(bool(lhs.@\exposid{value_}@) && bool(rhs.@\exposid{value_}@))
+    ? (*lhs.@\exposid{value_}@ <=> *rhs.@\exposid{value_}@)
+    : (bool(lhs.@\exposid{value_}@) <=> bool(rhs.@\exposid{value_}@));
+
+\end{codeblock}
+
+\end{itemdescr}
+
+\begin{itemdecl}
+friend constexpr auto operator==(const possible_view& lhs,
+                                 const possible_view& rhs);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum{}
+\returns
+\begin{codeblock}
+(bool(lhs.@\exposid{value_}@) && bool(@\exposid{value_}@))
+    ? (*lhs.@\exposid{value_}@ == *rhs.@\exposid{value_}@)
+    : (bool(lhs.@\exposid{value_}@) == bool(rhs.@\exposid{value_}@));
+\end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+template <typename Self, typename F>
+constexpr auto and_then(this Self&& self, F&& f);
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum
+  Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
+
+  \pnum
+  \mandates
+  \tcode{remove_cvref_t<U>} is a specialization of \tcode{possible_view<T\&}.
+
+\pnum{}
+\effects{}
+Equivalent to:
+
+\begin{codeblock}
+  if (self.@\exposid{value_}@) {
+    return std::invoke(forward<F>(f),
+                       forward_like<Self>(*self.@\exposid{value_}@));
+  } else {
+    return std::remove_cvref_t<U>();
+  }
+\end{codeblock}
+\end{itemdescr}
+
+\begin{itemdecl}
+  template <typename Self, typename F>
+  constexpr auto transform(this Self&& self, F&& f);
+\end{itemdecl}
+
+\begin{itemdescr}
+  \pnum
+  Let \tcode{U} be \tcode{invoke_result_t<F, decltype(forward_like<Self>(*self.\exposid{value_}))>}.
+
+\pnum{}
+\returns
+\begin{codeblock}
+  return (self.@\exposid{value_}@)
+     ? possible_view<U>{std::invoke(forward<F>(f),
+                                 forward_like<Self>(*self.@\exposid{value_}@))}
+     : possible_view<U>{};
+
+\end{codeblock}
+\end{itemdescr}
+
+
+\begin{itemdecl}
+  template <typename Self, typename F>
+  constexpr auto or_else(this Self&& self, F&& f);
+\end{itemdecl}
+
+\begin{itemdescr}
+  Let \tcode{U} be \tcode{invoke_result_t<F>}.
+
+  \pnum
+  \mandates
+  \tcode{remove_cvref_t<U>} is a specialization of \tcode{possible_view<T\&>}.
+
+\pnum{}
+\returns
+\begin{codeblock}
+  return self.@\exposid{value_}@ ? std::forward<Self>(self) : std::forward<F>(f)();
+\end{codeblock}
+\end{itemdescr}
